@@ -30,6 +30,7 @@ make fresh
 | `make migrate` | Apply pending migrations |
 | `make migrate-down` | Rollback last migration |
 | `make migrate-status` | Show applied migrations |
+| `make test` | Run unit tests |
 
 ## Connection Info
 

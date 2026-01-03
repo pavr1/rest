@@ -1,7 +1,7 @@
 # Bar-Restaurant Data Service Makefile
 # Docker-related commands only
 
-.PHONY: start stop restart logs connect status fresh clean migrate migrate-down migrate-status help
+.PHONY: start stop restart logs connect status fresh clean migrate migrate-down migrate-status test help
 
 .DEFAULT_GOAL := help
 
@@ -51,6 +51,10 @@ migrate-down: ## Rollback last migration
 
 migrate-status: ## Show applied migrations
 	@./scripts/migrate.sh status
+
+test: ## Run unit tests
+	@echo "🧪 Running tests..."
+	@go test -v ./...
 
 help: ## Show this help
 	@echo "🍺 Bar-Restaurant Data Service"
