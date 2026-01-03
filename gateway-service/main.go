@@ -91,6 +91,9 @@ func main() {
 	// Public health endpoints
 	api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, "/api/v1/data/p/health", logger)).Methods("GET")
 
+	// Data service - public settings endpoint (for service-to-service config loading)
+	api.HandleFunc("/v1/data/settings/by-service", createProxyHandler(dataServiceUrl, "/api/v1/data/settings/by-service", logger)).Methods("POST")
+
 	// ==== PROTECTED SESSION ENDPOINTS (require authentication) ====
 	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 	protectedSessionRouter.Use(sessionMiddleware.ValidateSession)

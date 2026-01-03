@@ -11,7 +11,7 @@
 
 start: _network ## Start containers (PostgreSQL + PgAdmin)
 	@echo "🍺 Starting Bar-Restaurant Data Service..."
-	@cd docker && docker-compose up -d
+	@cd docker && docker-compose up -d --build
 	@echo "⏳ Waiting for database..."
 	@sleep 3
 	@echo "✅ Started!"

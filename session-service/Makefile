@@ -11,7 +11,7 @@
 
 start: _network ## Start session-service container
 	@echo "🔐 Starting Session Service..."
-	@cd docker && docker-compose up -d
+	@cd docker && docker-compose up -d --build
 	@echo "✅ Started on port 8087"
 
 stop: ## Stop session-service container
