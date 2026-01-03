@@ -1,7 +1,7 @@
 # Gateway Service Makefile
 # Docker-related commands + test
 
-.PHONY: start stop restart logs status clean test help
+.PHONY: start stop restart logs status clean test test-coverage help
 
 .DEFAULT_GOAL := help
 
@@ -11,7 +11,7 @@
 
 start: _network ## Start gateway-service container
 	@echo "🌐 Starting Gateway Service..."
-	@cd docker && docker-compose up -d
+	@cd docker && docker-compose up -d --build
 	@echo "✅ Started on port 8082"
 
 stop: ## Stop gateway-service container
@@ -34,6 +34,10 @@ clean: ## Remove container and images
 test: ## Run tests
 	@echo "🧪 Running tests..."
 	@go test -v ./...
+
+test-coverage: ## Run tests with coverage
+	@echo "🧪 Running tests with coverage..."
+	@go test -cover ./...
 
 help: ## Show this help
 	@echo "🌐 Gateway Service"

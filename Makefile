@@ -1,7 +1,7 @@
 # Bar-Restaurant Root Makefile
 # Orchestrates all services
 
-.PHONY: test test-data test-session test-gateway start stop status clean help
+.PHONY: test test-data test-session test-gateway test-coverage start stop restart status logs clean fresh help
 
 .DEFAULT_GOAL := help
 
@@ -65,6 +65,16 @@ stop: ## Stop all services
 	@cd data-service && make stop
 	@echo "✅ All services stopped!"
 
+restart: stop start ## Restart all services
+
+logs: ## View logs for a service (usage: make logs s=gateway)
+	@if [ -z "$(s)" ]; then \
+		echo "Usage: make logs s=<service>"; \
+		echo "  Services: data, session, gateway"; \
+	else \
+		cd $(s)-service && make logs; \
+	fi
+
 status: ## Show status of all services
 	@echo "📊 Service Status"
 	@echo ""
@@ -106,8 +116,9 @@ help: ## Show this help
 	@grep -E '^test[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Services:"
-	@grep -E '^(start|stop|status|clean|fresh):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+	@grep -E '^(start|stop|restart|status|logs|clean|fresh):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Quick Start:"
-	@echo "  make fresh         # Clean install everything"
-	@echo "  make test          # Run all tests"
+	@echo "  make fresh           # Clean install everything"
+	@echo "  make test            # Run all tests"
+	@echo "  make logs s=gateway  # View gateway service logs"

@@ -27,7 +27,7 @@ func main() {
 
 	// Load configuration from data service
 	configLoader := sharedConfig.NewConfigLoader(sharedConfig.DATA_SERVICE_URL)
-	config, err := configLoader.LoadConfig("gateway", logger)
+	config, err := configLoader.LoadConfig("Gateway", logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
@@ -65,16 +65,17 @@ func main() {
 	// ==== PUBLIC ENDPOINTS (no authentication) ====
 
 	// Session service - public endpoints
-	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
-	sessionRouter.HandleFunc("/p/login", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/login", logger)).Methods("POST")
-	sessionRouter.HandleFunc("/p/validate", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/validate", logger)).Methods("POST")
-	sessionRouter.HandleFunc("/p/health", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/health", logger)).Methods("GET")
-
-	// Protected session endpoints
-	sessionRouter.HandleFunc("/logout", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/logout", logger)).Methods("POST")
+	api.HandleFunc("/v1/sessions/p/login", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/login", logger)).Methods("POST")
+	api.HandleFunc("/v1/sessions/p/validate", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/validate", logger)).Methods("POST")
+	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/health", logger)).Methods("GET")
 
 	// Public health endpoints
 	api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, "/api/v1/data/p/health", logger)).Methods("GET")
+
+	// ==== PROTECTED SESSION ENDPOINTS (require authentication) ====
+	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	protectedSessionRouter.Use(sessionMiddleware.ValidateSession)
+	protectedSessionRouter.HandleFunc("/logout", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/logout", logger)).Methods("POST")
 
 	// ==== PROTECTED ENDPOINTS (require authentication) ====
 
