@@ -1,7 +1,7 @@
 # Bar-Restaurant Root Makefile
 # Orchestrates all services
 
-.PHONY: test test-data test-session start stop status clean help
+.PHONY: test test-data test-session test-gateway start stop status clean help
 
 .DEFAULT_GOAL := help
 
@@ -20,6 +20,10 @@ test: ## Run all tests across all services
 	@echo "────────────────────────"
 	@cd session-service && go test -v ./...
 	@echo ""
+	@echo "🌐 Gateway Service Tests"
+	@echo "────────────────────────"
+	@cd gateway-service && go test -v ./...
+	@echo ""
 	@echo "✅ All tests complete!"
 
 test-data: ## Run data-service tests only
@@ -30,10 +34,15 @@ test-session: ## Run session-service tests only
 	@echo "🔐 Running Session Service tests..."
 	@cd session-service && go test -v ./...
 
+test-gateway: ## Run gateway-service tests only
+	@echo "🌐 Running Gateway Service tests..."
+	@cd gateway-service && go test -v ./...
+
 test-coverage: ## Run all tests with coverage
 	@echo "🧪 Running tests with coverage..."
 	@cd data-service && go test -cover ./...
 	@cd session-service && go test -cover ./...
+	@cd gateway-service && go test -cover ./...
 
 # =============================================================================
 # 🚀 SERVICE MANAGEMENT
@@ -45,10 +54,13 @@ start: ## Start all services
 	@echo "⏳ Waiting for database..."
 	@sleep 3
 	@cd session-service && make start
+	@sleep 2
+	@cd gateway-service && make start
 	@echo "✅ All services started!"
 
 stop: ## Stop all services
 	@echo "🛑 Stopping all services..."
+	@cd gateway-service && make stop
 	@cd session-service && make stop
 	@cd data-service && make stop
 	@echo "✅ All services stopped!"
@@ -61,9 +73,13 @@ status: ## Show status of all services
 	@echo ""
 	@echo "🔐 Session Service:"
 	@cd session-service && make status
+	@echo ""
+	@echo "🌐 Gateway Service:"
+	@cd gateway-service && make status
 
 clean: ## Clean all services
 	@echo "🧹 Cleaning all services..."
+	@cd gateway-service && make clean
 	@cd session-service && make clean
 	@cd data-service && make clean
 	@echo "✅ All cleaned!"
@@ -73,6 +89,8 @@ fresh: clean ## Fresh install of all services
 	@cd data-service && make fresh
 	@sleep 2
 	@cd session-service && make start
+	@sleep 2
+	@cd gateway-service && make start
 	@echo "✅ Fresh install complete!"
 
 # =============================================================================
