@@ -50,6 +50,10 @@ postgresql://postgres:postgres123@localhost:5432/barrest_db
 - **Email:** admin@barrest.com
 - **Password:** admin123
 
+### Portainer (Container Management)
+- **URL:** http://localhost:9000
+- First time: Create admin user
+
 To connect in PgAdmin:
 - Open http://localhost:8080
 - Login: admin@barrest.com / admin123
