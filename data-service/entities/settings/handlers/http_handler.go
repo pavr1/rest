@@ -27,11 +27,13 @@ func NewHTTPHandler(dbHandler *DBHandler, logger *logrus.Logger) *HTTPHandler {
 func (h *HTTPHandler) GetSettingsByService(w http.ResponseWriter, r *http.Request) {
 	var req sharedModels.GetSettingsByServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.WithError(err).Error("Failed to decode request body")
 		httpresponse.SendError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
 	if req.Service == "" {
+		h.logger.Error("Service name is required")
 		httpresponse.SendError(w, http.StatusBadRequest, "Service name is required", nil)
 		return
 	}
@@ -56,11 +58,13 @@ func (h *HTTPHandler) GetSettingsByService(w http.ResponseWriter, r *http.Reques
 func (h *HTTPHandler) GetSettingByKey(w http.ResponseWriter, r *http.Request) {
 	var req sharedModels.GetSettingsByKeyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.WithError(err).Error("Failed to decode request body")
 		httpresponse.SendError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
 	if req.Service == "" || req.Key == "" {
+		h.logger.Error("Service and key are required")
 		httpresponse.SendError(w, http.StatusBadRequest, "Service and key are required", nil)
 		return
 	}
@@ -78,11 +82,13 @@ func (h *HTTPHandler) GetSettingByKey(w http.ResponseWriter, r *http.Request) {
 func (h *HTTPHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
 	var req sharedModels.UpdateSettingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.WithError(err).Error("Failed to decode request body")
 		httpresponse.SendError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
 	if req.Service == "" || req.Key == "" {
+		h.logger.Error("Service and key are required")
 		httpresponse.SendError(w, http.StatusBadRequest, "Service and key are required", nil)
 		return
 	}
@@ -99,11 +105,13 @@ func (h *HTTPHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
 func (h *HTTPHandler) CreateSetting(w http.ResponseWriter, r *http.Request) {
 	var setting sharedModels.Setting
 	if err := json.NewDecoder(r.Body).Decode(&setting); err != nil {
+		h.logger.WithError(err).Error("Failed to decode request body")
 		httpresponse.SendError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
 	if setting.Service == "" || setting.Key == "" {
+		h.logger.Error("Service and key are required")
 		httpresponse.SendError(w, http.StatusBadRequest, "Service and key are required", nil)
 		return
 	}
@@ -120,11 +128,13 @@ func (h *HTTPHandler) CreateSetting(w http.ResponseWriter, r *http.Request) {
 func (h *HTTPHandler) DeleteSetting(w http.ResponseWriter, r *http.Request) {
 	var req sharedModels.GetSettingsByKeyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.WithError(err).Error("Failed to decode request body")
 		httpresponse.SendError(w, http.StatusBadRequest, "Invalid request body", err)
 		return
 	}
 
 	if req.Service == "" || req.Key == "" {
+		h.logger.Error("Service and key are required")
 		httpresponse.SendError(w, http.StatusBadRequest, "Service and key are required", nil)
 		return
 	}

@@ -33,6 +33,7 @@ func NewDBHandler(db database.DatabaseHandler, logger *logrus.Logger) (*DBHandle
 func (h *DBHandler) GetSettingsByService(service string) ([]sharedModels.Setting, error) {
 	query, err := h.queries.Get(sql.GetSettingsByServiceQuery)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get settings by service query")
 		return nil, err
 	}
 
@@ -48,7 +49,7 @@ func (h *DBHandler) GetSettingsByService(service string) ([]sharedModels.Setting
 		var s sharedModels.Setting
 		if err := rows.Scan(&s.SettingID, &s.Service, &s.Key, &s.Value, &s.Description, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			h.logger.WithError(err).Error("Failed to scan setting row")
-			continue
+			return nil, err
 		}
 		settings = append(settings, s)
 	}
@@ -65,6 +66,7 @@ func (h *DBHandler) GetSettingsByService(service string) ([]sharedModels.Setting
 func (h *DBHandler) GetSettingByKey(service, key string) (*sharedModels.Setting, error) {
 	query, err := h.queries.Get(sql.GetSettingByKeyQuery)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get setting by key query")
 		return nil, err
 	}
 
@@ -84,6 +86,7 @@ func (h *DBHandler) GetSettingByKey(service, key string) (*sharedModels.Setting,
 func (h *DBHandler) UpdateSetting(service, key, value string) error {
 	query, err := h.queries.Get(sql.UpdateSettingQuery)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get update setting query")
 		return err
 	}
 
@@ -100,6 +103,7 @@ func (h *DBHandler) UpdateSetting(service, key, value string) error {
 func (h *DBHandler) CreateSetting(setting sharedModels.Setting) error {
 	query, err := h.queries.Get(sql.CreateSettingQuery)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get create setting query")
 		return err
 	}
 
@@ -116,6 +120,7 @@ func (h *DBHandler) CreateSetting(setting sharedModels.Setting) error {
 func (h *DBHandler) DeleteSetting(service, key string) error {
 	query, err := h.queries.Get(sql.DeleteSettingQuery)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get delete setting query")
 		return err
 	}
 
