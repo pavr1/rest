@@ -1,41 +1,21 @@
-# Use a simple Alpine image
+FROM golang:1.24-alpine AS builder
+WORKDIR /build
+RUN apk add --no-cache git
+
+# Copy shared module (go.mod has: replace shared => ../shared)
+COPY shared/ /build/shared/
+
+# Copy data-service into a subdirectory
+WORKDIR /build/data-service
+COPY data-service/go.mod data-service/go.sum ./
+RUN go mod download
+
+COPY data-service/ .
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+
 FROM alpine:latest
-
-# Install necessary packages
-RUN apk add --no-cache ca-certificates curl
-
-# Create app user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
-
-# Set working directory
-WORKDIR /app
-
-# Copy the binary (we'll build it locally)
-COPY main .
-
-# Make binary executable
-RUN chmod +x main
-
-# Create images directory and set permissions
-RUN mkdir -p /app/images && \
-    chown -R appuser:appgroup /app/images
-
-# Change ownership
-RUN chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
-
-# Expose port
+RUN apk --no-cache add ca-certificates curl
+WORKDIR /root/
+COPY --from=builder /build/data-service/main .
 EXPOSE 8086
-
-# Add health check
-HEALTHCHECK --interval=1s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8086/api/v1/data/p/health || exit 1
-
-# Set timezone
-ENV TZ=America/Costa_Rica
-
-# Run the application
 CMD ["./main"]

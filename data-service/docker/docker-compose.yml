@@ -40,6 +40,41 @@ services:
     networks:
       - docker_barrest_network
 
+  data-service:
+    build:
+      context: ../..
+      dockerfile: data-service/docker/Dockerfile
+    container_name: barrest_data_service
+    restart: unless-stopped
+    environment:
+      # Server Configuration
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8086
+      
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      DB_NAME: barrest_db
+      DB_SSL_MODE: disable
+      
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "8086:8086"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/api/v1/data/p/health"]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+      start_period: 2s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - docker_barrest_network
+
   portainer:
     image: portainer/portainer-ce:latest
     container_name: barrest_portainer
