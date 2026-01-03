@@ -1,24 +1,33 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"gateway-service/middleware"
 	sessionmanager "gateway-service/middleware/session-manager"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"os/signal"
 	sharedConfig "shared/config"
+	sharedHealth "shared/health"
 	sharedLogger "shared/logger"
 	sharedMiddlewares "shared/middlewares"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	// HealthCheckInterval is how often to ping dependencies
+	HealthCheckInterval = 10 * time.Second
 )
 
 func main() {
@@ -41,6 +50,16 @@ func main() {
 		"data_service":    dataServiceUrl,
 	}).Info("Configuration loaded")
 
+	// Start health monitor (background goroutine)
+	ctx, cancel := context.WithCancel(context.Background())
+	healthMonitor := sharedHealth.NewHealthMonitor(logger, HealthCheckInterval)
+	healthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
+	healthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
+	// Future services - add here as they are created:
+	// healthMonitor.AddService("menu-service", menuServiceUrl+"/api/v1/menu/p/health")
+	// healthMonitor.AddService("orders-service", ordersServiceUrl+"/api/v1/orders/p/health")
+	go healthMonitor.Start(ctx)
+
 	// Create session manager for authentication
 	sessionManager := sessionmanager.NewSessionManager(sessionServiceUrl, logger)
 	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger)
@@ -59,8 +78,8 @@ func main() {
 	api := r.PathPrefix("/api").Subrouter()
 	v1 := api.PathPrefix("/v1").Subrouter()
 
-	// Gateway health check
-	v1.HandleFunc("/gateway/p/health", createHealthHandler(sessionServiceUrl, dataServiceUrl, logger)).Methods("GET")
+	// Gateway health check (uses cached health from monitor)
+	v1.HandleFunc("/gateway/p/health", createHealthHandler(healthMonitor, logger)).Methods("GET")
 
 	// ==== PUBLIC ENDPOINTS (no authentication) ====
 
@@ -105,20 +124,47 @@ func main() {
 		port = "8082"
 	}
 
-	logger.Info("🚀 Gateway Service starting on :" + port)
-	logger.Info("📡 Health: http://localhost:" + port + "/api/v1/gateway/p/health")
-	logger.Info("")
-	logger.Info("🔓 Public endpoints:")
-	logger.Info("   POST /api/v1/sessions/p/login")
-	logger.Info("   POST /api/v1/sessions/p/validate")
-	logger.Info("   GET  /api/v1/sessions/p/health")
-	logger.Info("   GET  /api/v1/data/p/health")
-	logger.Info("")
-	logger.Info("🔒 Protected endpoints (require Authorization header):")
-	logger.Info("   POST /api/v1/sessions/logout")
-	logger.Info("   ALL  /api/v1/data/*")
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
 
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	go func() {
+		logger.Info("🚀 Gateway Service starting on :" + port)
+		logger.Info("📡 Health: http://localhost:" + port + "/api/v1/gateway/p/health")
+		logger.Info("")
+		logger.Info("🔓 Public endpoints:")
+		logger.Info("   POST /api/v1/sessions/p/login")
+		logger.Info("   POST /api/v1/sessions/p/validate")
+		logger.Info("   GET  /api/v1/sessions/p/health")
+		logger.Info("   GET  /api/v1/data/p/health")
+		logger.Info("")
+		logger.Info("🔒 Protected endpoints (require Authorization header):")
+		logger.Info("   POST /api/v1/sessions/logout")
+		logger.Info("   ALL  /api/v1/data/*")
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.WithError(err).Fatal("Server failed")
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down...")
+	cancel() // Stop health monitor
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.WithError(err).Fatal("Shutdown failed")
+	}
+	logger.Info("Gateway Service stopped")
 }
 
 // createProxyHandler creates a reverse proxy handler for a specific service
@@ -187,60 +233,37 @@ func generateRequestID() string {
 	return hex.EncodeToString(bytes)
 }
 
-func createHealthHandler(sessionServiceUrl, dataServiceUrl string, logger *logrus.Logger) http.HandlerFunc {
+func createHealthHandler(healthMonitor *sharedHealth.HealthMonitor, logger *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		sessionHealthy := checkServiceHealth(sessionServiceUrl+"/api/v1/sessions/p/health", logger)
-		dataHealthy := checkServiceHealth(dataServiceUrl+"/api/v1/data/p/health", logger)
+		// Use cached health state from background monitor
+		allServices := healthMonitor.GetAllServicesStatus()
 
 		status := "healthy"
 		httpStatus := http.StatusOK
 
-		if !sessionHealthy || !dataHealthy {
-			status = "degraded"
-			httpStatus = http.StatusServiceUnavailable
+		// Check if all services are healthy
+		services := make(map[string]interface{})
+		services["gateway-service"] = "healthy"
+
+		for name, svc := range allServices {
+			if svc.Healthy {
+				services[name] = "healthy"
+			} else {
+				services[name] = "unhealthy"
+				status = "degraded"
+				httpStatus = http.StatusServiceUnavailable
+			}
 		}
 
 		response := map[string]interface{}{
-			"status":  status,
-			"service": "gateway-service",
-			"time":    time.Now(),
-			"services": map[string]string{
-				"gateway-service": "healthy",
-				"session-service": boolToHealth(sessionHealthy),
-				"data-service":    boolToHealth(dataHealthy),
-			},
+			"status":   status,
+			"service":  "gateway-service",
+			"time":     time.Now(),
+			"services": services,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(httpStatus)
 		json.NewEncoder(w).Encode(response)
 	}
-}
-
-func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
-	client := &http.Client{Timeout: 5 * time.Second}
-
-	req, err := http.NewRequest("GET", healthURL, nil)
-	if err != nil {
-		return false
-	}
-
-	req.Header.Set("X-Gateway-Service", "barrest-gateway")
-	req.Header.Set("X-User-ID", "system")
-	req.Header.Set("X-User-Role", "admin")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == http.StatusOK
-}
-
-func boolToHealth(healthy bool) string {
-	if healthy {
-		return "healthy"
-	}
-	return "unhealthy"
 }

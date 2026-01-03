@@ -3,25 +3,12 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	sharedHealth "shared/health"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
 )
-
-func TestBoolToHealth(t *testing.T) {
-	tests := []struct {
-		input    bool
-		expected string
-	}{
-		{true, "healthy"},
-		{false, "unhealthy"},
-	}
-
-	for _, tt := range tests {
-		result := boolToHealth(tt.input)
-		if result != tt.expected {
-			t.Errorf("boolToHealth(%v) = %s; want %s", tt.input, result, tt.expected)
-		}
-	}
-}
 
 func TestGenerateRequestID(t *testing.T) {
 	id1 := generateRequestID()
@@ -40,35 +27,60 @@ func TestGenerateRequestID(t *testing.T) {
 	}
 }
 
-func TestCheckServiceHealth_InvalidURL(t *testing.T) {
-	result := checkServiceHealth("http://invalid-url-that-does-not-exist:9999/health", nil)
-	if result {
-		t.Error("checkServiceHealth() should return false for invalid URL")
-	}
-}
+func TestCreateHealthHandler_AllHealthy(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
 
-func TestCreateHealthHandler_ServiceDown(t *testing.T) {
-	// Create handler with non-existent services
-	handler := createHealthHandler(
-		"http://localhost:19999", // non-existent session service
-		"http://localhost:19998", // non-existent data service
-		nil,
-	)
+	// Create health monitor with all services healthy
+	healthMonitor := sharedHealth.NewHealthMonitor(logger, 10*time.Second)
+	healthMonitor.AddService("data-service", "http://localhost:8086/api/v1/data/p/health")
+	healthMonitor.AddService("session-service", "http://localhost:8087/api/v1/sessions/p/health")
+	healthMonitor.SetServiceHealthForTesting("data-service", true)
+	healthMonitor.SetServiceHealthForTesting("session-service", true)
+
+	handler := createHealthHandler(healthMonitor, logger)
 
 	req := httptest.NewRequest("GET", "/api/v1/gateway/p/health", nil)
 	w := httptest.NewRecorder()
 
 	handler(w, req)
 
-	// Should return 503 when services are down
+	// Should return 200 when all services are healthy
+	if w.Code != http.StatusOK {
+		t.Errorf("health handler status = %d; want %d", w.Code, http.StatusOK)
+	}
+}
+
+func TestCreateHealthHandler_ServiceDown(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+
+	// Create health monitor with one service unhealthy
+	healthMonitor := sharedHealth.NewHealthMonitor(logger, 10*time.Second)
+	healthMonitor.AddService("data-service", "http://localhost:8086/api/v1/data/p/health")
+	healthMonitor.AddService("session-service", "http://localhost:8087/api/v1/sessions/p/health")
+	healthMonitor.SetServiceHealthForTesting("data-service", true)
+	healthMonitor.SetServiceHealthForTesting("session-service", false) // unhealthy
+
+	handler := createHealthHandler(healthMonitor, logger)
+
+	req := httptest.NewRequest("GET", "/api/v1/gateway/p/health", nil)
+	w := httptest.NewRecorder()
+
+	handler(w, req)
+
+	// Should return 503 when any service is down
 	if w.Code != http.StatusServiceUnavailable {
 		t.Errorf("health handler status = %d; want %d", w.Code, http.StatusServiceUnavailable)
 	}
 }
 
 func TestCreateProxyHandler_ErrorHandler(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+
 	// Create a proxy handler pointing to a non-existent service
-	handler := createProxyHandler("http://localhost:19997", "/api/test", nil)
+	handler := createProxyHandler("http://localhost:19997", "/api/test", logger)
 
 	req := httptest.NewRequest("GET", "/api/test", nil)
 	w := httptest.NewRecorder()

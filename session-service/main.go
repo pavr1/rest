@@ -10,10 +10,16 @@ import (
 	"time"
 
 	sharedConfig "shared/config"
+	sharedHealth "shared/health"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	// HealthCheckInterval is how often to ping dependencies
+	HealthCheckInterval = 10 * time.Second
 )
 
 func main() {
@@ -31,7 +37,13 @@ func main() {
 		"host": config.GetString("SERVER_HOST"),
 	}).Info("Configuration loaded")
 
-	mainHandler, err := NewMainHTTPHandler(config, logger)
+	// Start health monitor (background goroutine)
+	ctx, cancel := context.WithCancel(context.Background())
+	healthMonitor := sharedHealth.NewHealthMonitor(logger, HealthCheckInterval)
+	healthMonitor.AddService("data-service", sharedConfig.DATA_SERVICE_URL+"/api/v1/data/p/health")
+	go healthMonitor.Start(ctx)
+
+	mainHandler, err := NewMainHTTPHandler(config, logger, healthMonitor)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
@@ -59,10 +71,12 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down...")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	cancel() // Stop health monitor
 
-	if err := server.Shutdown(ctx); err != nil {
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.WithError(err).Fatal("Shutdown failed")
 	}
 	logger.Info("Session Service stopped")
