@@ -20,8 +20,11 @@ type Handler struct {
 }
 
 // NewHandler creates a new HTTP handler
-func NewHandler(db database.DatabaseHandler, config *database.Config, logger *logrus.Logger) *Handler {
-	dbHandler := handlers.NewDBHandler(db, logger)
+func NewHandler(db database.DatabaseHandler, config *database.Config, logger *logrus.Logger) (*Handler, error) {
+	dbHandler, err := handlers.NewDBHandler(db, logger)
+	if err != nil {
+		return nil, err
+	}
 	settingsHandler := handlers.NewHTTPHandler(dbHandler, logger)
 
 	return &Handler{
@@ -29,7 +32,7 @@ func NewHandler(db database.DatabaseHandler, config *database.Config, logger *lo
 		db:              db,
 		config:          config,
 		logger:          logger,
-	}
+	}, nil
 }
 
 // SetupRoutes configures all HTTP routes

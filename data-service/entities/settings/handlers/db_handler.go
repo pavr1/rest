@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"data-service/entities/settings/sql"
 	"data-service/pkg/database"
 	sharedModels "shared/models"
 
@@ -9,22 +10,31 @@ import (
 
 // DBHandler handles database operations for settings
 type DBHandler struct {
-	db     database.DatabaseHandler
-	logger *logrus.Logger
+	db      database.DatabaseHandler
+	queries *sql.Queries
+	logger  *logrus.Logger
 }
 
 // NewDBHandler creates a new settings database handler
-func NewDBHandler(db database.DatabaseHandler, logger *logrus.Logger) *DBHandler {
-	return &DBHandler{
-		db:     db,
-		logger: logger,
+func NewDBHandler(db database.DatabaseHandler, logger *logrus.Logger) (*DBHandler, error) {
+	queries, err := sql.LoadQueries()
+	if err != nil {
+		return nil, err
 	}
+
+	return &DBHandler{
+		db:      db,
+		queries: queries,
+		logger:  logger,
+	}, nil
 }
 
 // GetSettingsByService retrieves all settings for a specific service
 func (h *DBHandler) GetSettingsByService(service string) ([]sharedModels.Setting, error) {
-	query := `SELECT setting_id, service, key, value, description, created_at, updated_at 
-			  FROM settings WHERE service = $1`
+	query, err := h.queries.Get(sql.GetSettingsByServiceQuery)
+	if err != nil {
+		return nil, err
+	}
 
 	rows, err := h.db.Query(query, service)
 	if err != nil {
@@ -53,11 +63,13 @@ func (h *DBHandler) GetSettingsByService(service string) ([]sharedModels.Setting
 
 // GetSettingByKey retrieves a specific setting by service and key
 func (h *DBHandler) GetSettingByKey(service, key string) (*sharedModels.Setting, error) {
-	query := `SELECT setting_id, service, key, value, description, created_at, updated_at 
-			  FROM settings WHERE service = $1 AND key = $2`
+	query, err := h.queries.Get(sql.GetSettingByKeyQuery)
+	if err != nil {
+		return nil, err
+	}
 
 	var s sharedModels.Setting
-	err := h.db.QueryRow(query, service, key).Scan(
+	err = h.db.QueryRow(query, service, key).Scan(
 		&s.SettingID, &s.Service, &s.Key, &s.Value, &s.Description, &s.CreatedAt, &s.UpdatedAt,
 	)
 	if err != nil {
@@ -70,10 +82,12 @@ func (h *DBHandler) GetSettingByKey(service, key string) (*sharedModels.Setting,
 
 // UpdateSetting updates a setting value
 func (h *DBHandler) UpdateSetting(service, key, value string) error {
-	query := `UPDATE settings SET value = $1, updated_at = NOW() 
-			  WHERE service = $2 AND key = $3`
+	query, err := h.queries.Get(sql.UpdateSettingQuery)
+	if err != nil {
+		return err
+	}
 
-	_, err := h.db.Exec(query, value, service, key)
+	_, err = h.db.Exec(query, value, service, key)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update setting")
 		return err
@@ -84,10 +98,12 @@ func (h *DBHandler) UpdateSetting(service, key, value string) error {
 
 // CreateSetting creates a new setting
 func (h *DBHandler) CreateSetting(setting sharedModels.Setting) error {
-	query := `INSERT INTO settings (service, key, value, description) 
-			  VALUES ($1, $2, $3, $4)`
+	query, err := h.queries.Get(sql.CreateSettingQuery)
+	if err != nil {
+		return err
+	}
 
-	_, err := h.db.Exec(query, setting.Service, setting.Key, setting.Value, setting.Description)
+	_, err = h.db.Exec(query, setting.Service, setting.Key, setting.Value, setting.Description)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create setting")
 		return err
@@ -98,9 +114,12 @@ func (h *DBHandler) CreateSetting(setting sharedModels.Setting) error {
 
 // DeleteSetting deletes a setting
 func (h *DBHandler) DeleteSetting(service, key string) error {
-	query := `DELETE FROM settings WHERE service = $1 AND key = $2`
+	query, err := h.queries.Get(sql.DeleteSettingQuery)
+	if err != nil {
+		return err
+	}
 
-	_, err := h.db.Exec(query, service, key)
+	_, err = h.db.Exec(query, service, key)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to delete setting")
 		return err

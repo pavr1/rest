@@ -40,7 +40,10 @@ func main() {
 	fmt.Println("✅ Database connection established successfully")
 
 	// Setup HTTP handler and router
-	handler := httpHandler.NewHandler(db, config, logger)
+	handler, err := httpHandler.NewHandler(db, config, logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to create HTTP handler")
+	}
 	router := mux.NewRouter()
 	handler.SetupRoutes(router)
 

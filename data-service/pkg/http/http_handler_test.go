@@ -113,7 +113,10 @@ func TestNewHandler(t *testing.T) {
 		DBName: "test_db",
 	}
 
-	handler := NewHandler(mockDB, config, logger)
+	handler, err := NewHandler(mockDB, config, logger)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
 
 	if handler == nil {
 		t.Fatal("Expected handler to be created, got nil")
