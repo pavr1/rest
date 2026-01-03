@@ -1,0 +1,95 @@
+# Bar-Restaurant Root Makefile
+# Orchestrates all services
+
+.PHONY: test test-data test-session start stop status clean help
+
+.DEFAULT_GOAL := help
+
+# =============================================================================
+# 🧪 TESTING
+# =============================================================================
+
+test: ## Run all tests across all services
+	@echo "🧪 Running all tests..."
+	@echo ""
+	@echo "📦 Data Service Tests"
+	@echo "─────────────────────"
+	@cd data-service && go test -v ./...
+	@echo ""
+	@echo "🔐 Session Service Tests"
+	@echo "────────────────────────"
+	@cd session-service && go test -v ./...
+	@echo ""
+	@echo "✅ All tests complete!"
+
+test-data: ## Run data-service tests only
+	@echo "📦 Running Data Service tests..."
+	@cd data-service && go test -v ./...
+
+test-session: ## Run session-service tests only
+	@echo "🔐 Running Session Service tests..."
+	@cd session-service && go test -v ./...
+
+test-coverage: ## Run all tests with coverage
+	@echo "🧪 Running tests with coverage..."
+	@cd data-service && go test -cover ./...
+	@cd session-service && go test -cover ./...
+
+# =============================================================================
+# 🚀 SERVICE MANAGEMENT
+# =============================================================================
+
+start: ## Start all services
+	@echo "🍺 Starting all Bar-Restaurant services..."
+	@cd data-service && make start
+	@echo "⏳ Waiting for database..."
+	@sleep 3
+	@cd session-service && make start
+	@echo "✅ All services started!"
+
+stop: ## Stop all services
+	@echo "🛑 Stopping all services..."
+	@cd session-service && make stop
+	@cd data-service && make stop
+	@echo "✅ All services stopped!"
+
+status: ## Show status of all services
+	@echo "📊 Service Status"
+	@echo ""
+	@echo "📦 Data Service:"
+	@cd data-service && make status
+	@echo ""
+	@echo "🔐 Session Service:"
+	@cd session-service && make status
+
+clean: ## Clean all services
+	@echo "🧹 Cleaning all services..."
+	@cd session-service && make clean
+	@cd data-service && make clean
+	@echo "✅ All cleaned!"
+
+fresh: clean ## Fresh install of all services
+	@echo "🍺 Fresh install of all services..."
+	@cd data-service && make fresh
+	@sleep 2
+	@cd session-service && make start
+	@echo "✅ Fresh install complete!"
+
+# =============================================================================
+# 📋 HELP
+# =============================================================================
+
+help: ## Show this help
+	@echo "🍺 Bar-Restaurant Application"
+	@echo ""
+	@echo "Usage: make [command]"
+	@echo ""
+	@echo "Testing:"
+	@grep -E '^test[a-zA-Z_-]*:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Services:"
+	@grep -E '^(start|stop|status|clean|fresh):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-18s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Quick Start:"
+	@echo "  make fresh         # Clean install everything"
+	@echo "  make test          # Run all tests"

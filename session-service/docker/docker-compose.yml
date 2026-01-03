@@ -1,3 +1,7 @@
+# Session Service Docker Compose
+# NOTE: Depends on data-service (postgres) - start data-service first!
+# Use root Makefile: make fresh (handles startup order)
+
 services:
   session-service:
     build:
@@ -10,8 +14,6 @@ services:
     environment:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8087
-    depends_on:
-      - postgres
     networks:
       - docker_barrest_network
 
