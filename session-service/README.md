@@ -94,7 +94,7 @@ curl http://localhost:8087/api/v1/sessions/p/health
 | `make logs` | View container logs |
 | `make status` | Show container status |
 | `make clean` | Remove container and images |
-| `make test` | Run tests |
+| `make test` | Run unit tests |
 | `make help` | Show all commands |
 
 ## Configuration
