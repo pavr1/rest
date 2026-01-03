@@ -1,6 +1,8 @@
 # Session Service Docker Compose
-# NOTE: Depends on data-service (postgres) - start data-service first!
+# =============================================================================
+# Service pings data-service health endpoint to check availability.
 # Use root Makefile: make fresh (handles startup order)
+# =============================================================================
 
 services:
   session-service:
