@@ -29,7 +29,7 @@ status: ## Show container status
 
 clean: ## Remove container and images
 	@cd docker && docker-compose down -v --rmi local 2>/dev/null || true
-	@echo "✅ Cleaned"
+	@echo "✅ Session Service cleaned!"
 
 test: ## Run tests
 	@echo "🧪 Running tests..."

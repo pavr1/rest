@@ -41,7 +41,7 @@ fresh: clean start ## Clean everything and start fresh
 
 clean: ## Remove containers and volumes
 	@cd docker && docker-compose down -v --remove-orphans 2>/dev/null || true
-	@echo "✅ Cleaned!"
+	@echo "✅ Data Service cleaned!"
 
 migrate: ## Apply pending migrations
 	@./scripts/migrate.sh up
