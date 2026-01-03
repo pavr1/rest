@@ -36,7 +36,7 @@ func main() {
 
 	// Load configuration from data service
 	configLoader := sharedConfig.NewConfigLoader(sharedConfig.DATA_SERVICE_URL)
-	config, err := configLoader.LoadConfig("Gateway", logger)
+	config, err := configLoader.LoadConfig("gateway", logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
