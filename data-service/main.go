@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,11 +10,11 @@ import (
 	"time"
 
 	"data-service/pkg/database"
+	httpHandler "data-service/pkg/http"
 	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -40,8 +39,10 @@ func main() {
 
 	fmt.Println("✅ Database connection established successfully")
 
-	// Setup HTTP server
-	router := setupRouter(db, config, logger)
+	// Setup HTTP handler and router
+	handler := httpHandler.NewHandler(db, config, logger)
+	router := mux.NewRouter()
+	handler.SetupRoutes(router)
 
 	// Get server configuration
 	serverHost := sharedConfig.DATA_SERVICE_HOST
@@ -85,82 +86,4 @@ func main() {
 	}
 
 	logger.Info("Data Service exited gracefully")
-}
-
-// setupRouter configures the HTTP routes
-func setupRouter(db database.DatabaseHandler, config *database.Config, logger *logrus.Logger) *mux.Router {
-	router := mux.NewRouter()
-
-	// Root endpoint
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"message":"Bar-Restaurant Data Service is running"}`))
-	}).Methods("GET")
-
-	// Public health check endpoint
-	router.HandleFunc("/api/v1/data/p/health", func(w http.ResponseWriter, r *http.Request) {
-		healthCheck(w, db, config, logger)
-	}).Methods("GET")
-
-	// Stats endpoint
-	router.HandleFunc("/api/v1/data/p/stats", func(w http.ResponseWriter, r *http.Request) {
-		statsEndpoint(w, r, db, logger)
-	}).Methods("GET")
-
-	return router
-}
-
-// healthCheck handles the health check endpoint
-func healthCheck(w http.ResponseWriter, db database.DatabaseHandler, config *database.Config, logger *logrus.Logger) {
-	response := map[string]interface{}{
-		"service":   "data-service",
-		"timestamp": time.Now(),
-	}
-
-	if err := db.HealthCheck(); err != nil {
-		logger.WithError(err).Error("Database ping check failed")
-		response["status"] = "unhealthy"
-		response["message"] = "Database ping check failed"
-		response["error"] = err.Error()
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	response["status"] = "healthy"
-	response["message"] = "Database ping check passed"
-	response["database"] = map[string]interface{}{
-		"host":   config.Host,
-		"port":   config.Port,
-		"dbname": config.DBName,
-		"stats":  db.GetStats(),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
-
-// statsEndpoint provides database connection statistics
-func statsEndpoint(w http.ResponseWriter, _ *http.Request, db database.DatabaseHandler, _ *logrus.Logger) {
-	stats := db.GetStats()
-
-	response := map[string]interface{}{
-		"service":   "data-service",
-		"timestamp": time.Now(),
-		"database_stats": map[string]interface{}{
-			"open_connections": stats.OpenConnections,
-			"in_use":           stats.InUse,
-			"idle":             stats.Idle,
-			"wait_count":       stats.WaitCount,
-			"wait_duration":    stats.WaitDuration.String(),
-		},
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
 }
