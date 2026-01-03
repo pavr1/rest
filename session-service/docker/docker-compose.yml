@@ -1,0 +1,20 @@
+services:
+  session-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: barrest_session_service
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8087
+    depends_on:
+      - postgres
+    networks:
+      - docker_barrest_network
+
+networks:
+  docker_barrest_network:
+    external: true
