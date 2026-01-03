@@ -49,6 +49,20 @@ postgresql://postgres:postgres123@localhost:5432/barrest_db
 - **Email:** admin@barrest.com
 - **Password:** admin123
 
+To connect in PgAdmin:
+- Open http://localhost:8080
+- Login: admin@barrest.com / admin123
+- Right-click "Servers" → "Register" → "Server"
+- General tab:
+- Name: Bar-Restaurant
+- Connection tab:
+- Host: postgres (not localhost or 127.0.0.1)
+- Port: 5432
+- Database: barrest_db
+- Username: postgres
+- Password: postgres123
+- Click "Save"
+
 ## Database Schema
 
 The database includes 25 tables for the bar-restaurant application:
