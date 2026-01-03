@@ -504,13 +504,15 @@
                     
                     clearTimeout(timeoutId);
                     
-                    if (response.ok) {
+                    // Parse response even if status is 503 (degraded)
+                    // Gateway returns 503 when some services are unhealthy but still returns service details
+                    if (response.ok || response.status === 503) {
                         const data = await response.json();
                         console.log('🏥 Gateway response:', data);
                         console.log('🏥 Services:', data.services);
                         this.updateStatusFromGateway(data.services || {});
                     } else {
-                        console.warn('🏥 Gateway returned non-OK status:', response.status);
+                        console.warn('🏥 Gateway returned unexpected status:', response.status);
                         this.markAllServicesOffline();
                     }
                 } catch (error) {
@@ -520,8 +522,9 @@
             }
 
             updateStatusFromGateway(services) {
-                // Update gateway status (always online if we got a response)
-                this.updateStatusIndicator('gateway-status', 'online');
+                // Update gateway status based on actual health response
+                const gatewayStatus = services['gateway-service'] === 'healthy' ? 'online' : 'offline';
+                this.updateStatusIndicator('gateway-status', gatewayStatus);
                 
                 // Update session service status
                 const sessionStatus = services['session-service'] === 'healthy' ? 'online' : 'offline';

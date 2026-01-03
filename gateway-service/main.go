@@ -241,25 +241,32 @@ func createHealthHandler(healthMonitor *sharedHealth.HealthMonitor, logger *logr
 		// Use cached health state from background monitor
 		allServices := healthMonitor.GetAllServicesStatus()
 
-		status := "healthy"
+		gatewayHealthy := true
 		httpStatus := http.StatusOK
 
 		// Check if all services are healthy
 		services := make(map[string]interface{})
-		services["gateway-service"] = "healthy"
 
 		for name, svc := range allServices {
 			if svc.Healthy {
 				services[name] = "healthy"
 			} else {
 				services[name] = "unhealthy"
-				status = "degraded"
+				// Gateway depends on all its services - if any is down, gateway is unhealthy
+				gatewayHealthy = false
 				httpStatus = http.StatusServiceUnavailable
 			}
 		}
 
+		// Gateway status depends on its dependencies
+		if gatewayHealthy {
+			services["gateway-service"] = "healthy"
+		} else {
+			services["gateway-service"] = "unhealthy"
+		}
+
 		response := map[string]interface{}{
-			"status":   status,
+			"status":   map[bool]string{true: "healthy", false: "unhealthy"}[gatewayHealthy],
 			"service":  "gateway-service",
 			"time":     time.Now(),
 			"services": services,
