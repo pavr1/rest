@@ -1,0 +1,29 @@
+# UI Service Docker Compose
+# =============================================================================
+# Frontend UI service serving static HTML/CSS/JS files
+# Connects to gateway-service for API calls
+# =============================================================================
+
+services:
+  ui-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: barrest_ui_service
+    restart: unless-stopped
+    environment:
+      - UI_PORT=3000
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - docker_barrest_network
+
+networks:
+  docker_barrest_network:
+    external: true

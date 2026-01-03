@@ -1,0 +1,12 @@
+{
+  "name": "bar-restaurant-ui",
+  "version": "1.0.0",
+  "description": "Bar Restaurant UI Service",
+  "scripts": {
+    "start": "http-server . -p 3000 -c-1",
+    "dev": "http-server . -p 3000 -c-1 -o"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

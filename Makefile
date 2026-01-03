@@ -56,10 +56,15 @@ start: ## Start all services
 	@cd session-service && make start
 	@sleep 2
 	@cd gateway-service && make start
+	@sleep 2
+	@cd ui-service && make start
 	@echo "✅ All services started!"
+	@echo ""
+	@echo "🌐 UI available at: http://localhost:3000"
 
 stop: ## Stop all services
 	@echo "🛑 Stopping all services..."
+	@cd ui-service && make stop
 	@cd gateway-service && make stop
 	@cd session-service && make stop
 	@cd data-service && make stop
@@ -70,7 +75,7 @@ restart: stop start ## Restart all services
 logs: ## View logs for a service (usage: make logs s=gateway)
 	@if [ -z "$(s)" ]; then \
 		echo "Usage: make logs s=<service>"; \
-		echo "  Services: data, session, gateway"; \
+		echo "  Services: data, session, gateway, ui"; \
 	else \
 		cd $(s)-service && make logs; \
 	fi
@@ -86,9 +91,13 @@ status: ## Show status of all services
 	@echo ""
 	@echo "🌐 Gateway Service:"
 	@cd gateway-service && make status
+	@echo ""
+	@echo "🎨 UI Service:"
+	@cd ui-service && make status
 
 clean: ## Clean all services
 	@echo "🧹 Cleaning all services..."
+	@cd ui-service && make clean
 	@cd gateway-service && make clean
 	@cd session-service && make clean
 	@cd data-service && make clean
@@ -101,7 +110,11 @@ fresh: clean ## Fresh install of all services
 	@cd session-service && make start
 	@sleep 2
 	@cd gateway-service && make start
+	@sleep 2
+	@cd ui-service && make start
 	@echo "✅ Fresh install complete!"
+	@echo ""
+	@echo "🌐 UI available at: http://localhost:3000"
 
 # =============================================================================
 # 📋 HELP

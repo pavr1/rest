@@ -1,0 +1,271 @@
+// === BAR RESTAURANT - AUTHENTICATION SERVICE ===
+
+class AuthService {
+    constructor() {
+        // Ensure CONFIG is available
+        if (typeof CONFIG === 'undefined') {
+            console.error('❌ CONFIG not available when creating AuthService');
+            throw new Error('CONFIG must be loaded before AuthService');
+        }
+
+        // Use the gateway URL for authentication
+        this.baseURL = CONFIG.GATEWAY_URL;
+        this.sessionIdKey = CONFIG.AUTH.SESSION_ID_KEY;
+        this.userKey = CONFIG.AUTH.USER_KEY;
+        this.rememberKey = CONFIG.AUTH.REMEMBER_KEY;
+
+        console.log('✅ AuthService initialized');
+    }
+
+    // === MAIN LOGIN METHOD ===
+    
+    async login(username, password, rememberMe = false) {
+        try {
+            console.log('🔑 Attempting login for:', username);
+            
+            const response = await fetch(`${this.baseURL}${CONFIG.API.LOGIN}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const { success, result } = await isSuccessfulResponse(response);
+            
+            if (success) {
+                // Store authentication data
+                this.setSessionId(result.data.session_id, rememberMe);
+                this.setUserData(result.data.user, result.data.role, result.data.permissions || []);
+                
+                console.log('✅ Login successful for:', username);
+                
+                return {
+                    success: true,
+                    user: result.data.user,
+                    role: result.data.role,
+                    permissions: result.data.permissions || []
+                };
+            } else {
+                const errorMessage = result.message || `Login failed (${result.code})`;
+                throw new Error(errorMessage);
+            }
+            
+        } catch (error) {
+            console.error('❌ Login failed:', error);
+            throw error;
+        }
+    }
+
+    // === LOGOUT METHOD ===
+    
+    async logout() {
+        try {
+            console.log('🚪 Attempting logout...');
+            
+            const sessionId = this.getSessionId();
+            if (!sessionId) {
+                this.clearAuthData();
+                return { success: true };
+            }
+
+            const response = await fetch(`${this.baseURL}${CONFIG.API.LOGOUT}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionId}`
+                }
+            });
+
+            // Always clear local data regardless of server response
+            this.clearAuthData();
+            
+            console.log('✅ Logout successful');
+            return { success: true };
+            
+        } catch (error) {
+            console.error('❌ Logout error:', error);
+            // Always clear local data even if request fails
+            this.clearAuthData();
+            return { success: true, warning: 'Server logout failed' };
+        }
+    }
+
+    // === SESSION VALIDATION ===
+    
+    async validateSession() {
+        try {
+            const sessionId = this.getSessionId();
+            if (!sessionId) {
+                return false;
+            }
+
+            const response = await fetch(`${this.baseURL}${CONFIG.API.VALIDATE}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ session_id: sessionId })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.data?.valid || data.valid || false;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('❌ Session validation error:', error);
+            return false;
+        }
+    }
+
+    // === SESSION MANAGEMENT ===
+    
+    setSessionId(sessionId, rememberMe = false) {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem(this.sessionIdKey, sessionId);
+        
+        if (rememberMe) {
+            localStorage.setItem(this.rememberKey, 'true');
+        } else {
+            localStorage.removeItem(this.rememberKey);
+        }
+        
+        console.log('💾 Session ID stored');
+    }
+
+    getSessionId() {
+        // Check sessionStorage first, then localStorage
+        let sessionId = sessionStorage.getItem(this.sessionIdKey);
+        if (!sessionId) {
+            sessionId = localStorage.getItem(this.sessionIdKey);
+        }
+        return sessionId;
+    }
+
+    setUserData(user, role, permissions) {
+        const userData = { user, role, permissions };
+        const storage = this.isRememberMe() ? localStorage : sessionStorage;
+        storage.setItem(this.userKey, JSON.stringify(userData));
+        console.log('💾 User data stored:', { username: user?.username, role: role?.name });
+    }
+
+    getUserData() {
+        const storage = this.isRememberMe() ? localStorage : sessionStorage;
+        const data = storage.getItem(this.userKey);
+        return data ? JSON.parse(data) : null;
+    }
+
+    isRememberMe() {
+        return localStorage.getItem(this.rememberKey) === 'true';
+    }
+
+    clearAuthData() {
+        sessionStorage.removeItem(this.sessionIdKey);
+        sessionStorage.removeItem(this.userKey);
+        localStorage.removeItem(this.sessionIdKey);
+        localStorage.removeItem(this.userKey);
+        localStorage.removeItem(this.rememberKey);
+        console.log('🧹 Auth data cleared');
+    }
+
+    isAuthenticated() {
+        const sessionId = this.getSessionId();
+        if (!sessionId) {
+            return false;
+        }
+        return sessionId.length > 0 && sessionId !== 'null' && sessionId !== 'undefined';
+    }
+
+    getCurrentUser() {
+        const userData = this.getUserData();
+        return userData?.user || null;
+    }
+
+    getCurrentRole() {
+        const userData = this.getUserData();
+        return userData?.role || null;
+    }
+
+    getPermissions() {
+        const userData = this.getUserData();
+        return userData?.permissions || [];
+    }
+
+    hasPermission(permission) {
+        const permissions = this.getPermissions();
+        return permissions.includes(permission);
+    }
+}
+
+// === GLOBAL AUTH SERVICE INITIALIZATION ===
+
+function initializeAuthService() {
+    try {
+        if (window.authService) {
+            return window.authService;
+        }
+        
+        const authService = new AuthService();
+        window.authService = authService;
+        
+        return authService;
+        
+    } catch (error) {
+        console.error('❌ Failed to initialize AuthService:', error);
+        throw error;
+    }
+}
+
+// === AUTHENTICATED REQUEST HELPER ===
+
+async function makeAuthenticatedRequest(url, options = {}) {
+    const authService = window.authService;
+    
+    if (!authService) {
+        throw new Error('Authentication service not available');
+    }
+    
+    if (!authService.isAuthenticated()) {
+        console.warn('⚠️ User not authenticated');
+        window.location.href = 'login.html';
+        throw new Error('User not authenticated');
+    }
+    
+    const sessionId = authService.getSessionId();
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionId}`,
+        ...options.headers
+    };
+    
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+    
+    if (response.status === 401) {
+        console.warn('⚠️ Session expired');
+        authService.clearAuthData();
+        window.location.href = 'login.html';
+        throw new Error('Session expired');
+    }
+    
+    return response;
+}
+
+// Export for global access
+window.AuthService = AuthService;
+window.initializeAuthService = initializeAuthService;
+window.makeAuthenticatedRequest = makeAuthenticatedRequest;
+
+// Auto-initialize when script loads
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        initializeAuthService();
+    } catch (error) {
+        console.warn('⚠️ AuthService will be initialized later');
+    }
+});
