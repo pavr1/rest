@@ -8,7 +8,7 @@ import (
 	sharedConfig "shared/config"
 	"time"
 
-	dataHandlers "data-service/pkg/handlers"
+	dataHandler "data-service/pkg/handlers"
 
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -17,7 +17,7 @@ import (
 
 // DBHandler handles database operations for sessions
 type DBHandler struct {
-	db         dataHandlers.IDBHandler
+	db         dataHandler.IDBHandler
 	queries    sessionSQL.Queries
 	jwtHandler *JWTHandler
 	logger     *logrus.Logger
@@ -26,7 +26,7 @@ type DBHandler struct {
 // NewDBHandler creates a new database handler with internal database connection
 func NewDBHandler(cfg *sharedConfig.Config, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
 	// Create database configuration
-	dbConfig := &dataHandlers.Config{
+	dbConfig := &dataHandler.Config{
 		Host:            cfg.GetString("DB_HOST"),
 		Port:            cfg.GetInt("DB_PORT"),
 		User:            cfg.GetString("DB_USER"),
@@ -44,7 +44,7 @@ func NewDBHandler(cfg *sharedConfig.Config, jwtHandler *JWTHandler, logger *logr
 	}
 
 	// Create database handler using data-service's handler
-	db := dataHandlers.New(dbConfig, logger)
+	db := dataHandler.New(dbConfig, logger)
 	if err := db.Connect(); err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
