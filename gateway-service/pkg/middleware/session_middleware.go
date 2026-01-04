@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
-	sessionmanager "gateway-service/middleware/session-manager"
+	sessionmanager "gateway-service/pkg/middleware/session-manager"
 	"net/http"
 	"strings"
 	"time"

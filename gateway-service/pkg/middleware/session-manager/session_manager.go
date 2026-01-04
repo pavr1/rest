@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"gateway-service/models"
+	"gateway-service/pkg/models"
 	httpresponse "shared/http-response"
 
 	"github.com/sirupsen/logrus"
