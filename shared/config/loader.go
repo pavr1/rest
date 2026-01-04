@@ -210,7 +210,7 @@ func setDefaultValues(config *Config, serviceName string) {
 	case "data":
 		config.Set("SERVER_PORT", "8086")
 		config.Set("SERVER_HOST", "0.0.0.0")
-		config.Set("DB_HOST", "postgres")
+		config.Set("DB_HOST", "barrest_postgres")
 		config.Set("DB_PORT", "5432")
 		config.Set("DB_USER", "postgres")
 		config.Set("DB_PASSWORD", "postgres123")
@@ -218,7 +218,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
 	case "session":
-		config.Set("SERVER_PORT", "8081")
+		config.Set("SERVER_PORT", "8087")
 		config.Set("SERVER_HOST", "0.0.0.0")
 		config.Set("DB_HOST", "barrest_postgres")
 		config.Set("DB_PORT", "5432")
@@ -264,7 +264,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("LOG_LEVEL", "info")
 	case "gateway":
 		config.Set("GATEWAY_SERVICE_URL", "http://localhost:8082")
-		config.Set("SESSION_SERVICE_URL", "http://barrest_session_service:8081")
+		config.Set("SESSION_SERVICE_URL", "http://barrest_session_service:8087")
 		config.Set("ORDERS_SERVICE_URL", "http://localhost:8083")
 		config.Set("MENU_SERVICE_URL", "http://localhost:8087")
 		config.Set("INVENTORY_SERVICE_URL", "http://localhost:8084")

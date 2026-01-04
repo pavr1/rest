@@ -85,7 +85,7 @@ func (h *DBHandler) startHealthMonitoring() {
 		select {
 		case <-ticker.C:
 			if err := h.db.HealthCheck(); err != nil {
-				h.logger.WithError(err).Warn("Database health check failed")
+				h.logger.WithError(err).Error("Database health check failed") // Changed from Warn to Error
 				h.isHealthy = false
 			} else {
 				if !h.isHealthy {

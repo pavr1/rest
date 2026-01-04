@@ -45,16 +45,8 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use cached health state from background monitor
-	if !h.healthMonitor.IsServiceHealthy("data-service") {
-		httpresponse.SendError(w, http.StatusServiceUnavailable, "Data-service is not healthy", nil)
-		return
-	}
-
-	status := h.healthMonitor.GetServiceStatus("data-service")
 	httpresponse.SendSuccess(w, http.StatusOK, "Session service healthy", map[string]interface{}{
-		"status":     "healthy",
-		"service":    "session-service",
-		"last_check": status.LastCheck,
+		"status":  "healthy",
+		"service": "session-service",
 	})
 }
