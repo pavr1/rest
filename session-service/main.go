@@ -6,20 +6,28 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"session-service/pkg/entities/sessions/handlers"
 	"syscall"
 	"time"
 
 	sharedConfig "shared/config"
 	sharedHealth "shared/health"
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
+type MainHTTPHandler struct {
+	sessionsHandler *handlers.HTTPHandler
+	logger          *logrus.Logger
+	healthMonitor   *sharedHealth.HealthMonitor
+}
+
 const (
-	// HealthCheckInterval is how often to ping dependencies
-	HealthCheckInterval = 10 * time.Second
+	// pvillalobos this should be configurable
+	HealthCheckInterval = 1 * time.Second
 )
 
 func main() {
@@ -41,16 +49,19 @@ func main() {
 		"host": config.GetString("SERVER_HOST"),
 	}).Info("Configuration loaded")
 
-	// Start health monitor (background goroutine)
+	// Start health monitor for database in background
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	healthMonitor := sharedHealth.NewHealthMonitor(logger, HealthCheckInterval)
 	healthMonitor.AddService("data-service", sharedConfig.DATA_SERVICE_URL+"/api/v1/data/p/health")
 	go healthMonitor.Start(ctx)
 
-	mainHandler, err := NewMainHTTPHandler(config, logger, healthMonitor)
+	mainHandler, dbHandler, err := newMainHTTPHandler(config, logger, healthMonitor)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
+	defer dbHandler.Close()
 
 	router := mux.NewRouter()
 	mainHandler.SetupRoutes(router)
@@ -75,7 +86,7 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down...")
-	cancel() // Stop health monitor
+	cancel() // Stop health monitoring
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
@@ -84,4 +95,38 @@ func main() {
 		logger.WithError(err).Fatal("Shutdown failed")
 	}
 	logger.Info("Session Service stopped")
+}
+
+func newMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger, healthMonitor *sharedHealth.HealthMonitor) (*MainHTTPHandler, *handlers.DBHandler, error) {
+	jwtHandler := handlers.NewJWTHandler(cfg.GetString("JWT_SECRET"), cfg.GetDuration("JWT_EXPIRATION_TIME"), logger)
+	dbHandler, err := handlers.NewDBHandler(cfg, jwtHandler, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	sessionsHandler := handlers.NewHTTPHandler(dbHandler, logger)
+	return &MainHTTPHandler{
+		sessionsHandler: sessionsHandler,
+		logger:          logger,
+		healthMonitor:   healthMonitor,
+	}, dbHandler, nil
+}
+
+func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
+	router.HandleFunc("/api/v1/sessions/p/health", h.HealthCheck).Methods("GET")
+	router.HandleFunc("/api/v1/sessions/p/login", h.sessionsHandler.CreateSession).Methods("POST")
+	router.HandleFunc("/api/v1/sessions/p/validate", h.sessionsHandler.ValidateSession).Methods("POST")
+	router.HandleFunc("/api/v1/sessions/logout", h.sessionsHandler.LogoutSession).Methods("POST")
+}
+
+func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	// Check shared database health state (updated by main.go background goroutine)
+	if !h.healthMonitor.AreAllServicesHealthy() {
+		httpresponse.SendError(w, http.StatusServiceUnavailable, "Database is not healthy", nil)
+		return
+	}
+
+	httpresponse.SendSuccess(w, http.StatusOK, "Session service healthy", map[string]interface{}{
+		"status":  "healthy",
+		"service": "session-service",
+	})
 }

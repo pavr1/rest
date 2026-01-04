@@ -21,8 +21,6 @@ type DBHandler struct {
 	queries    sessionSQL.Queries
 	jwtHandler *JWTHandler
 	logger     *logrus.Logger
-	stopChan   chan struct{}
-	isHealthy  bool
 }
 
 // NewDBHandler creates a new database handler with internal database connection
@@ -56,64 +54,24 @@ func NewDBHandler(cfg *sharedConfig.Config, jwtHandler *JWTHandler, logger *logr
 		return nil, fmt.Errorf("failed to load SQL queries: %w", err)
 	}
 
-	dbHandler := &DBHandler{
+	return &DBHandler{
 		db:         db,
 		queries:    *queries,
 		jwtHandler: jwtHandler,
 		logger:     logger,
-		stopChan:   make(chan struct{}),
-		isHealthy:  true,
-	}
-
-	//start data-service health monitoring
-	go func() {
-		dbHandler.startHealthMonitoring()
-	}()
-
-	return dbHandler, nil
-}
-
-// startHealthMonitoring starts background health check monitoring
-func (h *DBHandler) startHealthMonitoring() {
-	//pvillalobos this should be configurable
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	h.logger.Info("Started database health monitoring")
-
-	for {
-		select {
-		case <-ticker.C:
-			if err := h.db.HealthCheck(); err != nil {
-				h.logger.WithError(err).Error("Database health check failed") // Changed from Warn to Error
-				h.isHealthy = false
-			} else {
-				if !h.isHealthy {
-					h.logger.Info("Database connection restored")
-				}
-				h.isHealthy = true
-				h.logger.Debug("Database health check passed")
-			}
-		case <-h.stopChan:
-			h.logger.Info("Stopping database health monitoring")
-			return
-		}
-	}
+	}, nil
 }
 
 func (h *DBHandler) Close() error {
-	// Stop health monitoring
-	close(h.stopChan)
-
 	if h.db != nil {
 		return h.db.Close()
 	}
 	return nil
 }
 
-// IsHealthy returns the current health status
-func (h *DBHandler) IsHealthy() bool {
-	return h.isHealthy
+// GetDB returns the underlying database handler for health checks
+func (h *DBHandler) GetDB() dataHandler.IDBHandler {
+	return h.db
 }
 
 // CreateSession creates a new session for a staff member

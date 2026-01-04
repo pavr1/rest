@@ -95,6 +95,7 @@ func (hm *HealthMonitor) checkService(svc *ServiceHealth) {
 
 	resp, err := hm.client.Do(req)
 	if err != nil {
+		hm.setServiceHealth(svc.Name, false)
 		hm.logger.WithFields(logrus.Fields{
 			"service": svc.Name,
 		}).Warn("Health check failed")
