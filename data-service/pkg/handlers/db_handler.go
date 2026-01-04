@@ -13,8 +13,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DatabaseHandler defines the interface for database operations
-type DatabaseHandler interface {
+// DbHandler implements the IDBHandler interface
+type DbHandler struct {
+	db        *sql.DB
+	config    *Config
+	logger    *logrus.Logger
+	connected bool
+}
+
+// IDBHandler defines the interface for database operations
+type IDBHandler interface {
 	// Connection management
 	Connect() error
 	Close() error
@@ -105,21 +113,13 @@ func DefaultConfig(logger *logrus.Logger) *Config {
 	return dbConfig
 }
 
-// dbHandler implements the DatabaseHandler interface
-type dbHandler struct {
-	db        *sql.DB
-	config    *Config
-	logger    *logrus.Logger
-	connected bool
-}
-
 // New creates a new database handler instance
-func New(config *Config, logger *logrus.Logger) DatabaseHandler {
+func New(config *Config, logger *logrus.Logger) IDBHandler {
 	if config == nil {
 		config = DefaultConfig(logger)
 	}
 
-	return &dbHandler{
+	return &DbHandler{
 		config:    config,
 		logger:    logger,
 		connected: false,
@@ -127,7 +127,7 @@ func New(config *Config, logger *logrus.Logger) DatabaseHandler {
 }
 
 // Connect establishes a connection to the database
-func (h *dbHandler) Connect() error {
+func (h *DbHandler) Connect() error {
 	h.logger.WithFields(logrus.Fields{
 		"host":   h.config.Host,
 		"port":   h.config.Port,
@@ -196,7 +196,7 @@ func (h *dbHandler) Connect() error {
 }
 
 // Close closes the database connection
-func (h *dbHandler) Close() error {
+func (h *DbHandler) Close() error {
 	if h.db == nil {
 		return nil
 	}
@@ -215,7 +215,7 @@ func (h *dbHandler) Close() error {
 }
 
 // Ping tests the database connection
-func (h *dbHandler) Ping() error {
+func (h *DbHandler) Ping() error {
 	if h.db == nil {
 		return fmt.Errorf("database connection is nil")
 	}
@@ -235,7 +235,7 @@ func (h *dbHandler) Ping() error {
 }
 
 // HealthCheck performs a comprehensive health check
-func (h *dbHandler) HealthCheck() error {
+func (h *DbHandler) HealthCheck() error {
 	if h.db == nil {
 		return fmt.Errorf("database connection is nil")
 	}
@@ -265,7 +265,7 @@ func (h *dbHandler) HealthCheck() error {
 }
 
 // BeginTx starts a new transaction
-func (h *dbHandler) BeginTx(ctx context.Context) (*sql.Tx, error) {
+func (h *DbHandler) BeginTx(ctx context.Context) (*sql.Tx, error) {
 	if h.db == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
@@ -281,7 +281,7 @@ func (h *dbHandler) BeginTx(ctx context.Context) (*sql.Tx, error) {
 }
 
 // CommitTx commits a transaction
-func (h *dbHandler) CommitTx(tx *sql.Tx) error {
+func (h *DbHandler) CommitTx(tx *sql.Tx) error {
 	if tx == nil {
 		return fmt.Errorf("transaction is nil")
 	}
@@ -297,7 +297,7 @@ func (h *dbHandler) CommitTx(tx *sql.Tx) error {
 }
 
 // RollbackTx rolls back a transaction
-func (h *dbHandler) RollbackTx(tx *sql.Tx) error {
+func (h *DbHandler) RollbackTx(tx *sql.Tx) error {
 	if tx == nil {
 		return fmt.Errorf("transaction is nil")
 	}
@@ -313,12 +313,12 @@ func (h *dbHandler) RollbackTx(tx *sql.Tx) error {
 }
 
 // Query executes a query with logging
-func (h *dbHandler) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (h *DbHandler) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return h.QueryContext(context.Background(), query, args...)
 }
 
 // QueryContext executes a query with context and logging
-func (h *dbHandler) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (h *DbHandler) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	if h.db == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
@@ -343,12 +343,12 @@ func (h *dbHandler) QueryContext(ctx context.Context, query string, args ...inte
 }
 
 // QueryRow executes a query that returns a single row
-func (h *dbHandler) QueryRow(query string, args ...interface{}) *sql.Row {
+func (h *DbHandler) QueryRow(query string, args ...interface{}) *sql.Row {
 	return h.QueryRowContext(context.Background(), query, args...)
 }
 
 // QueryRowContext executes a query that returns a single row with context
-func (h *dbHandler) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (h *DbHandler) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	if h.db == nil {
 		h.logger.Error("Database connection is nil for QueryRow")
 		return nil
@@ -368,12 +368,12 @@ func (h *dbHandler) QueryRowContext(ctx context.Context, query string, args ...i
 }
 
 // Exec executes a query without returning rows
-func (h *dbHandler) Exec(query string, args ...interface{}) (sql.Result, error) {
+func (h *DbHandler) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return h.ExecContext(context.Background(), query, args...)
 }
 
 // ExecContext executes a query without returning rows with context
-func (h *dbHandler) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (h *DbHandler) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	if h.db == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
@@ -398,12 +398,12 @@ func (h *dbHandler) ExecContext(ctx context.Context, query string, args ...inter
 }
 
 // Prepare creates a prepared statement
-func (h *dbHandler) Prepare(query string) (*sql.Stmt, error) {
+func (h *DbHandler) Prepare(query string) (*sql.Stmt, error) {
 	return h.PrepareContext(context.Background(), query)
 }
 
 // PrepareContext creates a prepared statement with context
-func (h *dbHandler) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+func (h *DbHandler) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
 	if h.db == nil {
 		return nil, fmt.Errorf("database connection is nil")
 	}
@@ -424,12 +424,12 @@ func (h *dbHandler) PrepareContext(ctx context.Context, query string) (*sql.Stmt
 }
 
 // GetDB returns the underlying sql.DB instance
-func (h *dbHandler) GetDB() *sql.DB {
+func (h *DbHandler) GetDB() *sql.DB {
 	return h.db
 }
 
 // GetStats returns database connection statistics
-func (h *dbHandler) GetStats() sql.DBStats {
+func (h *DbHandler) GetStats() sql.DBStats {
 	if h.db == nil {
 		return sql.DBStats{}
 	}
@@ -437,12 +437,12 @@ func (h *dbHandler) GetStats() sql.DBStats {
 }
 
 // IsConnected returns the connection status
-func (h *dbHandler) IsConnected() bool {
+func (h *DbHandler) IsConnected() bool {
 	return h.connected && h.db != nil
 }
 
 // buildConnectionString creates the PostgreSQL connection string
-func (h *dbHandler) buildConnectionString() string {
+func (h *DbHandler) buildConnectionString() string {
 	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=%d",
 		h.config.Host,
@@ -456,7 +456,7 @@ func (h *dbHandler) buildConnectionString() string {
 }
 
 // configureConnectionPool sets up the connection pool
-func (h *dbHandler) configureConnectionPool(db *sql.DB) {
+func (h *DbHandler) configureConnectionPool(db *sql.DB) {
 	db.SetMaxOpenConns(h.config.MaxOpenConns)
 	db.SetMaxIdleConns(h.config.MaxIdleConns)
 	db.SetConnMaxLifetime(h.config.ConnMaxLifetime)
@@ -471,7 +471,7 @@ func (h *dbHandler) configureConnectionPool(db *sql.DB) {
 }
 
 // sanitizeQuery removes sensitive information from queries for logging
-func (h *dbHandler) sanitizeQuery(query string) string {
+func (h *DbHandler) sanitizeQuery(query string) string {
 	if len(query) > 100 {
 		return query[:100] + "..."
 	}
@@ -479,7 +479,7 @@ func (h *dbHandler) sanitizeQuery(query string) string {
 }
 
 // handlePostgreSQLError handles PostgreSQL-specific errors
-func (h *dbHandler) handlePostgreSQLError(err error) error {
+func (h *DbHandler) handlePostgreSQLError(err error) error {
 	if pqErr, ok := err.(*pq.Error); ok {
 		h.logger.WithFields(logrus.Fields{
 			"code":       pqErr.Code,

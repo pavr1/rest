@@ -9,8 +9,10 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/crypto v0.46.0
 	shared v0.0.0
+	data-service v0.0.0
 )
 
 require golang.org/x/sys v0.39.0 // indirect
 
 replace shared => ../shared
+replace data-service => ../data-service

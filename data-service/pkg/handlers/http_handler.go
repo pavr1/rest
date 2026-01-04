@@ -12,13 +12,13 @@ import (
 // Handler is the main HTTP handler for data-service
 type HTTPHandler struct {
 	//settingsHandler *settingsHTTP.HTTPHandler
-	db     DatabaseHandler
+	db     IDBHandler
 	config *Config
 	logger *logrus.Logger
 }
 
 // NewHandler creates a new HTTP handler
-func NewHTTPHandler(db DatabaseHandler, config *Config, logger *logrus.Logger) (*HTTPHandler, error) {
+func NewHTTPHandler(db IDBHandler, config *Config, logger *logrus.Logger) (*HTTPHandler, error) {
 	// repository, err := settings.NewRepository(db)
 	// if err != nil {
 	// 	return nil, err

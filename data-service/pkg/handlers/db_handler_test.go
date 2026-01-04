@@ -163,5 +163,5 @@ func TestNewDatabaseHandler(t *testing.T) {
 
 func TestDatabaseHandlerInterface(t *testing.T) {
 	// Verify that dbHandler implements DatabaseHandler interface
-	var _ DatabaseHandler = (*dbHandler)(nil)
+	var _ IDBHandler = (*DbHandler)(nil)
 }

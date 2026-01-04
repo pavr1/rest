@@ -8,6 +8,8 @@ import (
 	sharedConfig "shared/config"
 	"time"
 
+	dataHandlers "data-service/pkg/handlers"
+
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -15,7 +17,7 @@ import (
 
 // DBHandler handles database operations for sessions
 type DBHandler struct {
-	db         *sql.DB
+	db         dataHandlers.IDBHandler
 	queries    sessionSQL.Queries
 	jwtHandler *JWTHandler
 	logger     *logrus.Logger
@@ -23,8 +25,27 @@ type DBHandler struct {
 
 // NewDBHandler creates a new database handler with internal database connection
 func NewDBHandler(cfg *sharedConfig.Config, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
-	db, err := connectToDatabase(cfg, logger)
-	if err != nil {
+	// Create database configuration
+	dbConfig := &dataHandlers.Config{
+		Host:            cfg.GetString("DB_HOST"),
+		Port:            cfg.GetInt("DB_PORT"),
+		User:            cfg.GetString("DB_USER"),
+		Password:        cfg.GetString("DB_PASSWORD"),
+		DBName:          cfg.GetString("DB_NAME"),
+		SSLMode:         cfg.GetString("DB_SSL_MODE"),
+		MaxOpenConns:    25,
+		MaxIdleConns:    5,
+		ConnMaxLifetime: 5 * time.Minute,
+		ConnMaxIdleTime: 1 * time.Minute,
+		ConnectTimeout:  10 * time.Second,
+		QueryTimeout:    30 * time.Second,
+		MaxRetries:      3,
+		RetryInterval:   2 * time.Second,
+	}
+
+	// Create database handler using data-service's handler
+	db := dataHandlers.New(dbConfig, logger)
+	if err := db.Connect(); err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
@@ -47,30 +68,6 @@ func (h *DBHandler) Close() error {
 		return h.db.Close()
 	}
 	return nil
-}
-
-func connectToDatabase(cfg *sharedConfig.Config, logger *logrus.Logger) (*sql.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.GetString("DB_HOST"),
-		cfg.GetString("DB_PORT"),
-		cfg.GetString("DB_USER"),
-		cfg.GetString("DB_PASSWORD"),
-		cfg.GetString("DB_NAME"),
-		cfg.GetString("DB_SSL_MODE"))
-
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		logger.WithError(err).Error("Failed to open database connection")
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
-	}
-
-	if err := db.Ping(); err != nil {
-		logger.WithError(err).Error("Failed to ping database")
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	logger.Info("Database connection established")
-	return db, nil
 }
 
 // CreateSession creates a new session for a staff member
