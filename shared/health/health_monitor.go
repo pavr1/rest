@@ -11,11 +11,10 @@ import (
 
 // ServiceHealth tracks the health state of a single dependency
 type ServiceHealth struct {
-	Name             string
-	URL              string
-	Healthy          bool
-	LastCheck        time.Time
-	ConsecutiveFails int
+	Name      string
+	URL       string
+	Healthy   bool
+	LastCheck time.Time
 }
 
 // HealthMonitor continuously monitors dependency health
@@ -33,7 +32,8 @@ func NewHealthMonitor(logger *logrus.Logger, interval time.Duration) *HealthMoni
 		logger:   logger,
 		interval: interval,
 		client: &http.Client{
-			Timeout: 5 * time.Second,
+			//pvillalobos this should be configurable
+			Timeout: 1 * time.Second,
 		},
 		services: make(map[string]*ServiceHealth),
 	}
@@ -77,14 +77,7 @@ func (hm *HealthMonitor) Start(ctx context.Context) {
 
 // checkAllServices pings all registered services
 func (hm *HealthMonitor) checkAllServices() {
-	hm.mu.RLock()
-	services := make([]*ServiceHealth, 0, len(hm.services))
 	for _, svc := range hm.services {
-		services = append(services, svc)
-	}
-	hm.mu.RUnlock()
-
-	for _, svc := range services {
 		hm.checkService(svc)
 	}
 }
@@ -96,48 +89,21 @@ func (hm *HealthMonitor) checkService(svc *ServiceHealth) {
 		hm.setServiceHealth(svc.Name, false)
 		return
 	}
-
 	req.Header.Set("X-Health-Check", "true")
 	req.Header.Set("X-User-ID", "system")
 	req.Header.Set("X-User-Role", "admin")
 
 	resp, err := hm.client.Do(req)
 	if err != nil {
-		hm.mu.Lock()
-		svc.ConsecutiveFails++
-		fails := svc.ConsecutiveFails
-		hm.mu.Unlock()
-
-		hm.setServiceHealth(svc.Name, false)
-
-		// Log only first 3 failures, then every 10th
-		if fails <= 3 || fails%10 == 0 {
-			hm.logger.WithFields(logrus.Fields{
-				"service":           svc.Name,
-				"consecutive_fails": fails,
-			}).Warn("Health check failed")
-		}
+		hm.logger.WithFields(logrus.Fields{
+			"service": svc.Name,
+		}).Warn("Health check failed")
 		return
 	}
 	defer resp.Body.Close()
 
 	healthy := resp.StatusCode == http.StatusOK
-
-	hm.mu.Lock()
-	previousFails := svc.ConsecutiveFails
-	if healthy {
-		svc.ConsecutiveFails = 0
-	}
-	hm.mu.Unlock()
-
 	hm.setServiceHealth(svc.Name, healthy)
-
-	if healthy && previousFails > 0 {
-		hm.logger.WithFields(logrus.Fields{
-			"service":        svc.Name,
-			"previous_fails": previousFails,
-		}).Info("✅ Service is healthy again")
-	}
 }
 
 // setServiceHealth updates the health state thread-safely
@@ -179,11 +145,10 @@ func (hm *HealthMonitor) GetServiceStatus(name string) *ServiceHealth {
 	if svc, ok := hm.services[name]; ok {
 		// Return a copy to avoid race conditions
 		return &ServiceHealth{
-			Name:             svc.Name,
-			URL:              svc.URL,
-			Healthy:          svc.Healthy,
-			LastCheck:        svc.LastCheck,
-			ConsecutiveFails: svc.ConsecutiveFails,
+			Name:      svc.Name,
+			URL:       svc.URL,
+			Healthy:   svc.Healthy,
+			LastCheck: svc.LastCheck,
 		}
 	}
 	return nil
@@ -196,11 +161,10 @@ func (hm *HealthMonitor) GetAllServicesStatus() map[string]*ServiceHealth {
 	result := make(map[string]*ServiceHealth)
 	for name, svc := range hm.services {
 		result[name] = &ServiceHealth{
-			Name:             svc.Name,
-			URL:              svc.URL,
-			Healthy:          svc.Healthy,
-			LastCheck:        svc.LastCheck,
-			ConsecutiveFails: svc.ConsecutiveFails,
+			Name:      svc.Name,
+			URL:       svc.URL,
+			Healthy:   svc.Healthy,
+			LastCheck: svc.LastCheck,
 		}
 	}
 	return result
