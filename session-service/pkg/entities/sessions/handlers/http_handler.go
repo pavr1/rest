@@ -15,7 +15,14 @@ type HTTPHandler struct {
 }
 
 func NewHTTPHandler(dbHandler *DBHandler, logger *logrus.Logger) *HTTPHandler {
+	// Start database health monitoring
+	dbHandler.startHealthMonitoring()
 	return &HTTPHandler{dbHandler: dbHandler, logger: logger}
+}
+
+// GetDBHandler returns the underlying DBHandler (for health checks)
+func (h *HTTPHandler) GetDBHandler() *DBHandler {
+	return h.dbHandler
 }
 
 func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {

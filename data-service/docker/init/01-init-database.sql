@@ -595,7 +595,7 @@ INSERT INTO settings (service, key, value, description) VALUES
 ('Gateway', 'CUSTOMER_SERVICE_URL', 'http://barrest_customer:8089', 'URL for customer service'),
 
 -- Session Service Settings
-('Session', 'SESSION_SERVER_PORT', '8081', 'Port for the session service'),
+('Session', 'SERVER_PORT', '8081', 'Port for the session service'),
 
 -- Orders Service Settings
 ('Orders', 'SERVER_PORT', '8083', 'Port for the orders service'),

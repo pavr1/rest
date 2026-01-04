@@ -39,6 +39,12 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	// Check if database connection is healthy
+	if !h.sessionsHandler.GetDBHandler().IsHealthy() {
+		httpresponse.SendError(w, http.StatusServiceUnavailable, "Database connection is not healthy", nil)
+		return
+	}
+
 	// Use cached health state from background monitor
 	if !h.healthMonitor.IsServiceHealthy("data-service") {
 		httpresponse.SendError(w, http.StatusServiceUnavailable, "Data-service is not healthy", nil)

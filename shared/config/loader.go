@@ -186,18 +186,19 @@ func (cl *ConfigLoader) loadSettingsFromDataService(serviceName string, logger *
 func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*Config, error) {
 	logger.Info("Loading configuration from data service")
 
-	settings, err := cl.loadSettingsFromDataService(serviceName, logger)
-	if err != nil {
-		return nil, err
-	}
+	//pvillalobos config service is not ready yet, set default values for now.
+	// settings, err := cl.loadSettingsFromDataService(serviceName, logger)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	config := newConfig(logger)
 	setDefaultValues(config, serviceName)
-	populateConfigFromSettings(config, settings, logger)
+	//populateConfigFromSettings(config, settings, logger)
 
 	logger.WithFields(logrus.Fields{
-		"service":        serviceName,
-		"settings_count": len(settings),
+		"service": serviceName,
+		//"settings_count": len(settings),
 	}).Info("Configuration loaded from data service")
 
 	return config, nil
@@ -206,7 +207,7 @@ func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*
 // setDefaultValues sets default values based on service name
 func setDefaultValues(config *Config, serviceName string) {
 	switch serviceName {
-	case "Data":
+	case "data":
 		config.Set("SERVER_PORT", "8086")
 		config.Set("SERVER_HOST", "0.0.0.0")
 		config.Set("DB_HOST", "postgres")
@@ -216,10 +217,10 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_NAME", "barrest_db")
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
-	case "Session":
+	case "session":
 		config.Set("SERVER_PORT", "8081")
 		config.Set("SERVER_HOST", "0.0.0.0")
-		config.Set("DB_HOST", "localhost")
+		config.Set("DB_HOST", "barrest_postgres")
 		config.Set("DB_PORT", "5432")
 		config.Set("DB_USER", "postgres")
 		config.Set("DB_PASSWORD", "postgres123")
@@ -228,7 +229,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("JWT_SECRET", "barrest-super-secret-jwt-key-change-in-production")
 		config.Set("JWT_EXPIRATION_TIME", "30m")
 		config.Set("LOG_LEVEL", "info")
-	case "Orders":
+	case "orders":
 		config.Set("SERVER_PORT", "8083")
 		config.Set("SERVER_HOST", "0.0.0.0")
 		config.Set("DB_HOST", "localhost")
@@ -241,7 +242,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("LOG_LEVEL", "info")
 		config.Set("DEFAULT_TAX_RATE", "13.0")
 		config.Set("DEFAULT_SERVICE_RATE", "10.0")
-	case "Menu":
+	case "menu":
 		config.Set("SERVER_PORT", "8087")
 		config.Set("SERVER_HOST", "0.0.0.0")
 		config.Set("DB_HOST", "localhost")
@@ -251,7 +252,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_NAME", "barrest_db")
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
-	case "Inventory":
+	case "inventory":
 		config.Set("SERVER_PORT", "8084")
 		config.Set("SERVER_HOST", "0.0.0.0")
 		config.Set("DB_HOST", "localhost")
@@ -261,9 +262,9 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_NAME", "barrest_db")
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
-	case "Gateway":
+	case "gateway":
 		config.Set("GATEWAY_SERVICE_URL", "http://localhost:8082")
-		config.Set("SESSION_SERVICE_URL", "http://localhost:8081")
+		config.Set("SESSION_SERVICE_URL", "http://barrest_session_service:8081")
 		config.Set("ORDERS_SERVICE_URL", "http://localhost:8083")
 		config.Set("MENU_SERVICE_URL", "http://localhost:8087")
 		config.Set("INVENTORY_SERVICE_URL", "http://localhost:8084")
@@ -273,17 +274,17 @@ func setDefaultValues(config *Config, serviceName string) {
 	}
 }
 
-// populateConfigFromSettings populates the config from settings
-func populateConfigFromSettings(config *Config, settings []sharedModels.Setting, logger *logrus.Logger) {
-	for _, setting := range settings {
-		config.Set(setting.Key, setting.Value)
+// // populateConfigFromSettings populates the config from settings
+// func populateConfigFromSettings(config *Config, settings []sharedModels.Setting, logger *logrus.Logger) {
+// 	for _, setting := range settings {
+// 		config.Set(setting.Key, setting.Value)
 
-		logger.WithFields(logrus.Fields{
-			"key":     setting.Key,
-			"value":   setting.Value,
-			"service": setting.Service,
-		}).Debug("Populated config from data service setting")
-	}
+// 		logger.WithFields(logrus.Fields{
+// 			"key":     setting.Key,
+// 			"value":   setting.Value,
+// 			"service": setting.Service,
+// 		}).Debug("Populated config from data service setting")
+// 	}
 
-	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
-}
+// 	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
+// }

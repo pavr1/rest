@@ -32,6 +32,10 @@ func main() {
 		logger.WithError(err).Fatal("Failed to load configuration")
 	}
 
+	if len(config.Values) == 0 {
+		logger.Fatal("No configuration values loaded")
+	}
+
 	logger.WithFields(logrus.Fields{
 		"port": config.GetString("SERVER_PORT"),
 		"host": config.GetString("SERVER_HOST"),
