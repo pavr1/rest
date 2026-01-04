@@ -1,8 +1,8 @@
 package http
 
 import (
-	"data-service/entities/settings/handlers"
 	"data-service/pkg/database"
+	"data-service/pkg/entities/settings"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -13,7 +13,7 @@ import (
 
 // Handler is the main HTTP handler for data-service
 type Handler struct {
-	settingsHandler *handlers.HTTPHandler
+	settingsHandler *settings.HTTPHandler
 	db              database.DatabaseHandler
 	config          *database.Config
 	logger          *logrus.Logger
@@ -21,11 +21,11 @@ type Handler struct {
 
 // NewHandler creates a new HTTP handler
 func NewHandler(db database.DatabaseHandler, config *database.Config, logger *logrus.Logger) (*Handler, error) {
-	dbHandler, err := handlers.NewDBHandler(db, logger)
+	repository, err := settings.NewRepository(db)
 	if err != nil {
 		return nil, err
 	}
-	settingsHandler := handlers.NewHTTPHandler(dbHandler, logger)
+	settingsHandler := settings.NewHTTPHandler(repository, logger)
 
 	return &Handler{
 		settingsHandler: settingsHandler,
@@ -37,14 +37,14 @@ func NewHandler(db database.DatabaseHandler, config *database.Config, logger *lo
 
 // SetupRoutes configures all HTTP routes
 func (h *Handler) SetupRoutes(router *mux.Router) {
-	// Root endpoint
+	//Root endpoint
 	router.HandleFunc("/", h.RootHandler).Methods("GET")
 
-	// Public endpoints
+	//Public endpoints
 	router.HandleFunc("/api/v1/data/p/health", h.HealthCheck).Methods("GET")
 	router.HandleFunc("/api/v1/data/p/stats", h.StatsEndpoint).Methods("GET")
 
-	// Settings endpoints
+	//Settings endpoints
 	router.HandleFunc("/api/v1/data/settings/by-service", h.settingsHandler.GetSettingsByService).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings/by-key", h.settingsHandler.GetSettingByKey).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings", h.settingsHandler.CreateSetting).Methods("POST")

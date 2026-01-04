@@ -21,11 +21,13 @@ func NewHTTPHandler(dbHandler *DBHandler, logger *logrus.Logger) *HTTPHandler {
 func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	var req models.SessionCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.WithError(err).Error("Failed to decode request body")
 		httpresponse.SendError(w, http.StatusBadRequest, "Invalid request format", err)
 		return
 	}
 
 	if req.Username == "" || req.Password == "" {
+		h.logger.Error("Username and password are required")
 		httpresponse.SendError(w, http.StatusBadRequest, "Username and password are required", nil)
 		return
 	}

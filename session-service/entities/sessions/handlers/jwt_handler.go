@@ -73,6 +73,7 @@ func (h *JWTHandler) GenerateToken(sessionID string, staff *models.Staff) (strin
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(h.secretKey))
 	if err != nil {
+		h.logger.Error("Failed to sign token")
 		return "", time.Time{}, fmt.Errorf("failed to sign token: %w", err)
 	}
 
@@ -98,12 +99,14 @@ func (h *JWTHandler) ValidateToken(tokenString string) (*JWTClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// Validate signing method
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			h.logger.Error("Unexpected signing method")
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(h.secretKey), nil
 	})
 
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to parse token")
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 

@@ -1,4 +1,4 @@
-package handlers
+package settings
 
 import (
 	"encoding/json"
@@ -11,15 +11,15 @@ import (
 
 // HTTPHandler handles HTTP requests for settings
 type HTTPHandler struct {
-	dbHandler *DBHandler
-	logger    *logrus.Logger
+	repository *Repository
+	logger     *logrus.Logger
 }
 
 // NewHTTPHandler creates a new settings HTTP handler
-func NewHTTPHandler(dbHandler *DBHandler, logger *logrus.Logger) *HTTPHandler {
+func NewHTTPHandler(repository *Repository, logger *logrus.Logger) *HTTPHandler {
 	return &HTTPHandler{
-		dbHandler: dbHandler,
-		logger:    logger,
+		repository: repository,
+		logger:     logger,
 	}
 }
 
@@ -40,8 +40,9 @@ func (h *HTTPHandler) GetSettingsByService(w http.ResponseWriter, r *http.Reques
 
 	h.logger.WithField("service", req.Service).Info("Loading settings for service")
 
-	settings, err := h.dbHandler.GetSettingsByService(req.Service)
+	settings, err := h.repository.GetSettingsByService(req.Service)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get settings by service")
 		httpresponse.SendError(w, http.StatusInternalServerError, "Failed to query settings", err)
 		return
 	}
@@ -69,8 +70,9 @@ func (h *HTTPHandler) GetSettingByKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setting, err := h.dbHandler.GetSettingByKey(req.Service, req.Key)
+	setting, err := h.repository.GetSettingByKey(req.Service, req.Key)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get setting by key")
 		httpresponse.SendError(w, http.StatusNotFound, "Setting not found", err)
 		return
 	}
@@ -93,7 +95,8 @@ func (h *HTTPHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.dbHandler.UpdateSetting(req.Service, req.Key, req.Value); err != nil {
+	if err := h.repository.UpdateSetting(req.Service, req.Key, req.Value); err != nil {
+		h.logger.WithError(err).Error("Failed to update setting")
 		httpresponse.SendError(w, http.StatusInternalServerError, "Failed to update setting", err)
 		return
 	}
@@ -116,7 +119,8 @@ func (h *HTTPHandler) CreateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.dbHandler.CreateSetting(setting); err != nil {
+	if err := h.repository.CreateSetting(setting); err != nil {
+		h.logger.WithError(err).Error("Failed to create setting")
 		httpresponse.SendError(w, http.StatusInternalServerError, "Failed to create setting", err)
 		return
 	}
@@ -139,7 +143,8 @@ func (h *HTTPHandler) DeleteSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.dbHandler.DeleteSetting(req.Service, req.Key); err != nil {
+	if err := h.repository.DeleteSetting(req.Service, req.Key); err != nil {
+		h.logger.WithError(err).Error("Failed to delete setting")
 		httpresponse.SendError(w, http.StatusInternalServerError, "Failed to delete setting", err)
 		return
 	}

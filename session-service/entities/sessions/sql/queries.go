@@ -51,11 +51,11 @@ func (q *Queries) Get(name string) (string, error) {
 
 // SQL query constants
 const (
-	CreateSessionQuery       = "create_session"
-	GetStaffByUsernameQuery  = "get_staff_by_username"
-	UpdateLastLoginQuery     = "update_last_login"
-	GetSessionByIDQuery      = "get_session_by_id"
-	DeleteSessionQuery       = "delete_session"
-	UpdateSessionTokenQuery  = "update_session_token"
+	CreateSessionQuery         = "create_session"
+	GetStaffByUsernameQuery    = "get_staff_by_username"
+	UpdateLastLoginQuery       = "update_last_login"
+	GetSessionByIDQuery        = "get_session_by_id"
+	DeleteSessionQuery         = "delete_session"
+	UpdateSessionTokenQuery    = "update_session_token"
 	DeleteExpiredSessionsQuery = "delete_expired_sessions"
 )
