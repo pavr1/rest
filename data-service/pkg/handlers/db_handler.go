@@ -217,6 +217,7 @@ func (h *DbHandler) Close() error {
 // Ping tests the database connection
 func (h *DbHandler) Ping() error {
 	if h.db == nil {
+		h.logger.Error("Database connection is nil for Ping")
 		return fmt.Errorf("database connection is nil")
 	}
 
@@ -237,12 +238,14 @@ func (h *DbHandler) Ping() error {
 // HealthCheck performs a comprehensive health check
 func (h *DbHandler) HealthCheck() error {
 	if h.db == nil {
+		h.logger.Error("Database connection is nil for HealthCheck")
 		return fmt.Errorf("database connection is nil")
 	}
 
 	h.logger.Debug("Performing database health check")
 
 	if err := h.Ping(); err != nil {
+		h.logger.WithError(err).Error("Ping failed for HealthCheck")
 		return fmt.Errorf("ping failed: %w", err)
 	}
 
@@ -252,11 +255,12 @@ func (h *DbHandler) HealthCheck() error {
 	var result int
 	err := h.db.QueryRowContext(ctx, "SELECT 1").Scan(&result)
 	if err != nil {
-		h.logger.WithError(err).Error("Health check query failed")
+		h.logger.WithError(err).Error("Health check query failed for HealthCheck")
 		return fmt.Errorf("health check query failed: %w", err)
 	}
 
 	if result != 1 {
+		h.logger.Errorf("Unexpected health check result: %d for HealthCheck", result)
 		return fmt.Errorf("unexpected health check result: %d", result)
 	}
 
@@ -267,12 +271,13 @@ func (h *DbHandler) HealthCheck() error {
 // BeginTx starts a new transaction
 func (h *DbHandler) BeginTx(ctx context.Context) (*sql.Tx, error) {
 	if h.db == nil {
+		h.logger.Error("Database connection is nil for BeginTx")
 		return nil, fmt.Errorf("database connection is nil")
 	}
 
 	tx, err := h.db.BeginTx(ctx, nil)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to begin transaction")
+		h.logger.WithError(err).Error("Failed to begin transaction for BeginTx")
 		return nil, err
 	}
 
@@ -283,12 +288,13 @@ func (h *DbHandler) BeginTx(ctx context.Context) (*sql.Tx, error) {
 // CommitTx commits a transaction
 func (h *DbHandler) CommitTx(tx *sql.Tx) error {
 	if tx == nil {
+		h.logger.Error("Transaction is nil for CommitTx")
 		return fmt.Errorf("transaction is nil")
 	}
 
 	err := tx.Commit()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to commit transaction")
+		h.logger.WithError(err).Error("Failed to commit transaction for CommitTx")
 		return err
 	}
 
@@ -299,12 +305,13 @@ func (h *DbHandler) CommitTx(tx *sql.Tx) error {
 // RollbackTx rolls back a transaction
 func (h *DbHandler) RollbackTx(tx *sql.Tx) error {
 	if tx == nil {
+		h.logger.Error("Transaction is nil for RollbackTx")
 		return fmt.Errorf("transaction is nil")
 	}
 
 	err := tx.Rollback()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to rollback transaction")
+		h.logger.WithError(err).Error("Failed to rollback transaction for RollbackTx")
 		return err
 	}
 
@@ -320,6 +327,7 @@ func (h *DbHandler) Query(query string, args ...interface{}) (*sql.Rows, error) 
 // QueryContext executes a query with context and logging
 func (h *DbHandler) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	if h.db == nil {
+		h.logger.Error("Database connection is nil for QueryContext")
 		return nil, fmt.Errorf("database connection is nil")
 	}
 
@@ -334,7 +342,7 @@ func (h *DbHandler) QueryContext(ctx context.Context, query string, args ...inte
 	})
 
 	if err != nil {
-		logEntry.WithError(err).Error("Query execution failed")
+		logEntry.WithError(err).Error("Query execution failed for QueryContext")
 		return nil, h.handlePostgreSQLError(err)
 	}
 
@@ -375,6 +383,7 @@ func (h *DbHandler) Exec(query string, args ...interface{}) (sql.Result, error) 
 // ExecContext executes a query without returning rows with context
 func (h *DbHandler) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	if h.db == nil {
+		h.logger.Error("Database connection is nil for ExecContext")
 		return nil, fmt.Errorf("database connection is nil")
 	}
 
@@ -389,7 +398,7 @@ func (h *DbHandler) ExecContext(ctx context.Context, query string, args ...inter
 	})
 
 	if err != nil {
-		logEntry.WithError(err).Error("Exec execution failed")
+		logEntry.WithError(err).Error("Exec execution failed for ExecContext")
 		return nil, h.handlePostgreSQLError(err)
 	}
 
@@ -405,6 +414,7 @@ func (h *DbHandler) Prepare(query string) (*sql.Stmt, error) {
 // PrepareContext creates a prepared statement with context
 func (h *DbHandler) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
 	if h.db == nil {
+		h.logger.Error("Database connection is nil for PrepareContext")
 		return nil, fmt.Errorf("database connection is nil")
 	}
 
@@ -412,7 +422,7 @@ func (h *DbHandler) PrepareContext(ctx context.Context, query string) (*sql.Stmt
 	if err != nil {
 		h.logger.WithFields(logrus.Fields{
 			"query": h.sanitizeQuery(query),
-		}).WithError(err).Error("Failed to prepare statement")
+		}).WithError(err).Error("Failed to prepare statement for PrepareContext")
 		return nil, h.handlePostgreSQLError(err)
 	}
 

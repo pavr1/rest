@@ -5,6 +5,9 @@ RUN apk add --no-cache git
 # Copy shared module (go.mod has: replace shared => ../shared)
 COPY shared/ /build/shared/
 
+# Copy data-service module (go.mod has: replace data-service => ../data-service)
+COPY data-service/ /build/data-service/
+
 # Copy session-service into a subdirectory
 WORKDIR /build/session-service
 COPY session-service/go.mod session-service/go.sum ./
