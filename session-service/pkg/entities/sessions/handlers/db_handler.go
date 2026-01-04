@@ -3,8 +3,8 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
-	"session-service/entities/sessions/models"
-	sessionSQL "session-service/entities/sessions/sql"
+	"session-service/pkg/entities/sessions/models"
+	sessionSQL "session-service/pkg/entities/sessions/sql"
 	sharedConfig "shared/config"
 	"time"
 

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"session-service/entities/sessions/models"
+	"session-service/pkg/entities/sessions/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"

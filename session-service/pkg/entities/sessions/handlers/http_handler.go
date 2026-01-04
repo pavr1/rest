@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"session-service/entities/sessions/models"
+	"session-service/pkg/entities/sessions/models"
 	httpresponse "shared/http-response"
 
 	"github.com/sirupsen/logrus"

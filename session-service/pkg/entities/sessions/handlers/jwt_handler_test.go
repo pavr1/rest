@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"session-service/entities/sessions/models"
+	"session-service/pkg/entities/sessions/models"
 	"testing"
 	"time"
 
