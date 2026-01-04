@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"data-service/pkg/handlers"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,8 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"data-service/pkg/database"
-	httpHandler "data-service/pkg/http"
 	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
 
@@ -20,10 +19,10 @@ import (
 func main() {
 	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_DATA_SERVICE, "INFO")
 
-	config := database.DefaultConfig(logger)
+	config := handlers.DefaultConfig(logger)
 
 	// Create database handler
-	db := database.New(config, logger)
+	db := handlers.New(config, logger)
 
 	// Connect to database
 	fmt.Println("🍺 Connecting to Bar-Restaurant Data Service...")
@@ -40,12 +39,12 @@ func main() {
 	fmt.Println("✅ Database connection established successfully")
 
 	// Setup HTTP handler and router
-	handler, err := httpHandler.NewHandler(db, config, logger)
+	httpHandler, err := handlers.NewHTTPHandler(db, config, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
 	router := mux.NewRouter()
-	handler.SetupRoutes(router)
+	httpHandler.SetupRoutes(router)
 
 	// Get server configuration
 	serverHost := sharedConfig.DATA_SERVICE_HOST

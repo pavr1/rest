@@ -1,7 +1,6 @@
-package http
+package handlers
 
 import (
-	"data-service/pkg/database"
 	"data-service/pkg/entities/settings"
 	settingsHTTP "data-service/pkg/entities/settings/http"
 	"encoding/json"
@@ -13,22 +12,22 @@ import (
 )
 
 // Handler is the main HTTP handler for data-service
-type Handler struct {
+type HTTPHandler struct {
 	settingsHandler *settingsHTTP.HTTPHandler
-	db              database.DatabaseHandler
-	config          *database.Config
+	db              DatabaseHandler
+	config          *Config
 	logger          *logrus.Logger
 }
 
 // NewHandler creates a new HTTP handler
-func NewHandler(db database.DatabaseHandler, config *database.Config, logger *logrus.Logger) (*Handler, error) {
+func NewHTTPHandler(db DatabaseHandler, config *Config, logger *logrus.Logger) (*HTTPHandler, error) {
 	repository, err := settings.NewRepository(db)
 	if err != nil {
 		return nil, err
 	}
 	settingsHandler := settingsHTTP.NewHTTPHandler(repository, logger)
 
-	return &Handler{
+	return &HTTPHandler{
 		settingsHandler: settingsHandler,
 		db:              db,
 		config:          config,
@@ -37,7 +36,7 @@ func NewHandler(db database.DatabaseHandler, config *database.Config, logger *lo
 }
 
 // SetupRoutes configures all HTTP routes
-func (h *Handler) SetupRoutes(router *mux.Router) {
+func (h *HTTPHandler) SetupRoutes(router *mux.Router) {
 	//Root endpoint
 	router.HandleFunc("/", h.RootHandler).Methods("GET")
 
@@ -54,14 +53,14 @@ func (h *Handler) SetupRoutes(router *mux.Router) {
 }
 
 // RootHandler handles the root endpoint
-func (h *Handler) RootHandler(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) RootHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message":"Bar-Restaurant Data Service is running"}`))
 }
 
 // HealthCheck handles the health check endpoint
-func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"service":   "data-service",
 		"timestamp": time.Now(),
@@ -94,7 +93,7 @@ func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // StatsEndpoint provides database connection statistics
-func (h *Handler) StatsEndpoint(w http.ResponseWriter, r *http.Request) {
+func (h *HTTPHandler) StatsEndpoint(w http.ResponseWriter, r *http.Request) {
 	stats := h.db.GetStats()
 
 	response := map[string]interface{}{
