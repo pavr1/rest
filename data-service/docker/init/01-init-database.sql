@@ -625,9 +625,9 @@ INSERT INTO settings (service, key, value, description) VALUES
 ('UI', 'UI_PORT', '3000', 'Port for the UI service'),
 ('UI', 'GATEWAY_URL', 'http://barrest_gateway:8082', 'Gateway service URL');
 
--- Insert default admin user (password: admin123)
+-- Insert default admin user (password: admin)
 INSERT INTO staff (username, email, password_hash, first_name, last_name, role) VALUES
-('admin', 'admin@barrest.com', '$2a$12$04xNgahgyY9qDgv7goYUVenjgTHF7.ei9GVkp.uYixLs.ebrJxw6u', 'System', 'Administrator', 'admin');
+('admin', 'admin@barrest.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.W7fGv0S8Lp7IGq', 'System', 'Administrator', 'admin');
 
 -- Insert default menu categories
 INSERT INTO menu_categories (name, display_order, description) VALUES

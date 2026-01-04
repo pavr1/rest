@@ -38,7 +38,7 @@ func TestCreateHealthHandler_AllHealthy(t *testing.T) {
 	healthMonitor.SetServiceHealthForTesting("data-service", true)
 	healthMonitor.SetServiceHealthForTesting("session-service", true)
 
-	handler := createHealthHandler(healthMonitor, logger)
+	handler := createHealthHandler(healthMonitor)
 
 	req := httptest.NewRequest("GET", "/api/v1/gateway/p/health", nil)
 	w := httptest.NewRecorder()
@@ -62,7 +62,7 @@ func TestCreateHealthHandler_ServiceDown(t *testing.T) {
 	healthMonitor.SetServiceHealthForTesting("data-service", true)
 	healthMonitor.SetServiceHealthForTesting("session-service", false) // unhealthy
 
-	handler := createHealthHandler(healthMonitor, logger)
+	handler := createHealthHandler(healthMonitor)
 
 	req := httptest.NewRequest("GET", "/api/v1/gateway/p/health", nil)
 	w := httptest.NewRecorder()
@@ -80,7 +80,7 @@ func TestCreateProxyHandler_ErrorHandler(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel)
 
 	// Create a proxy handler pointing to a non-existent service
-	handler := createProxyHandler("http://localhost:19997", "/api/test", logger)
+	handler := createProxyHandler("http://localhost:19997", logger)
 
 	req := httptest.NewRequest("GET", "/api/test", nil)
 	w := httptest.NewRecorder()

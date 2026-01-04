@@ -1,6 +1,7 @@
-package settings
+package http
 
 import (
+	"data-service/pkg/entities/settings"
 	"encoding/json"
 	"net/http"
 	httpresponse "shared/http-response"
@@ -11,12 +12,12 @@ import (
 
 // HTTPHandler handles HTTP requests for settings
 type HTTPHandler struct {
-	repository *Repository
+	repository *settings.Repository
 	logger     *logrus.Logger
 }
 
 // NewHTTPHandler creates a new settings HTTP handler
-func NewHTTPHandler(repository *Repository, logger *logrus.Logger) *HTTPHandler {
+func NewHTTPHandler(repository *settings.Repository, logger *logrus.Logger) *HTTPHandler {
 	return &HTTPHandler{
 		repository: repository,
 		logger:     logger,

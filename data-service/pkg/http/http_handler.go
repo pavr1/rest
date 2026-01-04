@@ -3,6 +3,7 @@ package http
 import (
 	"data-service/pkg/database"
 	"data-service/pkg/entities/settings"
+	settingsHTTP "data-service/pkg/entities/settings/http"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -13,7 +14,7 @@ import (
 
 // Handler is the main HTTP handler for data-service
 type Handler struct {
-	settingsHandler *settings.HTTPHandler
+	settingsHandler *settingsHTTP.HTTPHandler
 	db              database.DatabaseHandler
 	config          *database.Config
 	logger          *logrus.Logger
@@ -25,7 +26,7 @@ func NewHandler(db database.DatabaseHandler, config *database.Config, logger *lo
 	if err != nil {
 		return nil, err
 	}
-	settingsHandler := settings.NewHTTPHandler(repository, logger)
+	settingsHandler := settingsHTTP.NewHTTPHandler(repository, logger)
 
 	return &Handler{
 		settingsHandler: settingsHandler,

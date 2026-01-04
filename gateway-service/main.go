@@ -79,32 +79,32 @@ func main() {
 	v1 := api.PathPrefix("/v1").Subrouter()
 
 	// Gateway health check (uses cached health from monitor)
-	v1.HandleFunc("/gateway/p/health", createHealthHandler(healthMonitor, logger)).Methods("GET")
+	v1.HandleFunc("/gateway/p/health", createHealthHandler(healthMonitor)).Methods("GET")
 
 	// ==== PUBLIC ENDPOINTS (no authentication) ====
 
 	// Session service - public endpoints
-	api.HandleFunc("/v1/sessions/p/login", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/login", logger)).Methods("POST")
-	api.HandleFunc("/v1/sessions/p/validate", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/validate", logger)).Methods("POST")
-	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/health", logger)).Methods("GET")
+	api.HandleFunc("/v1/sessions/p/login", createProxyHandler(sessionServiceUrl, logger)).Methods("POST")
+	api.HandleFunc("/v1/sessions/p/validate", createProxyHandler(sessionServiceUrl, logger)).Methods("POST")
+	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(sessionServiceUrl, logger)).Methods("GET")
 
 	// Public health endpoints
-	api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, "/api/v1/data/p/health", logger)).Methods("GET")
+	api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, logger)).Methods("GET")
 
 	// Data service - public settings endpoint (for service-to-service config loading)
-	api.HandleFunc("/v1/data/settings/by-service", createProxyHandler(dataServiceUrl, "/api/v1/data/settings/by-service", logger)).Methods("POST")
+	api.HandleFunc("/v1/data/settings/by-service", createProxyHandler(dataServiceUrl, logger)).Methods("POST")
 
 	// ==== PROTECTED SESSION ENDPOINTS (require authentication) ====
 	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 	protectedSessionRouter.Use(sessionMiddleware.ValidateSession)
-	protectedSessionRouter.HandleFunc("/logout", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/logout", logger)).Methods("POST")
+	protectedSessionRouter.HandleFunc("/logout", createProxyHandler(sessionServiceUrl, logger)).Methods("POST")
 
 	// ==== PROTECTED ENDPOINTS (require authentication) ====
 
 	// Data service - protected endpoints
 	dataRouter := api.PathPrefix("/v1/data").Subrouter()
 	dataRouter.Use(sessionMiddleware.ValidateSession)
-	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(dataServiceUrl, "/api/v1/data", logger))
+	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(dataServiceUrl, logger))
 
 	// Future service routes (to be added as services are created):
 	// - /api/v1/menu/* → menu-service
@@ -171,7 +171,7 @@ func main() {
 }
 
 // createProxyHandler creates a reverse proxy handler for a specific service
-func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) http.HandlerFunc {
+func createProxyHandler(targetURL string, logger *logrus.Logger) http.HandlerFunc {
 	target, err := url.Parse(targetURL)
 	if err != nil {
 		logger.Fatalf("Invalid target URL: %v", err)
@@ -236,7 +236,7 @@ func generateRequestID() string {
 	return hex.EncodeToString(bytes)
 }
 
-func createHealthHandler(healthMonitor *sharedHealth.HealthMonitor, logger *logrus.Logger) http.HandlerFunc {
+func createHealthHandler(healthMonitor *sharedHealth.HealthMonitor) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Use cached health state from background monitor
 		allServices := healthMonitor.GetAllServicesStatus()
