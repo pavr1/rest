@@ -44,13 +44,13 @@ clean: ## Remove containers and volumes
 	@echo "✅ Data Service cleaned!"
 
 migrate: ## Apply pending migrations
-	@./scripts/migrate.sh up
+	@./pkg/scripts/migrate.sh up
 
 migrate-down: ## Rollback last migration
-	@./scripts/migrate.sh down
+	@./pkg/scripts/migrate.sh down
 
 migrate-status: ## Show applied migrations
-	@./scripts/migrate.sh status
+	@./pkg/scripts/migrate.sh status
 
 test: ## Run unit tests
 	@echo "🧪 Running tests..."
