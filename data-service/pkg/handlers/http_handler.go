@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"data-service/pkg/entities/settings"
-	settingsHTTP "data-service/pkg/entities/settings/http"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -13,25 +11,25 @@ import (
 
 // Handler is the main HTTP handler for data-service
 type HTTPHandler struct {
-	settingsHandler *settingsHTTP.HTTPHandler
-	db              DatabaseHandler
-	config          *Config
-	logger          *logrus.Logger
+	//settingsHandler *settingsHTTP.HTTPHandler
+	db     DatabaseHandler
+	config *Config
+	logger *logrus.Logger
 }
 
 // NewHandler creates a new HTTP handler
 func NewHTTPHandler(db DatabaseHandler, config *Config, logger *logrus.Logger) (*HTTPHandler, error) {
-	repository, err := settings.NewRepository(db)
-	if err != nil {
-		return nil, err
-	}
-	settingsHandler := settingsHTTP.NewHTTPHandler(repository, logger)
+	// repository, err := settings.NewRepository(db)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// settingsHandler := settingsHTTP.NewHTTPHandler(repository, logger)
 
 	return &HTTPHandler{
-		settingsHandler: settingsHandler,
-		db:              db,
-		config:          config,
-		logger:          logger,
+		//settingsHandler: settingsHandler,
+		db:     db,
+		config: config,
+		logger: logger,
 	}, nil
 }
 
@@ -44,12 +42,13 @@ func (h *HTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/v1/data/p/health", h.HealthCheck).Methods("GET")
 	router.HandleFunc("/api/v1/data/p/stats", h.StatsEndpoint).Methods("GET")
 
-	//Settings endpoints
-	router.HandleFunc("/api/v1/data/settings/by-service", h.settingsHandler.GetSettingsByService).Methods("POST")
-	router.HandleFunc("/api/v1/data/settings/by-key", h.settingsHandler.GetSettingByKey).Methods("POST")
-	router.HandleFunc("/api/v1/data/settings", h.settingsHandler.CreateSetting).Methods("POST")
-	router.HandleFunc("/api/v1/data/settings", h.settingsHandler.UpdateSetting).Methods("PUT")
-	router.HandleFunc("/api/v1/data/settings", h.settingsHandler.DeleteSetting).Methods("DELETE")
+	//pvillalobos these settings must belong to settings service
+	// //Settings endpoints
+	// router.HandleFunc("/api/v1/data/settings/by-service", h.settingsHandler.GetSettingsByService).Methods("POST")
+	// router.HandleFunc("/api/v1/data/settings/by-key", h.settingsHandler.GetSettingByKey).Methods("POST")
+	// router.HandleFunc("/api/v1/data/settings", h.settingsHandler.CreateSetting).Methods("POST")
+	// router.HandleFunc("/api/v1/data/settings", h.settingsHandler.UpdateSetting).Methods("PUT")
+	// router.HandleFunc("/api/v1/data/settings", h.settingsHandler.DeleteSetting).Methods("DELETE")
 }
 
 // RootHandler handles the root endpoint
