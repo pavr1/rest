@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"session-service/entities/sessions/handlers"
+	"session-service/pkg/entities/sessions/handlers"
 	sharedConfig "shared/config"
 	sharedHealth "shared/health"
 	httpresponse "shared/http-response"
