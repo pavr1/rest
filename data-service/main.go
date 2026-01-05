@@ -32,7 +32,7 @@ func main() {
 	defer db.Close()
 
 	// Perform initial health check
-	if err := db.HealthCheck(); err != nil {
+	if err := db.Ping(); err != nil {
 		logger.WithError(err).Fatal("Initial database health check failed")
 	}
 

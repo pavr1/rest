@@ -65,8 +65,7 @@ func (h *HTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		"timestamp": time.Now(),
 	}
 
-	if err := h.db.HealthCheck(); err != nil {
-		h.logger.WithError(err).Error("Database ping check failed")
+	if err := h.db.Ping(); err != nil {
 		response["status"] = "unhealthy"
 		response["message"] = "Database ping check failed"
 		response["error"] = err.Error()

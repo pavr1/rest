@@ -43,14 +43,17 @@ func main() {
 
 	// Service URLs
 	sessionServiceUrl := config.GetString("SESSION_SERVICE_URL")
+	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
 
 	logger.WithFields(logrus.Fields{
 		"session_service": sessionServiceUrl,
+		"data_service":    dataServiceUrl,
 	}).Info("Configuration loaded")
 
 	// Start health monitor (background goroutine)
 	ctx, cancel := context.WithCancel(context.Background())
 	healthMonitor := sharedHealth.NewHealthMonitor(logger, HealthCheckInterval)
+	healthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
 	healthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
 	// Future services - add here as they are created:
 	// healthMonitor.AddService("menu-service", menuServiceUrl+"/api/v1/menu/p/health")

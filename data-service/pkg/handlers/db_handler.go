@@ -26,8 +26,7 @@ type IDBHandler interface {
 	// Connection management
 	Connect() error
 	Close() error
-	ping() error
-	HealthCheck() error
+	Ping() error
 
 	// Transaction management
 	BeginTx(ctx context.Context) (*sql.Tx, error)
@@ -215,7 +214,7 @@ func (h *DbHandler) Close() error {
 }
 
 // Ping tests the database connection
-func (h *DbHandler) ping() error {
+func (h *DbHandler) Ping() error {
 	if h.db == nil {
 		h.logger.Error("Database connection is nil for Ping")
 		return fmt.Errorf("database connection is nil")
@@ -232,39 +231,6 @@ func (h *DbHandler) ping() error {
 	}
 
 	h.connected = true
-	return nil
-}
-
-// HealthCheck performs a comprehensive health check
-func (h *DbHandler) HealthCheck() error {
-	if h.db == nil {
-		h.logger.Error("Database connection is nil for HealthCheck")
-		return fmt.Errorf("database connection is nil")
-	}
-
-	h.logger.Debug("Performing database health check")
-
-	if err := h.ping(); err != nil {
-		h.logger.WithError(err).Error("Ping failed for HealthCheck")
-		return fmt.Errorf("ping failed: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), h.config.QueryTimeout)
-	defer cancel()
-
-	var result int
-	err := h.db.QueryRowContext(ctx, "SELECT 1").Scan(&result)
-	if err != nil {
-		h.logger.WithError(err).Error("Health check query failed for HealthCheck")
-		return fmt.Errorf("health check query failed: %w", err)
-	}
-
-	if result != 1 {
-		h.logger.Errorf("Unexpected health check result: %d for HealthCheck", result)
-		return fmt.Errorf("unexpected health check result: %d", result)
-	}
-
-	h.logger.Debug("Database health check passed")
 	return nil
 }
 
