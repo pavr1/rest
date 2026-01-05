@@ -13,3 +13,4 @@ INSERT INTO settings (service, key, value, description) VALUES
     ('gateway', 'CORS_ALLOWED_METHODS', 'GET,POST,PUT,DELETE,OPTIONS', 'CORS allowed methods'),
     ('gateway', 'CORS_ALLOWED_HEADERS', 'Content-Type,Authorization', 'CORS allowed headers')
 ON CONFLICT (service, key) DO NOTHING;
+

@@ -54,3 +54,4 @@ help: ## Show this help
 
 _network:
 	@docker network create docker_barrest_network 2>/dev/null || true
+

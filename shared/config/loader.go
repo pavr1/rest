@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -200,6 +201,10 @@ func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*
 		"service": serviceName,
 		//"settings_count": len(settings),
 	}).Info("Configuration loaded from data service")
+
+	if len(config.Values) == 0 {
+		return nil, errors.New("no configuration values loaded")
+	}
 
 	return config, nil
 }

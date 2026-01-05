@@ -48,3 +48,4 @@ function getResponseData(result) {
 window.isSuccessfulResponse = isSuccessfulResponse;
 window.getErrorMessage = getErrorMessage;
 window.getResponseData = getResponseData;
+

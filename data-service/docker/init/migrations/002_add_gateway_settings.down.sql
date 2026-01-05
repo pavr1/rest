@@ -2,3 +2,4 @@
 -- Version: 002
 
 DELETE FROM settings WHERE service = 'gateway';
+

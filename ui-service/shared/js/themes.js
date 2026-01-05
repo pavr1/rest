@@ -213,3 +213,4 @@ document.addEventListener('DOMContentLoaded', () => {
 // Export for global access
 window.THEMES = THEMES;
 window.themeManager = themeManager;
+

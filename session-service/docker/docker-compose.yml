@@ -28,3 +28,4 @@ services:
 networks:
   docker_barrest_network:
     external: true
+

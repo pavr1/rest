@@ -54,3 +54,4 @@ func SendJSON(w http.ResponseWriter, code int, data interface{}) {
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(data)
 }
+

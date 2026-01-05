@@ -54,3 +54,4 @@ console.log('🔧 Configuration loaded:', {
 
 // Export for global access
 window.CONFIG = CONFIG;
+

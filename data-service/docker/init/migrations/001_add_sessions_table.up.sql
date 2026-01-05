@@ -31,3 +31,4 @@ INSERT INTO settings (service, key, value, description) VALUES
     ('session', 'DB_NAME', 'barrest_db', 'Database name'),
     ('session', 'DB_SSL_MODE', 'disable', 'Database SSL mode')
 ON CONFLICT (service, key) DO NOTHING;
+

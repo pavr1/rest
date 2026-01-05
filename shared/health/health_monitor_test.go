@@ -184,3 +184,4 @@ func TestHealthMonitor_CheckService_Failure(t *testing.T) {
 		t.Error("service should be unhealthy after failed check")
 	}
 }
+

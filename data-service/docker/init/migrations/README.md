@@ -29,3 +29,4 @@ make migrate-status  # Show applied migrations
 - Migrations are tracked in the `schema_migrations` table
 - Always create both `.up.sql` and `.down.sql` files
 - Migrations run in alphabetical order (use numeric prefixes)
+

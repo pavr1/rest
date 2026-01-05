@@ -98,3 +98,4 @@ func TestCreateProxyHandler_ErrorHandler(t *testing.T) {
 		t.Errorf("Content-Type = %s; want application/json", contentType)
 	}
 }
+

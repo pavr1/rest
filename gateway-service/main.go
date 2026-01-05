@@ -43,17 +43,14 @@ func main() {
 
 	// Service URLs
 	sessionServiceUrl := config.GetString("SESSION_SERVICE_URL")
-	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
 
 	logger.WithFields(logrus.Fields{
 		"session_service": sessionServiceUrl,
-		"data_service":    dataServiceUrl,
 	}).Info("Configuration loaded")
 
 	// Start health monitor (background goroutine)
 	ctx, cancel := context.WithCancel(context.Background())
 	healthMonitor := sharedHealth.NewHealthMonitor(logger, HealthCheckInterval)
-	healthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
 	healthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
 	// Future services - add here as they are created:
 	// healthMonitor.AddService("menu-service", menuServiceUrl+"/api/v1/menu/p/health")
@@ -88,11 +85,11 @@ func main() {
 	api.HandleFunc("/v1/sessions/p/validate", createProxyHandler(sessionServiceUrl, logger)).Methods("POST")
 	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(sessionServiceUrl, logger)).Methods("GET")
 
-	// Public health endpoints
-	api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, logger)).Methods("GET")
+	// // Public health endpoints
+	// api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, logger)).Methods("GET")
 
-	// Data service - public settings endpoint (for service-to-service config loading)
-	api.HandleFunc("/v1/data/settings/by-service", createProxyHandler(dataServiceUrl, logger)).Methods("POST")
+	// // Data service - public settings endpoint (for service-to-service config loading)
+	// api.HandleFunc("/v1/data/settings/by-service", createProxyHandler(dataServiceUrl, logger)).Methods("POST")
 
 	// ==== PROTECTED SESSION ENDPOINTS (require authentication) ====
 	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
@@ -101,10 +98,10 @@ func main() {
 
 	// ==== PROTECTED ENDPOINTS (require authentication) ====
 
-	// Data service - protected endpoints
-	dataRouter := api.PathPrefix("/v1/data").Subrouter()
-	dataRouter.Use(sessionMiddleware.ValidateSession)
-	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(dataServiceUrl, logger))
+	// // Data service - protected endpoints
+	// dataRouter := api.PathPrefix("/v1/data").Subrouter()
+	// dataRouter.Use(sessionMiddleware.ValidateSession)
+	// dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(dataServiceUrl, logger))
 
 	// Future service routes (to be added as services are created):
 	// - /api/v1/menu/* → menu-service
@@ -124,12 +121,13 @@ func main() {
 	// Start server
 	port := config.GetString("SERVER_PORT")
 	if port == "" {
-		port = "8082"
+		logger.Fatal("SERVER_PORT is not set")
 	}
 
 	server := &http.Server{
-		Addr:         ":" + port,
-		Handler:      r,
+		Addr:    ":" + port,
+		Handler: r,
+		//pvillalobos this should be configurable
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,

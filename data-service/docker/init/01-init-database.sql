@@ -586,7 +586,7 @@ INSERT INTO settings (service, key, value, description) VALUES
 ('General', 'DEFAULT_SERVICE_RATE', '10.0', 'Default service charge rate'),
 
 -- Gateway Service Settings
-('Gateway', 'GATEWAY_PORT', '8082', 'Port for the gateway service'),
+('Gateway', 'SERVER_PORT', '8082', 'Port for the gateway service'),
 ('Gateway', 'SESSION_SERVICE_URL', 'http://barrest_session:8081', 'URL for session service'),
 ('Gateway', 'ORDERS_SERVICE_URL', 'http://barrest_orders:8083', 'URL for orders service'),
 ('Gateway', 'MENU_SERVICE_URL', 'http://barrest_menu:8087', 'URL for menu service'),
@@ -671,3 +671,4 @@ INSERT INTO tables (table_number, capacity, status) VALUES
 -- =============================================================================
 -- END OF SCHEMA
 -- =============================================================================
+

@@ -57,3 +57,4 @@ const (
 	UpdateSettingQuery        = "update_setting"
 	DeleteSettingQuery        = "delete_setting"
 )
+

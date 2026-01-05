@@ -26,7 +26,7 @@ type IDBHandler interface {
 	// Connection management
 	Connect() error
 	Close() error
-	Ping() error
+	ping() error
 	HealthCheck() error
 
 	// Transaction management
@@ -215,7 +215,7 @@ func (h *DbHandler) Close() error {
 }
 
 // Ping tests the database connection
-func (h *DbHandler) Ping() error {
+func (h *DbHandler) ping() error {
 	if h.db == nil {
 		h.logger.Error("Database connection is nil for Ping")
 		return fmt.Errorf("database connection is nil")
@@ -244,7 +244,7 @@ func (h *DbHandler) HealthCheck() error {
 
 	h.logger.Debug("Performing database health check")
 
-	if err := h.Ping(); err != nil {
+	if err := h.ping(); err != nil {
 		h.logger.WithError(err).Error("Ping failed for HealthCheck")
 		return fmt.Errorf("ping failed: %w", err)
 	}

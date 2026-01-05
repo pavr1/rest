@@ -10,3 +10,4 @@ DROP INDEX IF EXISTS idx_sessions_staff_id;
 
 -- Drop sessions table
 DROP TABLE IF EXISTS sessions;
+

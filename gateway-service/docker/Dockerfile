@@ -19,3 +19,4 @@ WORKDIR /root/
 COPY --from=builder /build/gateway-service/main .
 EXPOSE 8082
 CMD ["./main"]
+
