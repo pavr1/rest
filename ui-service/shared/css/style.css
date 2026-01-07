@@ -349,7 +349,15 @@ body {
 }
 
 .status-indicator.heartbeat {
-    animation: heartbeat 0.6s ease-in-out;
+    animation: heartbeat 0.6s ease-in-out !important;
+}
+
+/* Override pulse animations when heartbeat is active */
+.status-indicator.online.heartbeat,
+.status-indicator.offline.heartbeat,
+.status-indicator.warning.heartbeat,
+.status-indicator.loading.heartbeat {
+    animation: heartbeat 0.6s ease-in-out !important;
 }
 
 /* === ALERTS === */

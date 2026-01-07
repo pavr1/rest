@@ -173,9 +173,20 @@ class SystemStatusMonitor {
             'data-status'
         ];
         
+        console.log('💓 Triggering heartbeat animation');
+        
         indicators.forEach(id => {
             const element = document.getElementById(id);
-            if (!element) return;
+            if (!element) {
+                console.warn(`⚠️ Element ${id} not found for heartbeat`);
+                return;
+            }
+            
+            // Remove heartbeat class first to restart animation if it's already running
+            element.classList.remove('heartbeat');
+            
+            // Force reflow to restart animation
+            void element.offsetWidth;
             
             // Add heartbeat class
             element.classList.add('heartbeat');
