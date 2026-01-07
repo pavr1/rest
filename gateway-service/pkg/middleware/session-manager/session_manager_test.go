@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	httpresponse "shared/http-response"
+	sharedHttp "shared/http"
 )
 
 func TestNewSessionManager(t *testing.T) {
@@ -66,7 +66,7 @@ func TestSessionManager_ValidateSession_Success(t *testing.T) {
 		}
 
 		// Return valid response
-		response := httpresponse.Response{
+		response := sharedHttp.Response{
 			Code:    200,
 			Message: "Success",
 			Data: map[string]interface{}{
@@ -108,7 +108,7 @@ func TestSessionManager_ValidateSession_Success(t *testing.T) {
 
 func TestSessionManager_ValidateSession_Invalid(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := httpresponse.Response{
+		response := sharedHttp.Response{
 			Code:    200,
 			Message: "Success",
 			Data: map[string]interface{}{

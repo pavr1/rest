@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"gateway-service/pkg/models"
-	httpresponse "shared/http-response"
+	sharedHttp "shared/http"
 
 	"github.com/sirupsen/logrus"
 )
@@ -79,7 +79,7 @@ func (sm *SessionManager) ValidateSession(sessionId string, requestID string) (*
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	var responseWrapper httpresponse.Response
+	var responseWrapper sharedHttp.Response
 	if err := json.Unmarshal(body, &responseWrapper); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}

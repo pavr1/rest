@@ -35,6 +35,7 @@ func NewHealthMonitor(logger *logrus.Logger, interval time.Duration) (*HTTPHealt
 	hm := &HTTPHealthMonitor{
 		logger:   logger,
 		interval: interval,
+		services: make(map[string]*ServiceHealth),
 	}
 	hm.logger.WithFields(logrus.Fields{
 		"interval": interval,

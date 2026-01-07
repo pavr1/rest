@@ -11,7 +11,7 @@ import (
 	"time"
 
 	sharedConfig "shared/config"
-	httpresponse "shared/http-response"
+	sharedHttp "shared/http"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -104,17 +104,17 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Get(sharedConfig.DATA_SERVICE_URL + "/api/v1/data/p/health")
 	if err != nil {
 		h.logger.WithError(err).Error("data-service is not healthy")
-		httpresponse.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", err)
+		sharedHttp.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", err)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		httpresponse.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", nil)
+		sharedHttp.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", nil)
 		return
 	}
 
-	httpresponse.SendSuccess(w, http.StatusOK, "Session service healthy", map[string]interface{}{
+	sharedHttp.SendSuccess(w, http.StatusOK, "Session service healthy", map[string]interface{}{
 		"status":  "healthy",
 		"service": "session-service",
 	})

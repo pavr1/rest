@@ -4,7 +4,7 @@ package http
 // 	"data-service/pkg/entities/settings"
 // 	"encoding/json"
 // 	"net/http"
-// 	httpresponse "shared/http-response"
+// 	sharedHttp "shared/http"
 // 	sharedModels "shared/models"
 
 // 	"github.com/sirupsen/logrus"
