@@ -32,8 +32,12 @@ func main() {
 
 	// Service URLs
 	sessionServiceUrl := config.GetString("SESSION_SERVICE_URL")
+	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
 
-	logger.WithField("session_service", sessionServiceUrl).Info("Configuration loaded")
+	logger.WithFields(map[string]interface{}{
+		"session_service": sessionServiceUrl,
+		"data_service":    dataServiceUrl,
+	}).Info("Configuration loaded")
 
 	// Create cancellable context for graceful shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -45,6 +49,7 @@ func main() {
 		logger.WithError(err).Fatal("Failed to create HTTP health monitor")
 	}
 	httpHealthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
+	httpHealthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
 	httpHealthMonitor.Start(ctx)
 
 	// Create session manager for authentication

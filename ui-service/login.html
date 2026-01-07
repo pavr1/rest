@@ -531,9 +531,8 @@
                 const sessionStatus = services['session-service'] === true ? 'online' : 'offline';
                 this.updateStatusIndicator('session-status', sessionStatus);
                 
-                // Data service status (not directly monitored by gateway yet, infer from session)
-                // Session service depends on data service, so if session is healthy, data should be too
-                const dataStatus = services['session-service'] === true ? 'online' : 'offline';
+                // Update data service status from actual gateway response
+                const dataStatus = services['data-service'] === true ? 'online' : 'offline';
                 this.updateStatusIndicator('data-status', dataStatus);
             }
 
