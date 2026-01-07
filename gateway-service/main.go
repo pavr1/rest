@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/signal"
 	sharedConfig "shared/config"
-	sharedHealth "shared/health"
 	sharedLogger "shared/logger"
 	sharedMiddlewares "shared/middlewares"
 	"strings"
@@ -50,15 +49,7 @@ func main() {
 		"data_service":    dataServiceUrl,
 	}).Info("Configuration loaded")
 
-	// Start health monitor (background goroutine)
-	ctx, cancel := context.WithCancel(context.Background())
-	healthMonitor := sharedHealth.NewHTTPHealthMonitor(logger, HealthCheckInterval)
-	healthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
-	healthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
-	// Future services - add here as they are created:
-	// healthMonitor.AddService("menu-service", menuServiceUrl+"/api/v1/menu/p/health")
-	// healthMonitor.AddService("orders-service", ordersServiceUrl+"/api/v1/orders/p/health")
-	go healthMonitor.Start(ctx)
+	//pvillalobos implement health monitor for gateway service
 
 	// Create session manager for authentication
 	sessionManager := sessionmanager.NewSessionManager(sessionServiceUrl, logger)
@@ -76,10 +67,6 @@ func main() {
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
-	v1 := api.PathPrefix("/v1").Subrouter()
-
-	// Gateway health check (uses cached health from monitor)
-	v1.HandleFunc("/gateway/p/health", createHealthHandler(healthMonitor)).Methods("GET")
 
 	// ==== PUBLIC ENDPOINTS (no authentication) ====
 
@@ -160,7 +147,6 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down...")
-	cancel() // Stop health monitor
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
@@ -235,46 +221,4 @@ func generateRequestID() string {
 	bytes := make([]byte, 16)
 	rand.Read(bytes)
 	return hex.EncodeToString(bytes)
-}
-
-func createHealthHandler(healthMonitor *sharedHealth.HealthMonitor) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Use cached health state from background monitor
-		allServices := healthMonitor.GetAllServicesStatus()
-
-		gatewayHealthy := true
-		httpStatus := http.StatusOK
-
-		// Check if all services are healthy
-		services := make(map[string]interface{})
-
-		for name, svc := range allServices {
-			if svc.Healthy {
-				services[name] = "healthy"
-			} else {
-				services[name] = "unhealthy"
-				// Gateway depends on all its services - if any is down, gateway is unhealthy
-				gatewayHealthy = false
-				httpStatus = http.StatusServiceUnavailable
-			}
-		}
-
-		// Gateway status depends on its dependencies
-		if gatewayHealthy {
-			services["gateway-service"] = "healthy"
-		} else {
-			services["gateway-service"] = "unhealthy"
-		}
-
-		response := map[string]interface{}{
-			"status":   map[bool]string{true: "healthy", false: "unhealthy"}[gatewayHealthy],
-			"service":  "gateway-service",
-			"time":     time.Now(),
-			"services": services,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(httpStatus)
-		json.NewEncoder(w).Encode(response)
-	}
 }

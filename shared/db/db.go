@@ -1,57 +1,19 @@
-package handlers
+package db
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
+	"shared/config"
 	"time"
 
-	sharedConfig "shared/config"
-
 	"github.com/lib/pq"
-	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/sirupsen/logrus"
 )
 
-// DbHandler implements the IDBHandler interface
-type DbHandler struct {
-	db        *sql.DB
-	config    *Config
-	logger    *logrus.Logger
-	connected bool
-}
-
-// IDBHandler defines the interface for database operations
-type IDBHandler interface {
-	// Connection management
-	Connect() error
-	Close() error
-	Ping() error
-
-	// Transaction management
-	BeginTx(ctx context.Context) (*sql.Tx, error)
-	CommitTx(tx *sql.Tx) error
-	RollbackTx(tx *sql.Tx) error
-
-	// Query operations
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
-	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
-
-	// Execute operations
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-
-	// Prepared statements
-	Prepare(query string) (*sql.Stmt, error)
-	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
-
-	// Utility methods
-	GetDB() *sql.DB
-	GetStats() sql.DBStats
-	IsConnected() bool
-}
+const (
+	DBHealthCheckInterval = 1 * time.Second
+)
 
 // Config holds database configuration
 type Config struct {
@@ -79,12 +41,12 @@ type Config struct {
 
 // DefaultConfig returns a default configuration
 func DefaultConfig(logger *logrus.Logger) *Config {
-	host := sharedConfig.DATABASE_NAME
-	port := sharedConfig.DATABASE_PORT
-	user := sharedConfig.DATA_SERVICE_USER
-	password := sharedConfig.DATA_SERVICE_PASSWORD
-	dbName := sharedConfig.DATA_SERVICE_DB_NAME
-	sslMode := sharedConfig.DATA_SERVICE_SSL_MODE
+	host := config.DATABASE_NAME
+	port := config.DATABASE_PORT
+	user := config.DATA_SERVICE_USER
+	password := config.DATA_SERVICE_PASSWORD
+	dbName := config.DATA_SERVICE_DB_NAME
+	sslMode := config.DATA_SERVICE_SSL_MODE
 
 	dbConfig := &Config{
 		Host:     host,
@@ -95,29 +57,35 @@ func DefaultConfig(logger *logrus.Logger) *Config {
 		SSLMode:  sslMode,
 
 		// Connection pool settings
-		MaxOpenConns:    sharedConfig.DATA_SERVICE_MAX_OPEN_CONNS,
-		MaxIdleConns:    sharedConfig.DATA_SERVICE_MAX_IDLE_CONNS,
-		ConnMaxLifetime: sharedConfig.DATA_SERVICE_CONN_MAX_LIFETIME,
-		ConnMaxIdleTime: sharedConfig.DATA_SERVICE_CONN_MAX_IDLE_TIME,
+		MaxOpenConns:    config.DATA_SERVICE_MAX_OPEN_CONNS,
+		MaxIdleConns:    config.DATA_SERVICE_MAX_IDLE_CONNS,
+		ConnMaxLifetime: config.DATA_SERVICE_CONN_MAX_LIFETIME,
+		ConnMaxIdleTime: config.DATA_SERVICE_CONN_MAX_IDLE_TIME,
 
 		// Timeout settings
-		ConnectTimeout: sharedConfig.DATA_SERVICE_CONNECT_TIMEOUT,
-		QueryTimeout:   sharedConfig.DATA_SERVICE_QUERY_TIMEOUT,
+		ConnectTimeout: config.DATA_SERVICE_CONNECT_TIMEOUT,
+		QueryTimeout:   config.DATA_SERVICE_QUERY_TIMEOUT,
 
 		// Retry settings
-		MaxRetries:    sharedConfig.DATA_SERVICE_MAX_RETRIES,
-		RetryInterval: sharedConfig.DATA_SERVICE_RETRY_INTERVAL,
+		MaxRetries:    config.DATA_SERVICE_MAX_RETRIES,
+		RetryInterval: config.DATA_SERVICE_RETRY_INTERVAL,
 	}
 
 	return dbConfig
 }
 
-// New creates a new database handler instance
-func New(config *Config, logger *logrus.Logger) IDBHandler {
-	if config == nil {
-		config = DefaultConfig(logger)
-	}
+// DbHandler implements the IDBHandler interface
+type DbHandler struct {
+	ctx           context.Context
+	db            *sql.DB
+	config        *Config
+	logger        *logrus.Logger
+	healthMonitor *HealthMonitor
+	connected     bool
+}
 
+// NewDbHandler creates a new database handler instance
+func NewDbHandler(config *Config, logger *logrus.Logger) *DbHandler {
 	return &DbHandler{
 		config:    config,
 		logger:    logger,
@@ -125,8 +93,41 @@ func New(config *Config, logger *logrus.Logger) IDBHandler {
 	}
 }
 
+// New creates a new database handler instance
+func NewDatabaseHandler(config *Config, logger *logrus.Logger) (*DbHandler, error) {
+	var err error
+	if config == nil {
+		config = DefaultConfig(logger)
+	}
+
+	db := NewDbHandler(config, logger)
+
+	// Connect to database
+	fmt.Println("🍺 Connecting to Bar-Restaurant Data Service...")
+	if err := db.connect(); err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	// Perform initial health check
+	if err := db.Ping(); err != nil {
+		logger.WithError(err).Fatal("Initial database health check failed")
+		return nil, fmt.Errorf("initial database health check failed")
+	}
+
+	fmt.Println("✅ Database connection established successfully, starting health monitor...")
+
+	db.ctx = context.Background()
+	db.healthMonitor, err = NewHealthMonitor(logger, DBHealthCheckInterval, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create health monitor: %w", err)
+	}
+	go db.healthMonitor.Start(db.ctx)
+
+	return db, nil
+}
+
 // Connect establishes a connection to the database
-func (h *DbHandler) Connect() error {
+func (h *DbHandler) connect() error {
 	h.logger.WithFields(logrus.Fields{
 		"host":   h.config.Host,
 		"port":   h.config.Port,
@@ -480,4 +481,36 @@ func (h *DbHandler) handlePostgreSQLError(err error) error {
 	}
 
 	return err
+}
+
+// IDBHandler defines the interface for database operations
+type IDBHandler interface {
+	// Connection management
+	connect() error
+	Close() error
+	Ping() error
+
+	// Transaction management
+	BeginTx(ctx context.Context) (*sql.Tx, error)
+	CommitTx(tx *sql.Tx) error
+	RollbackTx(tx *sql.Tx) error
+
+	// Query operations
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+
+	// Execute operations
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+
+	// Prepared statements
+	Prepare(query string) (*sql.Stmt, error)
+	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
+
+	// Utility methods
+	GetDB() *sql.DB
+	GetStats() sql.DBStats
+	IsConnected() bool
 }

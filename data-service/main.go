@@ -11,47 +11,26 @@ import (
 	"time"
 
 	sharedConfig "shared/config"
-	sharedHealth "shared/health"
+	sharedDb "shared/db"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 )
 
-const (
-	DBHealthCheckInterval = 1 * time.Second
-)
-
 func main() {
 	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_DATA_SERVICE, "INFO")
 
-	config := handlers.DefaultConfig(logger)
+	config := sharedDb.DefaultConfig(logger)
 
 	// Create database handler
-	db := handlers.New(config, logger)
-
-	// Connect to database
-	fmt.Println("🍺 Connecting to Bar-Restaurant Data Service...")
-	if err := db.Connect(); err != nil {
-		logger.WithError(err).Fatal("Failed to connect to database")
+	db, err := sharedDb.NewDatabaseHandler(config, logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to create database handler")
 	}
 	defer db.Close()
 
-	// Perform initial health check
-	if err := db.Ping(); err != nil {
-		logger.WithError(err).Fatal("Initial database health check failed")
-	}
-
-	fmt.Println("✅ Database connection established successfully")
-
-	// Start background DB health monitoring
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	healthMonitor := sharedHealth.NewHealthMonitor(logger, DBHealthCheckInterval, db)
-	go healthMonitor.Start(ctx)
-
 	// Setup HTTP handler and router
-	httpHandler, err := handlers.NewHTTPHandler(db, config, logger, healthMonitor)
+	httpHandler, err := handlers.NewHTTPHandler(db, config, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
@@ -90,8 +69,6 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down Data Service...")
-	cancel() // Stop DB health monitoring
-
 	// Gracefully shutdown with a timeout
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	sharedDb "shared/db"
+
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
@@ -17,14 +19,13 @@ type HealthChecker interface {
 // Handler is the main HTTP handler for data-service
 type HTTPHandler struct {
 	//settingsHandler *settingsHTTP.HTTPHandler
-	db            IDBHandler
-	config        *Config
-	logger        *logrus.Logger
-	healthChecker HealthChecker
+	db     *sharedDb.DbHandler
+	config *sharedDb.Config
+	logger *logrus.Logger
 }
 
 // NewHandler creates a new HTTP handler
-func NewHTTPHandler(db IDBHandler, config *Config, logger *logrus.Logger, healthChecker HealthChecker) (*HTTPHandler, error) {
+func NewHTTPHandler(db *sharedDb.DbHandler, config *sharedDb.Config, logger *logrus.Logger) (*HTTPHandler, error) {
 	// repository, err := settings.NewRepository(db)
 	// if err != nil {
 	// 	return nil, err
@@ -33,10 +34,9 @@ func NewHTTPHandler(db IDBHandler, config *Config, logger *logrus.Logger, health
 
 	return &HTTPHandler{
 		//settingsHandler: settingsHandler,
-		db:            db,
-		config:        config,
-		logger:        logger,
-		healthChecker: healthChecker,
+		db:     db,
+		config: config,
+		logger: logger,
 	}, nil
 }
 
@@ -47,7 +47,6 @@ func (h *HTTPHandler) SetupRoutes(router *mux.Router) {
 
 	//Public endpoints
 	router.HandleFunc("/api/v1/data/p/health", h.HealthCheck).Methods("GET")
-	router.HandleFunc("/api/v1/data/p/stats", h.StatsEndpoint).Methods("GET")
 
 	//pvillalobos these settings must belong to settings service
 	// //Settings endpoints
@@ -74,7 +73,7 @@ func (h *HTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check cached health state (updated by background health monitor in main.go)
-	if !h.healthChecker.IsHealthy() {
+	if !h.db.IsConnected() {
 		response["status"] = "unhealthy"
 		response["message"] = "Database is not reachable"
 
@@ -91,27 +90,6 @@ func (h *HTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		"port":   h.config.Port,
 		"dbname": h.config.DBName,
 		"stats":  h.db.GetStats(),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
-
-// StatsEndpoint provides database connection statistics
-func (h *HTTPHandler) StatsEndpoint(w http.ResponseWriter, r *http.Request) {
-	stats := h.db.GetStats()
-
-	response := map[string]interface{}{
-		"service":   "data-service",
-		"timestamp": time.Now(),
-		"database_stats": map[string]interface{}{
-			"open_connections": stats.OpenConnections,
-			"in_use":           stats.InUse,
-			"idle":             stats.Idle,
-			"wait_count":       stats.WaitCount,
-			"wait_duration":    stats.WaitDuration.String(),
-		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")

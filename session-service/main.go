@@ -11,7 +11,6 @@ import (
 	"time"
 
 	sharedConfig "shared/config"
-	sharedHealth "shared/health"
 	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
@@ -19,13 +18,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	DBHealthCheckInterval = 1 * time.Second
-)
-
 type MainHTTPHandler struct {
 	sessionsHandler *handlers.HTTPHandler
-	healthMonitor   *sharedHealth.HealthMonitor
 	logger          *logrus.Logger
 }
 
@@ -50,14 +44,6 @@ func main() {
 	}
 	defer dbHandler.Close()
 
-	// Start background database health monitoring
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	healthMonitor := sharedHealth.NewHealthMonitor(logger, DBHealthCheckInterval, dbHandler.GetDB())
-	go healthMonitor.Start(ctx)
-	mainHandler.healthMonitor = healthMonitor
-
 	router := mux.NewRouter()
 	mainHandler.SetupRoutes(router)
 
@@ -81,7 +67,6 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down...")
-	cancel() // Stop health monitoring
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
@@ -101,7 +86,6 @@ func newMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainH
 	sessionsHandler := handlers.NewHTTPHandler(dbHandler, logger)
 	return &MainHTTPHandler{
 		sessionsHandler: sessionsHandler,
-		healthMonitor:   nil, // Will be set after health monitor is created
 		logger:          logger,
 	}, dbHandler, nil
 }
@@ -114,11 +98,17 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	// Check cached database health state (updated by background health monitor)
-	if !h.healthMonitor.IsHealthy() {
-		httpresponse.SendError(w, http.StatusServiceUnavailable, "Database is not healthy", nil)
+	// Check data-service health via HTTP
+	//pvillalobos configure timeout to 1 second
+	client := &http.Client{Timeout: 1 * time.Second}
+	resp, err := client.Get(sharedConfig.DATA_SERVICE_URL + "/api/v1/data/p/health")
+
+	if err != nil || resp.StatusCode != http.StatusOK {
+		h.logger.WithError(err).Error("data-service is not healthy")
+		httpresponse.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", err)
 		return
 	}
+	defer resp.Body.Close()
 
 	httpresponse.SendSuccess(w, http.StatusOK, "Session service healthy", map[string]interface{}{
 		"status":  "healthy",

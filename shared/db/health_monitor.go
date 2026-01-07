@@ -1,7 +1,8 @@
-package health
+package db
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -29,7 +30,7 @@ type HealthMonitor struct {
 	interval time.Duration
 
 	// For DB monitoring
-	dbPinger  DBPinger
+	dbHandler *DbHandler
 	dbHealthy atomic.Bool
 
 	// For HTTP monitoring
@@ -39,27 +40,25 @@ type HealthMonitor struct {
 }
 
 // NewHealthMonitor creates a new health monitor for database
-func NewHealthMonitor(logger *logrus.Logger, interval time.Duration, dbPinger DBPinger) *HealthMonitor {
-	hm := &HealthMonitor{
-		logger:   logger,
-		interval: interval,
-		dbPinger: dbPinger,
+func NewHealthMonitor(logger *logrus.Logger, interval time.Duration, dbHandler *DbHandler) (*HealthMonitor, error) {
+	if dbHandler == nil {
+		logger.Error("Database health monitor is not initialized")
+		return nil, errors.New("database health monitor is not initialized")
 	}
+
+	hm := &HealthMonitor{
+		logger:    logger,
+		interval:  interval,
+		dbHandler: dbHandler,
+	}
+	hm.logger.WithFields(logrus.Fields{
+		"interval":  interval,
+		"dbHandler": dbHandler,
+	}).Info("Creating new health monitor")
+
 	// Start as unhealthy until first successful check
 	hm.dbHealthy.Store(false)
-	return hm
-}
-
-// NewHTTPHealthMonitor creates a new health monitor for HTTP services
-func NewHTTPHealthMonitor(logger *logrus.Logger, interval time.Duration) *HealthMonitor {
-	return &HealthMonitor{
-		logger:   logger,
-		interval: interval,
-		client: &http.Client{
-			Timeout: 1 * time.Second,
-		},
-		services: make(map[string]*ServiceHealth),
-	}
+	return hm, nil
 }
 
 // AddService adds an HTTP service to monitor
@@ -80,7 +79,7 @@ func (hm *HealthMonitor) AddService(name, healthURL string) {
 // Start begins the background health monitoring
 func (hm *HealthMonitor) Start(ctx context.Context) {
 	// Determine monitoring mode
-	if hm.dbPinger != nil {
+	if hm.dbHandler != nil {
 		hm.startDBMonitoring(ctx)
 	} else if hm.services != nil {
 		hm.startHTTPMonitoring(ctx)
@@ -131,18 +130,18 @@ func (hm *HealthMonitor) startHTTPMonitoring(ctx context.Context) {
 
 // checkDatabase pings the database
 func (hm *HealthMonitor) checkDatabase() {
-	err := hm.dbPinger.Ping()
+	err := hm.dbHandler.Ping()
 
 	if err != nil {
 		// Only log if transitioning from healthy to unhealthy
-		if hm.dbHealthy.Load() {
-			hm.logger.WithError(err).Error("Database health check failed")
-		}
+		//if hm.dbHealthy.Load() {
+		hm.logger.WithError(err).Error("Database health check failed")
+		//}
 		hm.dbHealthy.Store(false)
 	} else {
 		// Only log if transitioning from unhealthy to healthy
 		if !hm.dbHealthy.Load() {
-			hm.logger.Info("Database health restored")
+			hm.logger.Info("🔥 Database health connected successfully")
 		}
 		hm.dbHealthy.Store(true)
 	}

@@ -8,7 +8,7 @@ import (
 	sharedConfig "shared/config"
 	"time"
 
-	dataHandler "data-service/pkg/handlers"
+	sharedDb "shared/db"
 
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -17,7 +17,7 @@ import (
 
 // DBHandler handles database operations for sessions
 type DBHandler struct {
-	db         dataHandler.IDBHandler
+	db         *sharedDb.DbHandler
 	queries    sessionSQL.Queries
 	jwtHandler *JWTHandler
 	logger     *logrus.Logger
@@ -26,7 +26,7 @@ type DBHandler struct {
 // NewDBHandler creates a new database handler with internal database connection
 func NewDBHandler(cfg *sharedConfig.Config, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
 	// Create database configuration
-	dbConfig := &dataHandler.Config{
+	dbConfig := &sharedDb.Config{
 		Host:            cfg.GetString("DB_HOST"),
 		Port:            cfg.GetInt("DB_PORT"),
 		User:            cfg.GetString("DB_USER"),
@@ -43,9 +43,9 @@ func NewDBHandler(cfg *sharedConfig.Config, jwtHandler *JWTHandler, logger *logr
 		RetryInterval:   2 * time.Second,
 	}
 	// Create database handler using data-service's handler
-	db := dataHandler.New(dbConfig, logger)
-	if err := db.Connect(); err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	db, err := sharedDb.NewDatabaseHandler(dbConfig, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database handler: %w", err)
 	}
 
 	queries, err := sessionSQL.LoadQueries()
@@ -70,7 +70,7 @@ func (h *DBHandler) Close() error {
 }
 
 // GetDB returns the underlying database handler for health checks
-func (h *DBHandler) GetDB() dataHandler.IDBHandler {
+func (h *DBHandler) GetDB() *sharedDb.DbHandler {
 	return h.db
 }
 
