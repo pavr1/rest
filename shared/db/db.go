@@ -77,29 +77,24 @@ func DefaultConfig(logger *logrus.Logger) *Config {
 // DbHandler implements the IDBHandler interface
 type DbHandler struct {
 	ctx           context.Context
+	cancelCtx     context.CancelFunc
 	db            *sql.DB
 	config        *Config
 	logger        *logrus.Logger
 	healthMonitor *HealthMonitor
-	connected     bool
 }
 
 // NewDbHandler creates a new database handler instance
 func NewDbHandler(config *Config, logger *logrus.Logger) *DbHandler {
 	return &DbHandler{
-		config:    config,
-		logger:    logger,
-		connected: false,
+		config: config,
+		logger: logger,
 	}
 }
 
 // New creates a new database handler instance
 func NewDatabaseHandler(config *Config, logger *logrus.Logger) (*DbHandler, error) {
 	var err error
-	if config == nil {
-		config = DefaultConfig(logger)
-	}
-
 	db := NewDbHandler(config, logger)
 
 	// Connect to database
@@ -116,7 +111,8 @@ func NewDatabaseHandler(config *Config, logger *logrus.Logger) (*DbHandler, erro
 
 	fmt.Println("✅ Database connection established successfully, starting health monitor...")
 
-	db.ctx = context.Background()
+	// Create cancellable context for health monitor
+	db.ctx, db.cancelCtx = context.WithCancel(context.Background())
 	db.healthMonitor, err = NewHealthMonitor(logger, DBHealthCheckInterval, db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create health monitor: %w", err)
@@ -184,7 +180,6 @@ func (h *DbHandler) connect() error {
 	h.configureConnectionPool(db)
 
 	h.db = db
-	h.connected = true
 
 	h.logger.WithFields(logrus.Fields{
 		"host":   h.config.Host,
@@ -203,13 +198,17 @@ func (h *DbHandler) Close() error {
 
 	h.logger.Info("Closing database connection")
 
+	// Cancel context to stop health monitor
+	if h.cancelCtx != nil {
+		h.cancelCtx()
+	}
+
 	err := h.db.Close()
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to close database connection")
 		return err
 	}
 
-	h.connected = false
 	h.logger.Info("Database connection closed successfully")
 	return nil
 }
@@ -221,17 +220,19 @@ func (h *DbHandler) Ping() error {
 		return fmt.Errorf("database connection is nil")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), h.config.ConnectTimeout)
+	// Use 2 second timeout for health checks (shorter than default)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	err := h.db.PingContext(ctx)
+	// Execute a simple query instead of PingContext
+	// This forces a real statement execution and respects statement_timeout
+	var result int
+	err := h.db.QueryRowContext(ctx, "SELECT 1").Scan(&result)
 	if err != nil {
 		h.logger.WithError(err).Error("Database ping failed")
-		h.connected = false
 		return err
 	}
 
-	h.connected = true
 	return nil
 }
 
@@ -415,13 +416,13 @@ func (h *DbHandler) GetStats() sql.DBStats {
 
 // IsConnected returns the connection status
 func (h *DbHandler) IsConnected() bool {
-	return h.connected && h.db != nil
+	return h.healthMonitor.IsHealthy()
 }
 
 // buildConnectionString creates the PostgreSQL connection string
 func (h *DbHandler) buildConnectionString() string {
 	return fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=%d",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s connect_timeout=%d statement_timeout=%d tcp_user_timeout=%d",
 		h.config.Host,
 		h.config.Port,
 		h.config.User,
@@ -429,6 +430,8 @@ func (h *DbHandler) buildConnectionString() string {
 		h.config.DBName,
 		h.config.SSLMode,
 		int(h.config.ConnectTimeout.Seconds()),
+		1000, // 1 second statement timeout in milliseconds
+		2000, // 2 second TCP user timeout in milliseconds (forces TCP to give up faster)
 	)
 }
 

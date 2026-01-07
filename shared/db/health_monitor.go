@@ -42,8 +42,8 @@ type HealthMonitor struct {
 // NewHealthMonitor creates a new health monitor for database
 func NewHealthMonitor(logger *logrus.Logger, interval time.Duration, dbHandler *DbHandler) (*HealthMonitor, error) {
 	if dbHandler == nil {
-		logger.Error("Database health monitor is not initialized")
-		return nil, errors.New("database health monitor is not initialized")
+		logger.Error("Database handler is not initialized")
+		return nil, errors.New("database handler is not initialized")
 	}
 
 	hm := &HealthMonitor{
@@ -59,21 +59,6 @@ func NewHealthMonitor(logger *logrus.Logger, interval time.Duration, dbHandler *
 	// Start as unhealthy until first successful check
 	hm.dbHealthy.Store(false)
 	return hm, nil
-}
-
-// AddService adds an HTTP service to monitor
-func (hm *HealthMonitor) AddService(name, healthURL string) {
-	hm.mu.Lock()
-	defer hm.mu.Unlock()
-	hm.services[name] = &ServiceHealth{
-		Name:    name,
-		URL:     healthURL,
-		Healthy: false, // Start as unhealthy until first successful check
-	}
-	hm.logger.WithFields(logrus.Fields{
-		"service": name,
-		"url":     healthURL,
-	}).Info("Added service to health monitor")
 }
 
 // Start begins the background health monitoring
@@ -102,6 +87,7 @@ func (hm *HealthMonitor) startDBMonitoring(ctx context.Context) {
 			hm.logger.Info("Database health monitor stopped")
 			return
 		case <-ticker.C:
+			hm.logger.Info("*********** `startDBMonitoring` **********")
 			hm.checkDatabase()
 		}
 	}
@@ -130,6 +116,7 @@ func (hm *HealthMonitor) startHTTPMonitoring(ctx context.Context) {
 
 // checkDatabase pings the database
 func (hm *HealthMonitor) checkDatabase() {
+	hm.logger.Info("*********** `Checking database health` **********")
 	err := hm.dbHandler.Ping()
 
 	if err != nil {
@@ -140,9 +127,9 @@ func (hm *HealthMonitor) checkDatabase() {
 		hm.dbHealthy.Store(false)
 	} else {
 		// Only log if transitioning from unhealthy to healthy
-		if !hm.dbHealthy.Load() {
-			hm.logger.Info("🔥 Database health connected successfully")
-		}
+		//if !hm.dbHealthy.Load() {
+		hm.logger.Info("🔥 Database health connected successfully")
+		//}
 		hm.dbHealthy.Store(true)
 	}
 }

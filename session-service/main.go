@@ -102,13 +102,17 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	//pvillalobos configure timeout to 1 second
 	client := &http.Client{Timeout: 1 * time.Second}
 	resp, err := client.Get(sharedConfig.DATA_SERVICE_URL + "/api/v1/data/p/health")
-
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		h.logger.WithError(err).Error("data-service is not healthy")
 		httpresponse.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", err)
 		return
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		httpresponse.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", nil)
+		return
+	}
 
 	httpresponse.SendSuccess(w, http.StatusOK, "Session service healthy", map[string]interface{}{
 		"status":  "healthy",
