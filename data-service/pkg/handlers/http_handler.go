@@ -44,17 +44,8 @@ func NewHTTPHandler(db *sharedDb.DbHandler, config *sharedDb.Config, logger *log
 func (h *HTTPHandler) SetupRoutes(router *mux.Router) {
 	//Root endpoint
 	router.HandleFunc("/", h.RootHandler).Methods("GET")
-
 	//Public endpoints
 	router.HandleFunc("/api/v1/data/p/health", h.HealthCheck).Methods("GET")
-
-	//pvillalobos these settings must belong to settings service
-	// //Settings endpoints
-	// router.HandleFunc("/api/v1/data/settings/by-service", h.settingsHandler.GetSettingsByService).Methods("POST")
-	// router.HandleFunc("/api/v1/data/settings/by-key", h.settingsHandler.GetSettingByKey).Methods("POST")
-	// router.HandleFunc("/api/v1/data/settings", h.settingsHandler.CreateSetting).Methods("POST")
-	// router.HandleFunc("/api/v1/data/settings", h.settingsHandler.UpdateSetting).Methods("PUT")
-	// router.HandleFunc("/api/v1/data/settings", h.settingsHandler.DeleteSetting).Methods("DELETE")
 }
 
 // RootHandler handles the root endpoint
