@@ -508,9 +508,10 @@
                     // Gateway returns 503 when some services are unhealthy but still returns service details
                     if (response.ok || response.status === 503) {
                         const data = await response.json();
-                        console.log('🏥 Gateway response:', data);
-                        console.log('🏥 Services:', data.services);
-                        this.updateStatusFromGateway(data.services || {});
+                        console.log('🏥 Gateway health response:', data);
+                        
+                        // Gateway returns: { is_healthy: bool, services: { "service-name": bool } }
+                        this.updateStatusFromGateway(data.services || {}, data.is_healthy);
                     } else {
                         console.warn('🏥 Gateway returned unexpected status:', response.status);
                         this.markAllServicesOffline();
@@ -521,17 +522,18 @@
                 }
             }
 
-            updateStatusFromGateway(services) {
-                // Update gateway status based on actual health response
-                const gatewayStatus = services['gateway-service'] === 'healthy' ? 'online' : 'offline';
+            updateStatusFromGateway(services, isHealthy) {
+                // Gateway status is determined by overall system health
+                const gatewayStatus = isHealthy ? 'online' : 'warning';
                 this.updateStatusIndicator('gateway-status', gatewayStatus);
                 
                 // Update session service status
-                const sessionStatus = services['session-service'] === 'healthy' ? 'online' : 'offline';
+                const sessionStatus = services['session-service'] === true ? 'online' : 'offline';
                 this.updateStatusIndicator('session-status', sessionStatus);
                 
-                // Update data service status
-                const dataStatus = services['data-service'] === 'healthy' ? 'online' : 'offline';
+                // Data service status (not directly monitored by gateway yet, infer from session)
+                // Session service depends on data service, so if session is healthy, data should be too
+                const dataStatus = services['session-service'] === true ? 'online' : 'offline';
                 this.updateStatusIndicator('data-status', dataStatus);
             }
 
@@ -563,4 +565,3 @@
     </script>
 </body>
 </html>
-
