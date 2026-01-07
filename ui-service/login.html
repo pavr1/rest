@@ -148,31 +148,8 @@
                         </p>
                     </div>
 
-                    <!-- System Status -->
-                    <div class="login-system-status mt-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0" style="font-family: 'Poppins', sans-serif; font-size: 0.85rem; color: #6c757d;">
-                                <i class="fas fa-server me-2"></i>System Status
-                            </h6>
-                            <button class="btn refresh-status-btn" id="refreshStatusBtn" title="Refresh status">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                        </div>
-                        <div class="login-status-grid">
-                            <div class="login-status-item">
-                                <div class="status-indicator loading" id="gateway-status"></div>
-                                <span>Gateway</span>
-                            </div>
-                            <div class="login-status-item">
-                                <div class="status-indicator loading" id="session-status"></div>
-                                <span>Session</span>
-                            </div>
-                            <div class="login-status-item">
-                                <div class="status-indicator loading" id="data-status"></div>
-                                <span>Data</span>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- System Status Component -->
+                    <div id="systemStatusPlaceholder"></div>
 
                     <!-- Theme Selector -->
                     <div class="theme-selector-container mt-3">
@@ -232,6 +209,9 @@
     <!-- Theme Manager -->
     <script src="shared/js/themes.js"></script>
     
+    <!-- System Status Component -->
+    <script src="shared/js/system-status.js"></script>
+    
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
     
@@ -247,20 +227,18 @@
                 this.rememberMeInput = document.getElementById('rememberMe');
                 this.togglePasswordBtn = document.getElementById('togglePassword');
                 this.loginBtn = document.getElementById('loginBtn');
-                this.refreshStatusBtn = document.getElementById('refreshStatusBtn');
                 
-                this.healthCheckInterval = null;
+                this.systemStatusMonitor = null;
                 
                 this.init();
             }
 
-            init() {
+            async init() {
                 console.log('🔧 Initializing login page...');
                 
                 // Bind event listeners
                 this.form.addEventListener('submit', this.handleLogin.bind(this));
                 this.togglePasswordBtn.addEventListener('click', this.togglePassword.bind(this));
-                this.refreshStatusBtn.addEventListener('click', this.refreshStatus.bind(this));
                 
                 // Add validation on field blur
                 this.usernameInput.addEventListener('blur', this.validateUsername.bind(this));
@@ -272,10 +250,21 @@
                 // Check if already authenticated
                 this.checkExistingAuth();
                 
-                // Start health monitoring
-                this.startHealthMonitoring();
+                // Load system status component
+                await this.loadSystemStatus();
                 
                 console.log('✅ Login page initialized');
+            }
+
+            async loadSystemStatus() {
+                try {
+                    this.systemStatusMonitor = await loadSystemStatus('systemStatusPlaceholder', {
+                        checkInterval: 1000,
+                        autoStart: true
+                    });
+                } catch (error) {
+                    console.error('❌ Failed to load system status:', error);
+                }
             }
 
             initThemeSelector() {
@@ -465,94 +454,9 @@
                 }, 50);
             }
 
-            // === HEALTH MONITORING ===
-
-            startHealthMonitoring() {
-                console.log('🏥 Starting health monitoring...');
-                
-                // Initial check
-                this.checkGatewayHealth();
-                
-                // Check every 5 seconds
-                this.healthCheckInterval = setInterval(() => {
-                    this.checkGatewayHealth();
-                }, 5000);
-            }
-
-            async refreshStatus() {
-                const icon = this.refreshStatusBtn.querySelector('i');
-                icon.classList.add('fa-spin');
-                this.refreshStatusBtn.disabled = true;
-                
-                await this.checkGatewayHealth();
-                
-                icon.classList.remove('fa-spin');
-                this.refreshStatusBtn.disabled = false;
-            }
-
-            async checkGatewayHealth() {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 5000);
-                    
-                    console.log('🏥 Checking gateway health:', CONFIG.SERVICES.gateway);
-                    
-                    const response = await fetch(CONFIG.SERVICES.gateway, {
-                        method: 'GET',
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    // Parse response even if status is 503 (degraded)
-                    // Gateway returns 503 when some services are unhealthy but still returns service details
-                    if (response.ok || response.status === 503) {
-                        const data = await response.json();
-                        console.log('🏥 Gateway health response:', data);
-                        
-                        // Gateway returns: { is_healthy: bool, services: { "service-name": bool } }
-                        this.updateStatusFromGateway(data.services || {}, data.is_healthy);
-                    } else {
-                        console.warn('🏥 Gateway returned unexpected status:', response.status);
-                        this.markAllServicesOffline();
-                    }
-                } catch (error) {
-                    console.error('🔄 Health check failed:', error.message, error);
-                    this.markAllServicesOffline();
-                }
-            }
-
-            updateStatusFromGateway(services, isHealthy) {
-                // Gateway status is determined by overall system health
-                const gatewayStatus = isHealthy ? 'online' : 'warning';
-                this.updateStatusIndicator('gateway-status', gatewayStatus);
-                
-                // Update session service status
-                const sessionStatus = services['session-service'] === true ? 'online' : 'offline';
-                this.updateStatusIndicator('session-status', sessionStatus);
-                
-                // Update data service status from actual gateway response
-                const dataStatus = services['data-service'] === true ? 'online' : 'offline';
-                this.updateStatusIndicator('data-status', dataStatus);
-            }
-
-            updateStatusIndicator(elementId, status) {
-                const element = document.getElementById(elementId);
-                if (!element) return;
-                
-                element.classList.remove('online', 'offline', 'warning', 'loading');
-                element.classList.add(status);
-            }
-
-            markAllServicesOffline() {
-                this.updateStatusIndicator('gateway-status', 'offline');
-                this.updateStatusIndicator('session-status', 'offline');
-                this.updateStatusIndicator('data-status', 'offline');
-            }
-
             destroy() {
-                if (this.healthCheckInterval) {
-                    clearInterval(this.healthCheckInterval);
+                if (this.systemStatusMonitor) {
+                    this.systemStatusMonitor.destroy();
                 }
             }
         }
