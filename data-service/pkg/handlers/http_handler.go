@@ -9,16 +9,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// HealthChecker interface for checking health state
+type HealthChecker interface {
+	IsHealthy() bool
+}
+
 // Handler is the main HTTP handler for data-service
 type HTTPHandler struct {
 	//settingsHandler *settingsHTTP.HTTPHandler
-	db     IDBHandler
-	config *Config
-	logger *logrus.Logger
+	db            IDBHandler
+	config        *Config
+	logger        *logrus.Logger
+	healthChecker HealthChecker
 }
 
 // NewHandler creates a new HTTP handler
-func NewHTTPHandler(db IDBHandler, config *Config, logger *logrus.Logger) (*HTTPHandler, error) {
+func NewHTTPHandler(db IDBHandler, config *Config, logger *logrus.Logger, healthChecker HealthChecker) (*HTTPHandler, error) {
 	// repository, err := settings.NewRepository(db)
 	// if err != nil {
 	// 	return nil, err
@@ -27,9 +33,10 @@ func NewHTTPHandler(db IDBHandler, config *Config, logger *logrus.Logger) (*HTTP
 
 	return &HTTPHandler{
 		//settingsHandler: settingsHandler,
-		db:     db,
-		config: config,
-		logger: logger,
+		db:            db,
+		config:        config,
+		logger:        logger,
+		healthChecker: healthChecker,
 	}, nil
 }
 
@@ -59,16 +66,17 @@ func (h *HTTPHandler) RootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // HealthCheck handles the health check endpoint
+// Returns cached health state that's updated by background ping loop every second
 func (h *HTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"service":   "data-service",
 		"timestamp": time.Now(),
 	}
 
-	if err := h.db.Ping(); err != nil {
+	// Check cached health state (updated by background health monitor in main.go)
+	if !h.healthChecker.IsHealthy() {
 		response["status"] = "unhealthy"
-		response["message"] = "Database ping check failed"
-		response["error"] = err.Error()
+		response["message"] = "Database is not reachable"
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -77,7 +85,7 @@ func (h *HTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response["status"] = "healthy"
-	response["message"] = "Database ping check passed"
+	response["message"] = "Database is healthy"
 	response["database"] = map[string]interface{}{
 		"host":   h.config.Host,
 		"port":   h.config.Port,

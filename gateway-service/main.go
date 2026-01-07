@@ -52,7 +52,7 @@ func main() {
 
 	// Start health monitor (background goroutine)
 	ctx, cancel := context.WithCancel(context.Background())
-	healthMonitor := sharedHealth.NewHealthMonitor(logger, HealthCheckInterval)
+	healthMonitor := sharedHealth.NewHTTPHealthMonitor(logger, HealthCheckInterval)
 	healthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
 	healthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
 	// Future services - add here as they are created:

@@ -11,9 +11,14 @@ import (
 	"time"
 
 	sharedConfig "shared/config"
+	sharedHealth "shared/health"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
+)
+
+const (
+	DBHealthCheckInterval = 1 * time.Second
 )
 
 func main() {
@@ -38,8 +43,15 @@ func main() {
 
 	fmt.Println("✅ Database connection established successfully")
 
+	// Start background DB health monitoring
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	healthMonitor := sharedHealth.NewHealthMonitor(logger, DBHealthCheckInterval, db)
+	go healthMonitor.Start(ctx)
+
 	// Setup HTTP handler and router
-	httpHandler, err := handlers.NewHTTPHandler(db, config, logger)
+	httpHandler, err := handlers.NewHTTPHandler(db, config, logger, healthMonitor)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
@@ -78,10 +90,11 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down Data Service...")
+	cancel() // Stop DB health monitoring
 
 	// Gracefully shutdown with a timeout
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.WithError(err).Error("Server forced to shutdown")

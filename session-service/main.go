@@ -19,16 +19,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	DBHealthCheckInterval = 1 * time.Second
+)
+
 type MainHTTPHandler struct {
 	sessionsHandler *handlers.HTTPHandler
-	logger          *logrus.Logger
 	healthMonitor   *sharedHealth.HealthMonitor
+	logger          *logrus.Logger
 }
-
-const (
-	// pvillalobos this should be configurable
-	HealthCheckInterval = 1 * time.Second
-)
 
 func main() {
 	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_SESSION_SERVICE, "INFO")
@@ -45,19 +44,19 @@ func main() {
 		"host": config.GetString("SERVER_HOST"),
 	}).Info("Configuration loaded")
 
-	// Start health monitor for database in background
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	healthMonitor := sharedHealth.NewHealthMonitor(logger, HealthCheckInterval)
-	healthMonitor.AddService("data-service", sharedConfig.DATA_SERVICE_URL+"/api/v1/data/p/health")
-	go healthMonitor.Start(ctx)
-
-	mainHandler, dbHandler, err := newMainHTTPHandler(config, logger, healthMonitor)
+	mainHandler, dbHandler, err := newMainHTTPHandler(config, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
 	defer dbHandler.Close()
+
+	// Start background database health monitoring
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	healthMonitor := sharedHealth.NewHealthMonitor(logger, DBHealthCheckInterval, dbHandler.GetDB())
+	go healthMonitor.Start(ctx)
+	mainHandler.healthMonitor = healthMonitor
 
 	router := mux.NewRouter()
 	mainHandler.SetupRoutes(router)
@@ -93,7 +92,7 @@ func main() {
 	logger.Info("Session Service stopped")
 }
 
-func newMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger, healthMonitor *sharedHealth.HealthMonitor) (*MainHTTPHandler, *handlers.DBHandler, error) {
+func newMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, *handlers.DBHandler, error) {
 	jwtHandler := handlers.NewJWTHandler(cfg.GetString("JWT_SECRET"), cfg.GetDuration("JWT_EXPIRATION_TIME"), logger)
 	dbHandler, err := handlers.NewDBHandler(cfg, jwtHandler, logger)
 	if err != nil {
@@ -102,8 +101,8 @@ func newMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger, healthM
 	sessionsHandler := handlers.NewHTTPHandler(dbHandler, logger)
 	return &MainHTTPHandler{
 		sessionsHandler: sessionsHandler,
+		healthMonitor:   nil, // Will be set after health monitor is created
 		logger:          logger,
-		healthMonitor:   healthMonitor,
 	}, dbHandler, nil
 }
 
@@ -115,8 +114,8 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	// Check shared database health state (updated by main.go background goroutine)
-	if !h.healthMonitor.AreAllServicesHealthy() {
+	// Check cached database health state (updated by background health monitor)
+	if !h.healthMonitor.IsHealthy() {
 		httpresponse.SendError(w, http.StatusServiceUnavailable, "Database is not healthy", nil)
 		return
 	}
