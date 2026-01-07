@@ -268,6 +268,9 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
 	case "gateway":
+		config.Set("SERVER_PORT", "8082")
+		config.Set("SERVER_HOST", "0.0.0.0")
+		config.Set("LOG_LEVEL", "INFO")
 		config.Set("GATEWAY_SERVICE_URL", "http://localhost:8082")
 		config.Set("SESSION_SERVICE_URL", "http://barrest_session_service:8087")
 		config.Set("ORDERS_SERVICE_URL", "http://localhost:8083")
@@ -276,6 +279,9 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("PAYMENT_SERVICE_URL", "http://localhost:8088")
 		config.Set("CUSTOMER_SERVICE_URL", "http://localhost:8089")
 		config.Set("DATA_SERVICE_URL", "http://barrest_data_service:8086")
+		config.Set("CORS_ALLOWED_ORIGINS", "*")
+		config.Set("CORS_ALLOWED_METHODS", "GET,POST,PUT,DELETE,OPTIONS")
+		config.Set("CORS_ALLOWED_HEADERS", "Content-Type,Authorization")
 	}
 }
 

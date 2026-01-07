@@ -35,6 +35,7 @@ func NewHealthMonitor(logger *logrus.Logger, interval time.Duration) (*HTTPHealt
 	hm := &HTTPHealthMonitor{
 		logger:   logger,
 		interval: interval,
+		client:   &http.Client{},
 		services: make(map[string]*ServiceHealth),
 	}
 	hm.logger.WithFields(logrus.Fields{
@@ -42,7 +43,7 @@ func NewHealthMonitor(logger *logrus.Logger, interval time.Duration) (*HTTPHealt
 	}).Info("Creating new health monitor")
 
 	// Start as unhealthy until first successful check
-	hm.healthy.Store(false)
+	hm.healthy.Store(true)
 	return hm, nil
 }
 
@@ -99,6 +100,11 @@ func (hm *HTTPHealthMonitor) checkAllServices() {
 func (hm *HTTPHealthMonitor) checkService(svc *ServiceHealth) {
 	req, err := http.NewRequest("GET", svc.URL, nil)
 	if err != nil {
+		hm.logger.WithFields(logrus.Fields{
+			"service": svc.Name,
+			"error":   err.Error(),
+		}).Error("Failed to create HTTP request")
+
 		hm.setServiceHealth(svc.Name, false)
 		return
 	}
@@ -109,7 +115,7 @@ func (hm *HTTPHealthMonitor) checkService(svc *ServiceHealth) {
 		hm.setServiceHealth(svc.Name, false)
 		hm.logger.WithFields(logrus.Fields{
 			"service": svc.Name,
-		}).Warn("Health check failed")
+		}).Error("Health check failed")
 		return
 	}
 	defer resp.Body.Close()

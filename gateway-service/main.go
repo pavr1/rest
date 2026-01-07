@@ -44,7 +44,7 @@ func main() {
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP health monitor")
 	}
-	httpHealthMonitor.AddService("session-service", sessionServiceUrl)
+	httpHealthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
 	httpHealthMonitor.Start(ctx)
 
 	// Create session manager for authentication

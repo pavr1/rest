@@ -52,6 +52,10 @@ func (h *HTTPHandler) GatewayHealthCheck(w http.ResponseWriter, r *http.Request)
 		statusCode = http.StatusServiceUnavailable
 	}
 
+	h.logger.WithFields(logrus.Fields{
+		"health_status": healthStatus,
+	}).Info("Gateway health check")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(healthStatus)
