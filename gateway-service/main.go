@@ -2,31 +2,14 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"gateway-service/pkg/middleware"
-	sessionmanager "gateway-service/pkg/middleware/session-manager"
+	"gateway-service/pkg/handlers"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"os/signal"
 	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
-	sharedMiddlewares "shared/middlewares"
-	"strings"
 	"syscall"
 	"time"
-
-	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
-)
-
-const (
-	// HealthCheckInterval is how often to ping dependencies
-	HealthCheckInterval = 10 * time.Second
 )
 
 func main() {
@@ -40,73 +23,9 @@ func main() {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
-	// Service URLs
-	sessionServiceUrl := config.GetString("SESSION_SERVICE_URL")
-	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
-
-	logger.WithFields(logrus.Fields{
-		"session_service": sessionServiceUrl,
-		"data_service":    dataServiceUrl,
-	}).Info("Configuration loaded")
-
-	//pvillalobos implement health monitor for gateway service
-
-	// Create session manager for authentication
-	sessionManager := sessionmanager.NewSessionManager(sessionServiceUrl, logger)
-	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger)
-
-	r := mux.NewRouter()
-
-	// Apply global middleware
-	r.Use(sharedMiddlewares.RequestIDMiddleware)
-	r.Use(sharedMiddlewares.GatewayMiddleware)
-
-	// CORS middleware
-	corsMiddleware := middleware.NewCORSMiddleware(logger)
-	r.Use(corsMiddleware.HandleCORS)
-
-	// API routes
-	api := r.PathPrefix("/api").Subrouter()
-
-	// ==== PUBLIC ENDPOINTS (no authentication) ====
-
-	// Session service - public endpoints
-	api.HandleFunc("/v1/sessions/p/login", createProxyHandler(sessionServiceUrl, logger)).Methods("POST")
-	api.HandleFunc("/v1/sessions/p/validate", createProxyHandler(sessionServiceUrl, logger)).Methods("POST")
-	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(sessionServiceUrl, logger)).Methods("GET")
-
-	// // Public health endpoints
-	// api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, logger)).Methods("GET")
-
-	// // Data service - public settings endpoint (for service-to-service config loading)
-	// api.HandleFunc("/v1/data/settings/by-service", createProxyHandler(dataServiceUrl, logger)).Methods("POST")
-
-	// ==== PROTECTED SESSION ENDPOINTS (require authentication) ====
-	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
-	protectedSessionRouter.Use(sessionMiddleware.ValidateSession)
-	protectedSessionRouter.HandleFunc("/logout", createProxyHandler(sessionServiceUrl, logger)).Methods("POST")
-
-	// ==== PROTECTED ENDPOINTS (require authentication) ====
-
-	// // Data service - protected endpoints
-	// dataRouter := api.PathPrefix("/v1/data").Subrouter()
-	// dataRouter.Use(sessionMiddleware.ValidateSession)
-	// dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(dataServiceUrl, logger))
-
-	// Future service routes (to be added as services are created):
-	// - /api/v1/menu/* → menu-service
-	// - /api/v1/orders/* → orders-service
-	// - /api/v1/inventory/* → inventory-service
-	// - /api/v1/payments/* → payment-service
-	// - /api/v1/invoices/* → invoice-service
-	// - /api/v1/karaoke/* → karaoke-service
-	// - /api/v1/promotions/* → promotion-service
-	// - /api/v1/customers/* → customer-service
-
-	// OPTIONS handling for CORS preflight
-	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	// Create HTTP handler and setup routes
+	httpHandler := handlers.NewHTTPHandler(config, logger)
+	router := httpHandler.SetupRoutes()
 
 	// Start server
 	port := config.GetString("SERVER_PORT")
@@ -116,7 +35,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:    ":" + port,
-		Handler: r,
+		Handler: router,
 		//pvillalobos this should be configurable
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -125,17 +44,16 @@ func main() {
 
 	go func() {
 		logger.Info("🚀 Gateway Service starting on :" + port)
-		logger.Info("📡 Health: http://localhost:" + port + "/api/v1/gateway/p/health")
+		logger.Info("📡 Gateway Health: http://localhost:" + port + "/api/v1/gateway/p/health")
 		logger.Info("")
 		logger.Info("🔓 Public endpoints:")
-		logger.Info("   POST /api/v1/sessions/p/login")
-		logger.Info("   POST /api/v1/sessions/p/validate")
-		logger.Info("   GET  /api/v1/sessions/p/health")
-		logger.Info("   GET  /api/v1/data/p/health")
+		logger.Info("   GET  /api/v1/gateway/p/health       - Gateway health (checks business layer)")
+		logger.Info("   POST /api/v1/sessions/p/login       - Login")
+		logger.Info("   POST /api/v1/sessions/p/validate    - Validate session")
+		logger.Info("   GET  /api/v1/sessions/p/health      - Session service health")
 		logger.Info("")
 		logger.Info("🔒 Protected endpoints (require Authorization header):")
-		logger.Info("   POST /api/v1/sessions/logout")
-		logger.Info("   ALL  /api/v1/data/*")
+		logger.Info("   POST /api/v1/sessions/logout        - Logout")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.WithError(err).Fatal("Server failed")
@@ -155,70 +73,4 @@ func main() {
 		logger.WithError(err).Fatal("Shutdown failed")
 	}
 	logger.Info("Gateway Service stopped")
-}
-
-// createProxyHandler creates a reverse proxy handler for a specific service
-func createProxyHandler(targetURL string, logger *logrus.Logger) http.HandlerFunc {
-	target, err := url.Parse(targetURL)
-	if err != nil {
-		logger.Fatalf("Invalid target URL: %v", err)
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(target)
-
-	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		serviceName := "unknown-service"
-		switch {
-		case strings.Contains(r.URL.Path, "/sessions"):
-			serviceName = "session-service"
-		case strings.Contains(r.URL.Path, "/data"):
-			serviceName = "data-service"
-		case strings.Contains(r.URL.Path, "/orders"):
-			serviceName = "orders-service"
-		case strings.Contains(r.URL.Path, "/menu"):
-			serviceName = "menu-service"
-		case strings.Contains(r.URL.Path, "/inventory"):
-			serviceName = "inventory-service"
-		}
-
-		logger.WithFields(logrus.Fields{
-			"service": serviceName,
-			"path":    r.URL.Path,
-			"error":   err.Error(),
-		}).Error("Proxy error - service unavailable")
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error":     "service_unavailable",
-			"message":   fmt.Sprintf("The %s is currently unavailable", serviceName),
-			"timestamp": time.Now(),
-			"service":   serviceName,
-		})
-	}
-
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-
-		requestID := req.Header.Get("X-Request-ID")
-		if requestID == "" {
-			requestID = generateRequestID()
-			req.Header.Set("X-Request-ID", requestID)
-		}
-
-		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
-		req.Header.Set("X-Gateway-Service", "barrest-gateway")
-		req.Header.Set("X-Gateway-Session-Managed", "true")
-	}
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		proxy.ServeHTTP(w, r)
-	}
-}
-
-func generateRequestID() string {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
 }

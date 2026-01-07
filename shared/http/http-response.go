@@ -1,4 +1,4 @@
-package httpresponse
+package http
 
 import (
 	"encoding/json"
@@ -54,4 +54,3 @@ func SendJSON(w http.ResponseWriter, code int, data interface{}) {
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(data)
 }
-

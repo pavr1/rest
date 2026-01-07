@@ -81,7 +81,7 @@ type DbHandler struct {
 	db            *sql.DB
 	config        *Config
 	logger        *logrus.Logger
-	healthMonitor *HealthMonitor
+	healthMonitor *DBHealthMonitor
 }
 
 // NewDbHandler creates a new database handler instance
@@ -117,7 +117,7 @@ func NewDatabaseHandler(config *Config, logger *logrus.Logger) (*DbHandler, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create health monitor: %w", err)
 	}
-	go db.healthMonitor.Start(db.ctx)
+	db.healthMonitor.Start(db.ctx)
 
 	return db, nil
 }
