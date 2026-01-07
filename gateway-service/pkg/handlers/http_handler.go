@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -20,21 +19,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	// HealthCheckInterval is how often to ping dependencies
-	HealthCheckInterval = 10 * time.Second
-)
-
 type HTTPHandler struct {
 	config            *sharedConfig.Config
+	sessionServiceUrl string
 	httpHealthMonitor *sharedHttp.HTTPHealthMonitor
 	logger            *logrus.Logger
 }
 
-func NewHTTPHandler(config *sharedConfig.Config, logger *logrus.Logger) *HTTPHandler {
+func NewHTTPHandler(
+	config *sharedConfig.Config,
+	sessionServiceUrl string,
+	httpHealthMonitor *sharedHttp.HTTPHealthMonitor,
+	logger *logrus.Logger,
+) *HTTPHandler {
 	return &HTTPHandler{
-		config: config,
-		logger: logger,
+		config:            config,
+		sessionServiceUrl: sessionServiceUrl,
+		httpHealthMonitor: httpHealthMonitor,
+		logger:            logger,
 	}
 }
 
@@ -116,13 +118,7 @@ func (h *HTTPHandler) CreateProxyHandler(targetURL string) http.HandlerFunc {
 }
 
 // SetupRoutes configures all gateway routes
-func (h *HTTPHandler) SetupRoutes() *mux.Router {
-	// Service URLs
-	sessionServiceUrl := h.config.GetString("SESSION_SERVICE_URL")
-	// Create session manager for authentication
-	//sessionManager := sessionmanager.NewSessionManager(sessionServiceUrl, h.logger)
-	//sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, h.logger)
-
+func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddleware) *mux.Router {
 	r := mux.NewRouter()
 
 	// Apply global middleware
@@ -133,16 +129,6 @@ func (h *HTTPHandler) SetupRoutes() *mux.Router {
 	corsMiddleware := middleware.NewCORSMiddleware(h.logger)
 	r.Use(corsMiddleware.HandleCORS)
 
-	// Create HTTP health monitor for business layer services
-	httpHealthMonitor, err := sharedHttp.NewHealthMonitor(h.logger, HealthCheckInterval)
-	if err != nil {
-		h.logger.WithError(err).Fatal("Failed to create HTTP health monitor")
-	}
-	httpHealthMonitor.AddService("session-service", sessionServiceUrl)
-	httpHealthMonitor.Start(context.Background())
-
-	h.httpHealthMonitor = httpHealthMonitor
-
 	api := r.PathPrefix("/api").Subrouter()
 
 	// Gateway health endpoint (checks business layer services only)
@@ -151,21 +137,14 @@ func (h *HTTPHandler) SetupRoutes() *mux.Router {
 	// ==== PUBLIC ENDPOINTS (no authentication) ====
 
 	// Session service - public endpoints
-	api.HandleFunc("/v1/sessions/p/login", h.CreateProxyHandler(sessionServiceUrl)).Methods("POST")
-	api.HandleFunc("/v1/sessions/p/validate", h.CreateProxyHandler(sessionServiceUrl)).Methods("POST")
-	api.HandleFunc("/v1/sessions/p/health", h.CreateProxyHandler(sessionServiceUrl)).Methods("GET")
+	api.HandleFunc("/v1/sessions/p/login", h.CreateProxyHandler(h.sessionServiceUrl)).Methods("POST")
+	api.HandleFunc("/v1/sessions/p/validate", h.CreateProxyHandler(h.sessionServiceUrl)).Methods("POST")
+	api.HandleFunc("/v1/sessions/p/health", h.CreateProxyHandler(h.sessionServiceUrl)).Methods("GET")
 
-	// // ==== PROTECTED SESSION ENDPOINTS (require authentication) ====
-	// // Type assert session middleware to use it
-	// if sm, ok := sessionMiddleware.(interface {
-	// 	ValidateSession(http.Handler) http.Handler
-	// }); ok {
-	// 	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
-	// 	protectedSessionRouter.Use(func(next http.Handler) http.Handler {
-	// 		return sm.ValidateSession(next)
-	// 	})
-	// 	protectedSessionRouter.HandleFunc("/logout", h.CreateProxyHandler(sessionServiceUrl)).Methods("POST")
-	// }
+	// ==== PROTECTED SESSION ENDPOINTS (require authentication) ====
+	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	protectedSessionRouter.Use(sessionMiddleware.ValidateSession)
+	protectedSessionRouter.HandleFunc("/logout", h.CreateProxyHandler(h.sessionServiceUrl)).Methods("POST")
 
 	// OPTIONS handling for CORS preflight
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

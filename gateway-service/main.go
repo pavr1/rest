@@ -3,13 +3,20 @@ package main
 import (
 	"context"
 	"gateway-service/pkg/handlers"
+	"gateway-service/pkg/middleware"
+	sessionmanager "gateway-service/pkg/middleware/session-manager"
 	"net/http"
 	"os"
 	"os/signal"
 	sharedConfig "shared/config"
+	sharedHttp "shared/http"
 	sharedLogger "shared/logger"
 	"syscall"
 	"time"
+)
+
+const (
+	HealthCheckInterval = 10 * time.Second
 )
 
 func main() {
@@ -23,9 +30,30 @@ func main() {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
-	// Create HTTP handler and setup routes
-	httpHandler := handlers.NewHTTPHandler(config, logger)
-	router := httpHandler.SetupRoutes()
+	// Service URLs
+	sessionServiceUrl := config.GetString("SESSION_SERVICE_URL")
+
+	logger.WithField("session_service", sessionServiceUrl).Info("Configuration loaded")
+
+	// Create cancellable context for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create HTTP health monitor for business layer services
+	httpHealthMonitor, err := sharedHttp.NewHealthMonitor(logger, HealthCheckInterval)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to create HTTP health monitor")
+	}
+	httpHealthMonitor.AddService("session-service", sessionServiceUrl)
+	httpHealthMonitor.Start(ctx)
+
+	// Create session manager for authentication
+	sessionManager := sessionmanager.NewSessionManager(sessionServiceUrl, logger)
+	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger)
+
+	// Create HTTP handler with all dependencies
+	httpHandler := handlers.NewHTTPHandler(config, sessionServiceUrl, httpHealthMonitor, logger)
+	router := httpHandler.SetupRoutes(sessionMiddleware)
 
 	// Start server
 	port := config.GetString("SERVER_PORT")
@@ -65,6 +93,7 @@ func main() {
 	<-quit
 
 	logger.Info("Shutting down...")
+	cancel() // Cancel context to stop health monitor
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer shutdownCancel()
