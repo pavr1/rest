@@ -191,10 +191,10 @@ class SystemStatusMonitor {
             // Add heartbeat class
             element.classList.add('heartbeat');
             
-            // Remove after animation completes (600ms)
+            // Remove after animation completes (800ms)
             setTimeout(() => {
                 element.classList.remove('heartbeat');
-            }, 600);
+            }, 800);
         });
     }
 
