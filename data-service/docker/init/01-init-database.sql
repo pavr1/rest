@@ -195,6 +195,15 @@ CREATE TABLE staff (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 18. Sessions (User authentication sessions)
+CREATE TABLE sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    token TEXT NOT NULL,
+    staff_id UUID NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL
+);
+
 -- 24. Promotions
 CREATE TABLE promotions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -353,16 +362,6 @@ CREATE TABLE loyalty_points_transactions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 22. Table Sessions
-CREATE TABLE table_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
-    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ended_at TIMESTAMP,
-    cleared_by_staff_id UUID REFERENCES staff(id) ON DELETE SET NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'closed'))
-);
-
 -- =============================================================================
 -- ADVANCED FEATURES ENTITIES (FUTURE)
 -- =============================================================================
@@ -467,9 +466,9 @@ CREATE INDEX idx_karaoke_requests_table ON karaoke_song_requests(table_id);
 CREATE INDEX idx_karaoke_requests_status ON karaoke_song_requests(status);
 CREATE INDEX idx_karaoke_requests_queue ON karaoke_song_requests(status, position_in_queue);
 
--- Table Sessions indexes
-CREATE INDEX idx_table_sessions_table ON table_sessions(table_id);
-CREATE INDEX idx_table_sessions_status ON table_sessions(status);
+-- Sessions (auth) indexes
+CREATE INDEX idx_sessions_staff_id ON sessions(staff_id);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 
 -- Promotions indexes
 CREATE INDEX idx_promotions_type ON promotions(promotion_type);
@@ -552,9 +551,6 @@ CREATE TRIGGER update_karaoke_song_requests_updated_at BEFORE UPDATE ON karaoke_
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_karaoke_song_library_updated_at BEFORE UPDATE ON karaoke_song_library 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_table_sessions_updated_at BEFORE UPDATE ON table_sessions 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reservations_updated_at BEFORE UPDATE ON reservations 
