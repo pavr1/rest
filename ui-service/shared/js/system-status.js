@@ -7,14 +7,19 @@ class SystemStatusMonitor {
         this.checkInterval = options.checkInterval || 5000; // 5 seconds default
         this.autoStart = options.autoStart !== false; // Auto-start by default
         this.containerId = options.containerId || 'systemStatusContainer';
+        this.variant = options.variant || 'full'; // 'full', 'compact', or 'dot'
         
         // Elements
         this.container = document.getElementById(this.containerId);
         this.refreshBtn = document.getElementById('refreshStatusBtn');
+        this.mainDot = document.getElementById('main-status');
+        this.dotTrigger = document.getElementById('statusDotTrigger');
+        this.dropdownMenu = document.getElementById('statusDropdownMenu');
         
         // State
         this.healthCheckInterval = null;
         this.isRunning = false;
+        this.isDropdownOpen = false;
         
         // Ensure CONFIG is available
         if (typeof CONFIG === 'undefined') {
@@ -27,6 +32,8 @@ class SystemStatusMonitor {
         // Bind methods
         this.checkGatewayHealth = this.checkGatewayHealth.bind(this);
         this.refreshStatus = this.refreshStatus.bind(this);
+        this.toggleDropdown = this.toggleDropdown.bind(this);
+        this.closeDropdown = this.closeDropdown.bind(this);
         
         // Initialize
         this.init();
@@ -40,7 +47,27 @@ class SystemStatusMonitor {
         
         // Bind refresh button
         if (this.refreshBtn) {
-            this.refreshBtn.addEventListener('click', this.refreshStatus);
+            this.refreshBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.refreshStatus();
+            });
+        }
+        
+        // Bind dot trigger for dropdown variant
+        if (this.dotTrigger && this.dropdownMenu) {
+            this.dotTrigger.addEventListener('click', this.toggleDropdown);
+            
+            // Initialize Bootstrap tooltip if available
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                this.tooltip = new bootstrap.Tooltip(this.dotTrigger);
+            }
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!this.container.contains(e.target)) {
+                    this.closeDropdown();
+                }
+            });
         }
         
         // Auto-start monitoring if enabled
@@ -49,6 +76,28 @@ class SystemStatusMonitor {
         }
         
         console.log('✅ SystemStatusMonitor ready');
+    }
+    
+    toggleDropdown(e) {
+        e.stopPropagation();
+        this.isDropdownOpen = !this.isDropdownOpen;
+        
+        if (this.isDropdownOpen) {
+            this.dropdownMenu.classList.add('show');
+            // Hide tooltip when dropdown is open
+            if (this.tooltip) {
+                this.tooltip.hide();
+            }
+        } else {
+            this.dropdownMenu.classList.remove('show');
+        }
+    }
+    
+    closeDropdown() {
+        this.isDropdownOpen = false;
+        if (this.dropdownMenu) {
+            this.dropdownMenu.classList.remove('show');
+        }
     }
 
     // === CONTROL METHODS ===
@@ -138,6 +187,13 @@ class SystemStatusMonitor {
     }
 
     updateStatusFromGateway(services, isHealthy) {
+        // Update main dot (for dot variant) - overall system health
+        const mainStatus = isHealthy ? 'online' : 'offline';
+        this.updateStatusIndicator('main-status', mainStatus);
+        
+        // Update tooltip with current status
+        this.updateTooltip(isHealthy);
+        
         // Gateway status is determined by overall system health
         const gatewayStatus = isHealthy ? 'online' : 'warning';
         this.updateStatusIndicator('gateway-status', gatewayStatus);
@@ -150,6 +206,15 @@ class SystemStatusMonitor {
         const dataStatus = services['data-service'] === true ? 'online' : 'offline';
         this.updateStatusIndicator('data-status', dataStatus);
     }
+    
+    updateTooltip(isHealthy) {
+        if (this.tooltip && this.dotTrigger) {
+            const statusText = isHealthy ? 'All Systems Operational' : 'System Issues Detected';
+            this.dotTrigger.setAttribute('data-bs-title', statusText);
+            this.tooltip.dispose();
+            this.tooltip = new bootstrap.Tooltip(this.dotTrigger);
+        }
+    }
 
     updateStatusIndicator(elementId, status) {
         const element = document.getElementById(elementId);
@@ -160,27 +225,24 @@ class SystemStatusMonitor {
     }
 
     markAllServicesOffline() {
+        this.updateStatusIndicator('main-status', 'offline');
         this.updateStatusIndicator('gateway-status', 'offline');
         this.updateStatusIndicator('session-status', 'offline');
         this.updateStatusIndicator('data-status', 'offline');
     }
 
     triggerHeartbeat() {
-        // Trigger heartbeat animation on all status indicators
+        // Trigger heartbeat animation on all status indicators (including main dot)
         const indicators = [
+            'main-status',
             'gateway-status',
             'session-status',
             'data-status'
         ];
         
-        console.log('💓 Triggering heartbeat animation');
-        
         indicators.forEach(id => {
             const element = document.getElementById(id);
-            if (!element) {
-                console.warn(`⚠️ Element ${id} not found for heartbeat`);
-                return;
-            }
+            if (!element) return;
             
             // Remove heartbeat class first to restart animation if it's already running
             element.classList.remove('heartbeat');
@@ -241,10 +303,22 @@ async function loadSystemStatus(containerId, options = {}) {
             return null;
         }
         
+        // Determine which partial to load
+        let partialPath = 'shared/partials/system-status.html';
+        let variant = 'full';
+        
+        if (options.variant === 'dot') {
+            partialPath = 'shared/partials/system-status-dot.html';
+            variant = 'dot';
+        } else if (options.compact === true) {
+            partialPath = 'shared/partials/system-status-compact.html';
+            variant = 'compact';
+        }
+        
         // Load the HTML partial
-        const response = await fetch('shared/partials/system-status.html');
+        const response = await fetch(partialPath);
         if (!response.ok) {
-            throw new Error(`Failed to load system-status.html: ${response.status}`);
+            throw new Error(`Failed to load ${partialPath}: ${response.status}`);
         }
         
         const html = await response.text();
@@ -253,10 +327,11 @@ async function loadSystemStatus(containerId, options = {}) {
         // Create and return the monitor
         const monitor = new SystemStatusMonitor({
             containerId: 'systemStatusContainer',
+            variant: variant,
             ...options
         });
         
-        console.log('✅ System status component loaded');
+        console.log(`✅ System status component loaded (${variant})`);
         return monitor;
         
     } catch (error) {

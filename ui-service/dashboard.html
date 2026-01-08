@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bar Restaurant - Dashboard</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="shared/css/style.css">
+    
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dashboard-container {
+            flex: 1;
+            display: flex;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--gradient-primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            transition: var(--transition);
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .sidebar-brand i {
+            font-size: 1.5rem;
+        }
+        
+        .sidebar-brand h4 {
+            margin: 0;
+            font-family: 'Playfair Display', serif;
+            font-weight: 600;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0;
+            overflow-y: auto;
+        }
+        
+        .nav-section {
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 0.5rem;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 0.25rem 0.75rem;
+            transition: var(--transition);
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+        
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .sidebar-footer {
+            padding: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--background-light);
+        }
+        
+        /* Top Navbar */
+        .top-navbar {
+            background: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-light);
+            z-index: 10;
+        }
+        
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .user-dropdown {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--light-color);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .user-dropdown:hover {
+            background: #e9ecef;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .user-info {
+            text-align: left;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--dark-color);
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: capitalize;
+        }
+        
+        /* Dashboard Content */
+        .dashboard-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+        
+        .welcome-section {
+            margin-bottom: 2rem;
+        }
+        
+        .welcome-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .welcome-subtitle {
+            color: var(--text-secondary);
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* Quick Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-light);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .stat-icon.orders { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .stat-icon.tables { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .stat-icon.revenue { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stat-icon.customers { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        
+        .stat-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .action-btn {
+            background: white;
+            border: 2px solid transparent;
+            border-radius: var(--border-radius);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            color: var(--dark-color);
+        }
+        
+        .action-btn:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .action-btn i {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary-color);
+        }
+        
+        .action-btn span {
+            display: block;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        /* System Status Section */
+        .status-section {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-light);
+        }
+        
+        .section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* Theme Toggle */
+        .theme-toggle {
+            padding: 0.5rem;
+            background: var(--light-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .theme-toggle:hover {
+            background: #e9ecef;
+        }
+        
+        /* Responsive */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                bottom: 0;
+                z-index: 1000;
+            }
+            
+            .sidebar.show {
+                left: 0;
+            }
+            
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            
+            .sidebar-overlay.show {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Overlay (mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="sidebar-brand">
+                    <i class="fas fa-wine-glass-alt"></i>
+                    <h4>Bar Restaurant</h4>
+                </a>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="dashboard.html" class="nav-link active">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section" id="ordersSection">
+                    <div class="nav-section-title">Orders</div>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Active Orders</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-history"></i>
+                        <span>Order History</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section" id="tablesSection">
+                    <div class="nav-section-title">Tables</div>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-chair"></i>
+                        <span>Table Map</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Reservations</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section" id="menuSection">
+                    <div class="nav-section-title">Menu</div>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-utensils"></i>
+                        <span>Menu Items</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-tags"></i>
+                        <span>Categories</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section" id="inventorySection">
+                    <div class="nav-section-title">Inventory</div>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-boxes"></i>
+                        <span>Stock Items</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-truck"></i>
+                        <span>Suppliers</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section" id="adminSection">
+                    <div class="nav-section-title">Administration</div>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-users"></i>
+                        <span>Staff</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Reports</span>
+                    </a>
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </nav>
+            
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
+                <div class="navbar-left">
+                    <button class="btn d-lg-none" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h5 class="mb-0 d-none d-md-block" style="font-family: 'Poppins', sans-serif;">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                    </h5>
+                </div>
+                
+                <div class="navbar-right">
+                    <!-- Theme Toggle -->
+                    <div class="dropdown">
+                        <button class="theme-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-palette"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">Theme</h6></li>
+                            <li><a class="dropdown-item theme-option" data-theme="navy">Navy & Gold</a></li>
+                            <li><a class="dropdown-item theme-option" data-theme="slate">Slate & Teal</a></li>
+                            <li><a class="dropdown-item theme-option" data-theme="charcoal">Charcoal & Rose</a></li>
+                            <li><a class="dropdown-item theme-option" data-theme="emerald">Deep Emerald</a></li>
+                            <li><a class="dropdown-item theme-option" data-theme="purple">Midnight Purple</a></li>
+                            <li><a class="dropdown-item theme-option" data-theme="ocean">Ocean Blue</a></li>
+                            <li><a class="dropdown-item theme-option" data-theme="burgundy">Burgundy Wine</a></li>
+                            <li><a class="dropdown-item theme-option" data-theme="brown">Classic Brown</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Notifications -->
+                    <button class="theme-toggle position-relative">
+                        <i class="fas fa-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                            3
+                        </span>
+                    </button>
+                    
+                    <!-- System Status -->
+                    <div id="headerSystemStatus"></div>
+                    
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <div class="user-dropdown" data-bs-toggle="dropdown">
+                            <div class="user-avatar" id="userAvatar">A</div>
+                            <div class="user-info d-none d-sm-block">
+                                <div class="user-name" id="userName">Admin</div>
+                                <div class="user-role" id="userRole">Administrator</div>
+                            </div>
+                            <i class="fas fa-chevron-down ms-2" style="font-size: 0.7rem;"></i>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Welcome Section -->
+                <div class="welcome-section">
+                    <h1 class="welcome-title">Welcome back, <span id="welcomeName">Admin</span>! 👋</h1>
+                    <p class="welcome-subtitle">Here's what's happening at your restaurant today.</p>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon orders">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>24</h3>
+                            <p>Active Orders</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon tables">
+                            <i class="fas fa-chair"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>8/12</h3>
+                            <p>Tables Occupied</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon revenue">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>$2,450</h3>
+                            <p>Today's Revenue</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon customers">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>47</h3>
+                            <p>Customers Today</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <h5 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                <div class="quick-actions">
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>New Order</span>
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-chair"></i>
+                        <span>Seat Guests</span>
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Reservation</span>
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-concierge-bell"></i>
+                        <span>Request</span>
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Payment</span>
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-microphone"></i>
+                        <span>Karaoke</span>
+                    </a>
+                </div>
+                
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Configuration -->
+    <script src="config.js"></script>
+    
+    <!-- Response Utilities -->
+    <script src="shared/js/response-utils.js"></script>
+    
+    <!-- Authentication Service -->
+    <script src="shared/js/auth.js"></script>
+    
+    <!-- Theme Manager -->
+    <script src="shared/js/themes.js"></script>
+    
+    <!-- System Status Component -->
+    <script src="shared/js/system-status.js"></script>
+    
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    
+    <!-- Dashboard JavaScript -->
+    <script>
+        class Dashboard {
+            constructor() {
+                this.sidebar = document.getElementById('sidebar');
+                this.sidebarOverlay = document.getElementById('sidebarOverlay');
+                this.sidebarToggle = document.getElementById('sidebarToggle');
+                this.logoutBtn = document.getElementById('logoutBtn');
+                
+                this.systemStatusMonitor = null;
+                this.user = null;
+                
+                this.init();
+            }
+            
+            async init() {
+                console.log('🏠 Initializing dashboard...');
+                
+                // Check authentication
+                await this.checkAuth();
+                
+                // Setup user info
+                this.setupUserInfo();
+                
+                // Setup navigation based on role
+                this.setupNavigation();
+                
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                // Setup theme
+                this.setupTheme();
+                
+                // Load system status
+                await this.loadSystemStatus();
+                
+                console.log('✅ Dashboard initialized');
+            }
+            
+            async checkAuth() {
+                if (!window.authService) {
+                    window.authService = new AuthService();
+                }
+                
+                if (!window.authService.isAuthenticated()) {
+                    console.log('❌ Not authenticated, redirecting to login...');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Validate session with server
+                const isValid = await window.authService.validateSession();
+                if (!isValid) {
+                    console.log('❌ Session invalid, redirecting to login...');
+                    window.authService.clearAuthData();
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                this.user = window.authService.getUserData();
+                console.log('✅ Authenticated as:', this.user?.user?.username);
+            }
+            
+            setupUserInfo() {
+                if (!this.user) return;
+                
+                const { user, role } = this.user;
+                
+                // Update user display
+                const firstName = user?.first_name || user?.username || 'User';
+                const lastName = user?.last_name || '';
+                const fullName = `${firstName} ${lastName}`.trim();
+                const roleName = role?.name || role || 'Staff';
+                
+                document.getElementById('userName').textContent = fullName;
+                document.getElementById('userRole').textContent = roleName;
+                document.getElementById('welcomeName').textContent = firstName;
+                document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+            }
+            
+            setupNavigation() {
+                if (!this.user) return;
+                
+                const role = this.user.role?.name || this.user.role || '';
+                const roleLower = role.toLowerCase();
+                
+                // Hide sections based on role
+                const adminSection = document.getElementById('adminSection');
+                const inventorySection = document.getElementById('inventorySection');
+                const menuSection = document.getElementById('menuSection');
+                
+                // Only admin and manager can see admin section
+                if (!['admin', 'manager'].includes(roleLower)) {
+                    adminSection?.classList.add('d-none');
+                }
+                
+                // Only admin, manager, and chef can see inventory
+                if (!['admin', 'manager', 'chef'].includes(roleLower)) {
+                    inventorySection?.classList.add('d-none');
+                }
+                
+                // Only admin and manager can edit menu
+                if (!['admin', 'manager'].includes(roleLower)) {
+                    // Keep menu visible but maybe disable edit functionality later
+                }
+            }
+            
+            setupEventListeners() {
+                // Sidebar toggle (mobile)
+                this.sidebarToggle?.addEventListener('click', () => {
+                    this.sidebar.classList.toggle('show');
+                    this.sidebarOverlay.classList.toggle('show');
+                });
+                
+                // Close sidebar when clicking overlay
+                this.sidebarOverlay?.addEventListener('click', () => {
+                    this.sidebar.classList.remove('show');
+                    this.sidebarOverlay.classList.remove('show');
+                });
+                
+                // Logout
+                this.logoutBtn?.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    await this.handleLogout();
+                });
+                
+                // Theme options
+                document.querySelectorAll('.theme-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const theme = e.target.dataset.theme;
+                        if (window.themeManager) {
+                            window.themeManager.setTheme(theme);
+                        }
+                    });
+                });
+            }
+            
+            setupTheme() {
+                if (window.themeManager) {
+                    // Theme is auto-applied by themes.js
+                }
+            }
+            
+            async loadSystemStatus() {
+                try {
+                    this.systemStatusMonitor = await loadSystemStatus('headerSystemStatus', {
+                        checkInterval: 10000, // Check every 10 seconds on dashboard
+                        autoStart: true,
+                        variant: 'dot' // Single dot with dropdown
+                    });
+                } catch (error) {
+                    console.error('❌ Failed to load system status:', error);
+                }
+            }
+            
+            async handleLogout() {
+                const result = await Swal.fire({
+                    title: 'Logout',
+                    text: 'Are you sure you want to logout?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, logout',
+                    cancelButtonText: 'Cancel'
+                });
+                
+                if (result.isConfirmed) {
+                    try {
+                        await window.authService.logout();
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Logged out',
+                            text: 'You have been logged out successfully.',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        
+                        setTimeout(() => {
+                            window.location.href = 'login.html';
+                        }, 1500);
+                    } catch (error) {
+                        console.error('Logout error:', error);
+                        // Still redirect even if logout API fails
+                        window.location.href = 'login.html';
+                    }
+                }
+            }
+            
+            destroy() {
+                if (this.systemStatusMonitor) {
+                    this.systemStatusMonitor.destroy();
+                }
+            }
+        }
+        
+        // Initialize dashboard when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new Dashboard();
+        });
+    </script>
+</body>
+</html>

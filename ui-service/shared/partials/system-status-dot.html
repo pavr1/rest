@@ -1,0 +1,34 @@
+<!-- System Status Component (Single Dot with Dropdown) -->
+<!-- Click the dot to see detailed status -->
+
+<div class="system-status-dropdown" id="systemStatusContainer">
+    <button class="status-dot-trigger" id="statusDotTrigger" 
+            data-bs-toggle="tooltip" 
+            data-bs-placement="bottom" 
+            data-bs-title="System Status">
+        <div class="status-dot-main loading" id="main-status"></div>
+    </button>
+    
+    <div class="status-dropdown-menu" id="statusDropdownMenu">
+        <div class="status-dropdown-header">
+            <span>System Status</span>
+            <button class="status-refresh-btn" id="refreshStatusBtn" title="Refresh">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+        <div class="status-dropdown-body">
+            <div class="status-dropdown-item">
+                <div class="status-dot loading" id="gateway-status"></div>
+                <span>Gateway</span>
+            </div>
+            <div class="status-dropdown-item">
+                <div class="status-dot loading" id="session-status"></div>
+                <span>Session</span>
+            </div>
+            <div class="status-dropdown-item">
+                <div class="status-dot loading" id="data-status"></div>
+                <span>Data</span>
+            </div>
+        </div>
+    </div>
+</div>
