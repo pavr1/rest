@@ -627,7 +627,7 @@ INSERT INTO settings (service, key, value, description) VALUES
 
 -- Insert default admin user (password: admin)
 INSERT INTO staff (username, email, password_hash, first_name, last_name, role) VALUES
-('admin', 'admin@barrest.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.W7fGv0S8Lp7IGq', 'System', 'Administrator', 'admin');
+('admin', 'admin@barrest.com', '$2a$10$o4Pv9FXpT5HNIaPRS7U.xuWj2b8EyfuGp6EhGKByB8d3vdGNkgYYq', 'System', 'Administrator', 'admin');
 
 -- Insert default menu categories
 INSERT INTO menu_categories (name, display_order, description) VALUES

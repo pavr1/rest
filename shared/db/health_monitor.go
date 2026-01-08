@@ -86,15 +86,15 @@ func (hm *DBHealthMonitor) checkDatabase() {
 
 	if err != nil {
 		// Only log if transitioning from healthy to unhealthy
-		//if hm.dbHealthy.Load() {
-		hm.logger.WithError(err).Error("Database health check failed")
-		//}
+		if hm.dbHealthy.Load() {
+			hm.logger.WithError(err).Error("❌ Database health check failed")
+		}
 		hm.dbHealthy.Store(false)
 	} else {
 		// Only log if transitioning from unhealthy to healthy
-		//if !hm.dbHealthy.Load() {
-		hm.logger.Info("🔥 Database health connected successfully")
-		//}
+		if !hm.dbHealthy.Load() {
+			hm.logger.Info("✅ Database health connected successfully")
+		}
 		hm.dbHealthy.Store(true)
 	}
 }
