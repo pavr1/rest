@@ -98,10 +98,24 @@ func (h *DBHandler) Create(req *models.MenuItemCreateRequest) (*models.MenuItem,
 		return nil, fmt.Errorf("failed to get query: %w", err)
 	}
 
+	// Default empty JSON arrays for JSONB columns if nil
+	menuTypes := req.MenuTypes
+	if menuTypes == nil {
+		menuTypes = json.RawMessage(`[]`)
+	}
+	dietaryTags := req.DietaryTags
+	if dietaryTags == nil {
+		dietaryTags = json.RawMessage(`[]`)
+	}
+	allergens := req.Allergens
+	if allergens == nil {
+		allergens = json.RawMessage(`[]`)
+	}
+
 	row := h.db.QueryRow(query,
 		req.Name, req.Description, req.CategoryID, req.Price, req.HappyHourPrice,
-		req.ImageURL, req.IsAvailable, req.ItemType, req.MenuTypes,
-		req.DietaryTags, req.Allergens, req.IsAlcoholic,
+		req.ImageURL, req.IsAvailable, req.ItemType, menuTypes,
+		dietaryTags, allergens, req.IsAlcoholic,
 	)
 
 	return h.scanMenuItemRowWithoutCategory(row)
@@ -114,10 +128,23 @@ func (h *DBHandler) Update(id string, req *models.MenuItemUpdateRequest) (*model
 		return nil, fmt.Errorf("failed to get query: %w", err)
 	}
 
+	// For update, we pass nil to keep existing values, or the new value
+	// The SQL uses COALESCE to handle this
+	var menuTypes, dietaryTags, allergens interface{}
+	if req.MenuTypes != nil {
+		menuTypes = *req.MenuTypes
+	}
+	if req.DietaryTags != nil {
+		dietaryTags = *req.DietaryTags
+	}
+	if req.Allergens != nil {
+		allergens = *req.Allergens
+	}
+
 	row := h.db.QueryRow(query, id,
 		req.Name, req.Description, req.CategoryID, req.Price, req.HappyHourPrice,
-		req.ImageURL, req.IsAvailable, req.ItemType, req.MenuTypes,
-		req.DietaryTags, req.Allergens, req.IsAlcoholic,
+		req.ImageURL, req.IsAvailable, req.ItemType, menuTypes,
+		dietaryTags, allergens, req.IsAlcoholic,
 	)
 
 	return h.scanMenuItemRowWithoutCategory(row)
