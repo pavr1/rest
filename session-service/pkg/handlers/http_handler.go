@@ -16,10 +16,11 @@ import (
 )
 
 type MainHTTPHandler struct {
-	sessionsDBHandler *sessionHandlers.DBHandler
-	sessionsHandler   *sessionHandlers.HTTPHandler
-	httpHealthMonitor *sharedHttp.HTTPHealthMonitor
-	logger            *logrus.Logger
+	sessionsDBHandler   *sessionHandlers.DBHandler
+	sessionsHandler     *sessionHandlers.HTTPHandler
+	httpHealthMonitor   *sharedHttp.HTTPHealthMonitor
+	cancelHealthMonitor context.CancelFunc
+	logger              *logrus.Logger
 }
 
 func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
@@ -37,26 +38,32 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 
 	// Create cancellable context for health monitor
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	//pvillalobos this should be configurable
 	// Create HTTP health monitor for data-service
 	httpHealthMonitor, err := sharedHttp.NewHealthMonitor(logger, 1*time.Second)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 	httpHealthMonitor.AddService("data-service", sharedConfig.DATA_SERVICE_URL+"/api/v1/data/p/health")
 	httpHealthMonitor.Start(ctx)
 
 	return &MainHTTPHandler{
-		sessionsDBHandler: sessionsDBHandler,
-		sessionsHandler:   sessionsHTTPHandler,
-		httpHealthMonitor: httpHealthMonitor,
-		logger:            logger,
+		sessionsDBHandler:   sessionsDBHandler,
+		sessionsHandler:     sessionsHTTPHandler,
+		httpHealthMonitor:   httpHealthMonitor,
+		cancelHealthMonitor: cancel,
+		logger:              logger,
 	}, nil
 }
 
 func (h *MainHTTPHandler) CloseDB() error {
+	// Stop health monitor
+	if h.cancelHealthMonitor != nil {
+		h.cancelHealthMonitor()
+	}
+
 	err := h.sessionsDBHandler.Close()
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to close database")
