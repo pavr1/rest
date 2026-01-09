@@ -1,0 +1,278 @@
+<!-- Stock Items Page Partial -->
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
+    .filters { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; }
+    .data-table { width: 100%; margin: 0; }
+    .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
+    .data-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
+    .data-table tbody tr:hover { background: #f8f9fa; }
+    .action-btns { display: flex; gap: 0.5rem; }
+    .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
+    .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+    .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .stock-level { font-weight: 600; }
+    .stock-level.low { color: #dc3545; }
+    .stock-level.medium { color: #ffc107; }
+    .stock-level.high { color: #28a745; }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Stock Items</h1>
+    <button class="btn btn-primary" id="addBtn"><i class="fas fa-plus me-2"></i>Add Stock Item</button>
+</div>
+
+<div class="filters">
+    <select class="form-select" id="categoryFilter" style="width: auto;"><option value="">All Categories</option></select>
+    <button class="btn btn-outline-secondary" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+</div>
+
+<div class="data-card">
+    <div id="tableContainer">
+        <div class="loading-state" id="loadingState">
+            <div class="spinner-border text-primary mb-3"></div>
+            <p>Loading stock items...</p>
+        </div>
+        <div class="empty-state d-none" id="emptyState">
+            <i class="fas fa-boxes"></i>
+            <h5>No stock items yet</h5>
+            <p>Create your first stock item.</p>
+        </div>
+        <table class="data-table d-none" id="dataTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Unit</th>
+                    <th>In Stock</th>
+                    <th>Min Level</th>
+                    <th>Cost/Unit</th>
+                    <th width="120">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="formModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Stock Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="dataForm">
+                <div class="modal-body">
+                    <input type="hidden" id="itemId">
+                    <div class="mb-3">
+                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="itemName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="itemCategory"><option value="">Select...</option></select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unit <span class="text-danger">*</span></label>
+                            <select class="form-select" id="itemUnit" required>
+                                <option value="">Select...</option>
+                                <option value="kg">Kilogram</option>
+                                <option value="g">Gram</option>
+                                <option value="l">Liter</option>
+                                <option value="ml">Milliliter</option>
+                                <option value="unit">Unit</option>
+                                <option value="piece">Piece</option>
+                                <option value="dozen">Dozen</option>
+                                <option value="box">Box</option>
+                                <option value="bottle">Bottle</option>
+                                <option value="can">Can</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Current Stock</label>
+                            <input type="number" class="form-control" id="itemStock" step="0.01" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Min Stock Level</label>
+                            <input type="number" class="form-control" id="itemMinStock" step="0.01" min="0" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cost per Unit</label>
+                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="itemCost" step="0.01" min="0" value="0"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="itemDescription" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    let items = [];
+    let categories = [];
+    let modal = null;
+    let editingId = null;
+    
+    function init() {
+        modal = new bootstrap.Modal(document.getElementById('formModal'));
+        setupEventListeners();
+        loadCategories();
+        loadData();
+    }
+    
+    function setupEventListeners() {
+        document.getElementById('addBtn')?.addEventListener('click', () => openModal());
+        document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
+        document.getElementById('dataForm')?.addEventListener('submit', (e) => { e.preventDefault(); save(); });
+        document.getElementById('categoryFilter')?.addEventListener('change', () => loadData());
+    }
+    
+    async function loadCategories() {
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(CONFIG.MENU.stockCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (resp.ok) {
+                const result = await resp.json();
+                categories = result.data?.categories || result.data || [];
+                populateCategoryDropdowns();
+            }
+        } catch (e) {}
+    }
+    
+    function populateCategoryDropdowns() {
+        const options = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        document.getElementById('categoryFilter').innerHTML = '<option value="">All Categories</option>' + options;
+        document.getElementById('itemCategory').innerHTML = '<option value="">Select...</option>' + options;
+    }
+    
+    async function loadData() {
+        showLoading();
+        try {
+            const token = window.authService.getSessionId();
+            const params = new URLSearchParams();
+            const catId = document.getElementById('categoryFilter').value;
+            if (catId) params.append('category_id', catId);
+            
+            const url = CONFIG.MENU.stockItems + (params.toString() ? `?${params}` : '');
+            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed');
+            const result = await resp.json();
+            items = result.data?.items || result.data || [];
+            renderTable();
+        } catch (e) {
+            Swal.fire('Error', 'Failed to load stock items', 'error');
+            showEmpty();
+        }
+    }
+    
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const table = document.getElementById('dataTable');
+        const empty = document.getElementById('emptyState');
+        document.getElementById('loadingState').classList.add('d-none');
+        
+        if (!items.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+        
+        empty.classList.add('d-none');
+        table.classList.remove('d-none');
+        tbody.innerHTML = items.map(item => {
+            const cat = categories.find(c => c.id === item.category_id);
+            const stockClass = item.current_stock <= item.minimum_stock ? 'low' : item.current_stock <= item.minimum_stock * 2 ? 'medium' : 'high';
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(item.name)}</strong></td>
+                    <td>${cat?.name || '-'}</td>
+                    <td>${item.unit || '-'}</td>
+                    <td><span class="stock-level ${stockClass}">${(item.current_stock || 0).toFixed(2)}</span></td>
+                    <td>${(item.minimum_stock || 0).toFixed(2)}</td>
+                    <td>$${(item.cost_per_unit || 0).toFixed(2)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-outline-primary btn-action" onclick="window.stockItemsPage.edit('${item.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-outline-danger btn-action" onclick="window.stockItemsPage.delete('${item.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    
+    function showLoading() { document.getElementById('loadingState').classList.remove('d-none'); document.getElementById('emptyState').classList.add('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
+    function showEmpty() { document.getElementById('loadingState').classList.add('d-none'); document.getElementById('emptyState').classList.remove('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
+    
+    function openModal(item = null) {
+        editingId = item?.id || null;
+        document.getElementById('modalTitle').textContent = item ? 'Edit Stock Item' : 'Add Stock Item';
+        document.getElementById('itemId').value = item?.id || '';
+        document.getElementById('itemName').value = item?.name || '';
+        document.getElementById('itemCategory').value = item?.category_id || '';
+        document.getElementById('itemUnit').value = item?.unit || '';
+        document.getElementById('itemStock').value = item?.current_stock || 0;
+        document.getElementById('itemMinStock').value = item?.minimum_stock || 0;
+        document.getElementById('itemCost').value = item?.cost_per_unit || 0;
+        document.getElementById('itemDescription').value = item?.description || '';
+        modal.show();
+    }
+    
+    async function save() {
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        try {
+            const token = window.authService.getSessionId();
+            const data = {
+                name: document.getElementById('itemName').value,
+                category_id: document.getElementById('itemCategory').value || null,
+                unit: document.getElementById('itemUnit').value,
+                current_stock: parseFloat(document.getElementById('itemStock').value) || 0,
+                minimum_stock: parseFloat(document.getElementById('itemMinStock').value) || 0,
+                cost_per_unit: parseFloat(document.getElementById('itemCost').value) || 0,
+                description: document.getElementById('itemDescription').value
+            };
+            const url = editingId ? `${CONFIG.MENU.stockItems}/${editingId}` : CONFIG.MENU.stockItems;
+            const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
+            modal.hide();
+            Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false });
+            await loadData();
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
+        finally { btn.disabled = false; btn.innerHTML = 'Save'; }
+    }
+    
+    async function deleteItem(id) {
+        const item = items.find(i => i.id === id);
+        const result = await Swal.fire({ title: 'Delete?', text: `Delete "${item?.name}"?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
+        if (!result.isConfirmed) return;
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(`${CONFIG.MENU.stockItems}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed');
+            Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
+            await loadData();
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
+    }
+    
+    function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+    
+    window.stockItemsPage = {
+        edit: (id) => { const item = items.find(i => i.id === id); if (item) openModal(item); },
+        delete: deleteItem
+    };
+    
+    init();
+})();
+</script>

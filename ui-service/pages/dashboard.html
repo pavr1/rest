@@ -1,0 +1,209 @@
+<!-- Dashboard Page Partial -->
+<style>
+    .welcome-section {
+        margin-bottom: 2rem;
+    }
+    
+    .welcome-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.75rem;
+        color: var(--dark-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .welcome-subtitle {
+        color: var(--text-secondary);
+        font-family: 'Poppins', sans-serif;
+    }
+    
+    /* Quick Stats Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-light);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: var(--transition);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .stat-icon.orders { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.tables { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat-icon.revenue { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-icon.customers { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    
+    .stat-info h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-info p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 0;
+        font-family: 'Poppins', sans-serif;
+    }
+    
+    /* Quick Actions */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .action-btn {
+        background: white;
+        border: 2px solid transparent;
+        border-radius: var(--border-radius);
+        padding: 1.5rem 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition);
+        text-decoration: none;
+        color: var(--dark-color);
+    }
+    
+    .action-btn:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    .action-btn i {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        color: var(--primary-color);
+    }
+    
+    .action-btn span {
+        display: block;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .section-title {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <h1 class="welcome-title">Welcome back, <span id="welcomeName">Admin</span>! 👋</h1>
+    <p class="welcome-subtitle">Here's what's happening at your restaurant today.</p>
+</div>
+
+<!-- Quick Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon orders">
+            <i class="fas fa-receipt"></i>
+        </div>
+        <div class="stat-info">
+            <h3>24</h3>
+            <p>Active Orders</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon tables">
+            <i class="fas fa-chair"></i>
+        </div>
+        <div class="stat-info">
+            <h3>8/12</h3>
+            <p>Tables Occupied</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon revenue">
+            <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="stat-info">
+            <h3>$2,450</h3>
+            <p>Today's Revenue</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon customers">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-info">
+            <h3>47</h3>
+            <p>Customers Today</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<h5 class="section-title"><i class="fas fa-bolt"></i> Quick Actions</h5>
+<div class="quick-actions">
+    <div class="action-btn" onclick="app.navigateTo('orders-active')">
+        <i class="fas fa-plus-circle"></i>
+        <span>New Order</span>
+    </div>
+    <div class="action-btn" onclick="app.navigateTo('tables-map')">
+        <i class="fas fa-chair"></i>
+        <span>Seat Guests</span>
+    </div>
+    <div class="action-btn" onclick="app.navigateTo('reservations')">
+        <i class="fas fa-calendar-plus"></i>
+        <span>Reservation</span>
+    </div>
+    <div class="action-btn" onclick="app.navigateTo('menu-items')">
+        <i class="fas fa-utensils"></i>
+        <span>Menu</span>
+    </div>
+    <div class="action-btn" onclick="app.navigateTo('stock-items')">
+        <i class="fas fa-boxes"></i>
+        <span>Inventory</span>
+    </div>
+    <div class="action-btn" onclick="app.navigateTo('reports')">
+        <i class="fas fa-chart-bar"></i>
+        <span>Reports</span>
+    </div>
+</div>
+
+<script>
+    // Update welcome name from user data
+    (function() {
+        const user = window.authService?.getUserData();
+        if (user) {
+            const firstName = user.user?.first_name || user.user?.username || 'Admin';
+            document.getElementById('welcomeName').textContent = firstName;
+        }
+    })();
+</script>

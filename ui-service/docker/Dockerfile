@@ -11,6 +11,7 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY *.html /usr/share/nginx/html/
 COPY *.js /usr/share/nginx/html/
 COPY shared/ /usr/share/nginx/html/shared/
+COPY pages/ /usr/share/nginx/html/pages/
 
 # Expose port
 EXPOSE 3000

@@ -8,20 +8,31 @@ class AppRouter {
         this.pageTitle = document.getElementById('pageTitle');
         this.user = null;
         
-        // Page configuration
+        // Page configuration - organized by section
         this.pages = {
+            // Dashboard
             'dashboard': { title: 'Dashboard', icon: 'fa-home', partial: 'pages/dashboard.html' },
-            'menu-items': { title: 'Menu Items', icon: 'fa-hamburger', partial: 'pages/menu-items.html' },
-            'menu-categories': { title: 'Menu Categories', icon: 'fa-tags', partial: 'pages/menu-categories.html' },
-            'stock-items': { title: 'Stock Items', icon: 'fa-boxes', partial: 'pages/stock-items.html' },
-            'stock-categories': { title: 'Stock Categories', icon: 'fa-layer-group', partial: 'pages/stock-categories.html' },
-            'orders-active': { title: 'Active Orders', icon: 'fa-clipboard-list', partial: 'pages/coming-soon.html' },
-            'orders-history': { title: 'Order History', icon: 'fa-history', partial: 'pages/coming-soon.html' },
-            'tables-map': { title: 'Table Map', icon: 'fa-map', partial: 'pages/coming-soon.html' },
-            'reservations': { title: 'Reservations', icon: 'fa-calendar-alt', partial: 'pages/coming-soon.html' },
-            'staff': { title: 'Staff', icon: 'fa-users', partial: 'pages/coming-soon.html' },
-            'reports': { title: 'Reports', icon: 'fa-chart-bar', partial: 'pages/coming-soon.html' },
-            'settings': { title: 'Settings', icon: 'fa-sliders-h', partial: 'pages/coming-soon.html' }
+            
+            // Orders
+            'orders-active': { title: 'Active Orders', icon: 'fa-clipboard-list', partial: 'pages/orders/active.html' },
+            'orders-history': { title: 'Order History', icon: 'fa-history', partial: 'pages/orders/history.html' },
+            
+            // Tables
+            'tables-map': { title: 'Table Map', icon: 'fa-map', partial: 'pages/tables/map.html' },
+            'reservations': { title: 'Reservations', icon: 'fa-calendar-alt', partial: 'pages/tables/reservations.html' },
+            
+            // Menu
+            'menu-items': { title: 'Menu Items', icon: 'fa-hamburger', partial: 'pages/menu/items.html' },
+            'menu-categories': { title: 'Menu Categories', icon: 'fa-tags', partial: 'pages/menu/categories.html' },
+            
+            // Inventory
+            'stock-items': { title: 'Stock Items', icon: 'fa-boxes', partial: 'pages/inventory/items.html' },
+            'stock-categories': { title: 'Stock Categories', icon: 'fa-layer-group', partial: 'pages/inventory/categories.html' },
+            
+            // Admin
+            'staff': { title: 'Staff', icon: 'fa-users', partial: 'pages/admin/staff.html' },
+            'reports': { title: 'Reports', icon: 'fa-chart-bar', partial: 'pages/admin/reports.html' },
+            'settings': { title: 'Settings', icon: 'fa-sliders-h', partial: 'pages/admin/settings.html' }
         };
         
         this.init();
