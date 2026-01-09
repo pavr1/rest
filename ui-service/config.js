@@ -48,9 +48,11 @@ const CONFIG = {
         REMEMBER_KEY: 'barrest_remember_me'
     },
     MENU: {
-        // Menu Categories
+        // Menu Categories (top level: Drinks, Desserts, etc.)
         categories: SERVICE_URLS.gateway + '/api/v1/menu/categories',
-        // Menu Items
+        // Sub Menus (second level: Smoothies, Sodas, etc. - grouped by category)
+        subMenus: SERVICE_URLS.gateway + '/api/v1/menu/submenus',
+        // Menu Items (third level: Banana Smoothie, Pineapple Smoothie, etc. - with pricing)
         items: SERVICE_URLS.gateway + '/api/v1/menu/items',
         // Menu Item Ingredients (use with item ID: `${CONFIG.MENU.items}/${itemId}/ingredients`)
         ingredients: (itemId) => SERVICE_URLS.gateway + `/api/v1/menu/items/${itemId}/ingredients`,

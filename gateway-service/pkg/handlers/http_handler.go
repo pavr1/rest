@@ -163,6 +163,10 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	menuRouter.HandleFunc("/categories", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
 	menuRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
 
+	// Protected - Sub Menus
+	menuRouter.HandleFunc("/submenus", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	menuRouter.HandleFunc("/submenus/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+
 	// Protected - Menu Items
 	menuRouter.HandleFunc("/items", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
 	menuRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")

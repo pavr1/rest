@@ -14,6 +14,7 @@ import (
 	ingredientHandlers "menu-service/pkg/entities/ingredients/handlers"
 	menuCategoryHandlers "menu-service/pkg/entities/menu_categories/handlers"
 	menuItemHandlers "menu-service/pkg/entities/menu_items/handlers"
+	subMenuHandlers "menu-service/pkg/entities/sub_menus/handlers"
 	stockCategoryHandlers "menu-service/pkg/entities/stock_item_categories/handlers"
 	stockItemHandlers "menu-service/pkg/entities/stock_items/handlers"
 
@@ -26,6 +27,7 @@ type MainHTTPHandler struct {
 	httpHealthMonitor    *sharedHttp.HTTPHealthMonitor
 	cancelHealthMonitor  context.CancelFunc
 	menuCategoryHandler  *menuCategoryHandlers.HTTPHandler
+	subMenuHandler       *subMenuHandlers.HTTPHandler
 	menuItemHandler      *menuItemHandlers.HTTPHandler
 	stockCategoryHandler *stockCategoryHandlers.HTTPHandler
 	stockItemHandler     *stockItemHandlers.HTTPHandler
@@ -64,6 +66,14 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		return nil, fmt.Errorf("failed to create menu category handler: %w", err)
 	}
 	menuCategoryHTTPHandler := menuCategoryHandlers.NewHTTPHandler(menuCategoryDBHandler, logger)
+
+	// Create sub menu handlers
+	subMenuDBHandler, err := subMenuHandlers.NewDBHandler(db, logger)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to create sub menu handler: %w", err)
+	}
+	subMenuHTTPHandler := subMenuHandlers.NewHTTPHandler(subMenuDBHandler, logger)
 
 	// Create menu item handlers
 	menuItemDBHandler, err := menuItemHandlers.NewDBHandler(db, logger)
@@ -115,6 +125,7 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		httpHealthMonitor:    httpHealthMonitor,
 		cancelHealthMonitor:  cancel,
 		menuCategoryHandler:  menuCategoryHTTPHandler,
+		subMenuHandler:       subMenuHTTPHandler,
 		menuItemHandler:      menuItemHTTPHandler,
 		stockCategoryHandler: stockCategoryHTTPHandler,
 		stockItemHandler:     stockItemHTTPHandler,
@@ -147,6 +158,13 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/v1/menu/categories", h.menuCategoryHandler.Create).Methods("POST")
 	router.HandleFunc("/api/v1/menu/categories/{id}", h.menuCategoryHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/menu/categories/{id}", h.menuCategoryHandler.Delete).Methods("DELETE")
+
+	// Sub Menus
+	router.HandleFunc("/api/v1/menu/submenus", h.subMenuHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/menu/submenus/{id}", h.subMenuHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/menu/submenus", h.subMenuHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/menu/submenus/{id}", h.subMenuHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/menu/submenus/{id}", h.subMenuHandler.Delete).Methods("DELETE")
 
 	// Menu Items
 	router.HandleFunc("/api/v1/menu/items", h.menuItemHandler.List).Methods("GET")

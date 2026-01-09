@@ -33,12 +33,7 @@
 </div>
 
 <div class="filters">
-    <select class="form-select" id="categoryFilter" style="width: auto;"><option value="">All Categories</option></select>
-    <select class="form-select" id="typeFilter" style="width: auto;">
-        <option value="">All Types</option>
-        <option value="kitchen">Kitchen</option>
-        <option value="bar">Bar</option>
-    </select>
+    <select class="form-select" id="subMenuFilter" style="width: auto;"><option value="">All Sub Menus</option></select>
     <select class="form-select" id="availabilityFilter" style="width: auto;">
         <option value="">All Status</option>
         <option value="true">Available</option>
@@ -64,7 +59,7 @@
                     <th>Image</th>
                     <th>Name</th>
                     <th>Type</th>
-                    <th>Category</th>
+                    <th>Sub Menu</th>
                     <th>Price</th>
                     <th>Cost</th>
                     <th>Status</th>
@@ -88,21 +83,13 @@
                 <div class="modal-body">
                     <input type="hidden" id="itemId">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-8 mb-3">
                             <label class="form-label">Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="itemName" required>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Type <span class="text-danger">*</span></label>
-                            <select class="form-select" id="itemType" required>
-                                <option value="">Select...</option>
-                                <option value="kitchen">Kitchen</option>
-                                <option value="bar">Bar</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" id="itemCategory" required><option value="">Select...</option></select>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Sub Menu <span class="text-danger">*</span></label>
+                            <select class="form-select" id="itemSubMenu" required><option value="">Select...</option></select>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -205,7 +192,7 @@
 <script>
 (function() {
     let items = [];
-    let categories = [];
+    let subMenus = [];
     let stockItems = [];
     let currentIngredients = [];
     let modal = null;
@@ -216,7 +203,7 @@
         modal = new bootstrap.Modal(document.getElementById('itemModal'));
         ingredientsModal = new bootstrap.Modal(document.getElementById('ingredientsModal'));
         setupEventListeners();
-        loadCategories();
+        loadSubMenus();
         loadStockItems();
         loadItems();
     }
@@ -225,23 +212,22 @@
         document.getElementById('addItemBtn')?.addEventListener('click', () => openModal());
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadItems());
         document.getElementById('itemForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveItem(); });
-        document.getElementById('categoryFilter')?.addEventListener('change', () => loadItems());
-        document.getElementById('typeFilter')?.addEventListener('change', () => loadItems());
+        document.getElementById('subMenuFilter')?.addEventListener('change', () => loadItems());
         document.getElementById('availabilityFilter')?.addEventListener('change', () => loadItems());
         document.getElementById('addIngredientBtn')?.addEventListener('click', addIngredient);
         document.getElementById('recalculateCostBtn')?.addEventListener('click', recalculateCost);
     }
     
-    async function loadCategories() {
+    async function loadSubMenus() {
         try {
             const token = window.authService.getSessionId();
-            const resp = await fetch(CONFIG.MENU.categories, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.subMenus, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
-                categories = result.data?.categories || result.data || [];
-                populateCategoryDropdowns();
+                subMenus = result.sub_menus || result.data?.sub_menus || result.data || [];
+                populateSubMenuDropdowns();
             }
-        } catch (e) { console.error('Error loading categories:', e); }
+        } catch (e) { console.error('Error loading sub menus:', e); }
     }
     
     async function loadStockItems() {
@@ -256,10 +242,10 @@
         } catch (e) { console.error('Error loading stock items:', e); }
     }
     
-    function populateCategoryDropdowns() {
-        const options = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        document.getElementById('categoryFilter').innerHTML = '<option value="">All Categories</option>' + options;
-        document.getElementById('itemCategory').innerHTML = '<option value="">Select...</option>' + options;
+    function populateSubMenuDropdowns() {
+        const options = subMenus.map(sm => `<option value="${sm.id}">${sm.name} (${sm.item_type})</option>`).join('');
+        document.getElementById('subMenuFilter').innerHTML = '<option value="">All Sub Menus</option>' + options;
+        document.getElementById('itemSubMenu').innerHTML = '<option value="">Select...</option>' + options;
     }
     
     function populateStockItemsDropdown() {
@@ -272,11 +258,9 @@
         try {
             const token = window.authService.getSessionId();
             const params = new URLSearchParams();
-            const catId = document.getElementById('categoryFilter').value;
-            const itemType = document.getElementById('typeFilter').value;
+            const subMenuId = document.getElementById('subMenuFilter').value;
             const avail = document.getElementById('availabilityFilter').value;
-            if (catId) params.append('category_id', catId);
-            if (itemType) params.append('item_type', itemType);
+            if (subMenuId) params.append('sub_menu_id', subMenuId);
             if (avail) params.append('is_available', avail);
             
             const url = CONFIG.MENU.items + (params.toString() ? `?${params}` : '');
@@ -303,15 +287,16 @@
         empty.classList.add('d-none');
         table.classList.remove('d-none');
         tbody.innerHTML = items.map(item => {
-            const cat = categories.find(c => c.id === item.category_id);
-            const typeIcon = item.item_type === 'bar' ? 'fa-cocktail' : 'fa-utensils';
-            const typeLabel = item.item_type === 'bar' ? 'Bar' : 'Kitchen';
+            const subMenu = subMenus.find(sm => sm.id === item.sub_menu_id);
+            const itemType = item.item_type || subMenu?.item_type || 'kitchen';
+            const typeIcon = itemType === 'bar' ? 'fa-cocktail' : 'fa-utensils';
+            const typeLabel = itemType === 'bar' ? 'Bar' : 'Kitchen';
             return `
                 <tr>
                     <td>${item.image_url ? `<img src="${item.image_url}" class="item-image">` : `<div class="item-image-placeholder"><i class="fas ${typeIcon}"></i></div>`}</td>
                     <td><strong>${escapeHtml(item.name)}</strong></td>
-                    <td><span class="type-badge ${item.item_type || 'kitchen'}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
-                    <td>${cat?.name || '-'}</td>
+                    <td><span class="type-badge ${itemType}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
+                    <td>${item.sub_menu_name || subMenu?.name || '-'}</td>
                     <td class="price">$${(item.price || 0).toFixed(2)}</td>
                     <td>$${(item.item_cost || 0).toFixed(2)}</td>
                     <td><span class="status-badge ${item.is_available ? 'available' : 'unavailable'}">${item.is_available ? 'Available' : 'Unavailable'}</span></td>
@@ -340,8 +325,7 @@
         document.getElementById('modalTitle').textContent = item ? 'Edit Menu Item' : 'Add Menu Item';
         document.getElementById('itemId').value = item?.id || '';
         document.getElementById('itemName').value = item?.name || '';
-        document.getElementById('itemType').value = item?.item_type || '';
-        document.getElementById('itemCategory').value = item?.category_id || '';
+        document.getElementById('itemSubMenu').value = item?.sub_menu_id || '';
         document.getElementById('itemDescription').value = item?.description || '';
         document.getElementById('itemPrice').value = item?.price || '';
         document.getElementById('itemPrepTime').value = item?.preparation_time || '';
@@ -358,11 +342,10 @@
             const token = window.authService.getSessionId();
             const data = {
                 name: document.getElementById('itemName').value,
-                item_type: document.getElementById('itemType').value,
-                category_id: document.getElementById('itemCategory').value,
-                description: document.getElementById('itemDescription').value,
+                sub_menu_id: document.getElementById('itemSubMenu').value,
+                description: document.getElementById('itemDescription').value || null,
                 price: parseFloat(document.getElementById('itemPrice').value) || 0,
-                preparation_time: parseInt(document.getElementById('itemPrepTime').value) || 0,
+                preparation_time: parseInt(document.getElementById('itemPrepTime').value) || null,
                 display_order: parseInt(document.getElementById('itemDisplayOrder').value) || 0,
                 is_available: document.getElementById('itemAvailable').checked
             };

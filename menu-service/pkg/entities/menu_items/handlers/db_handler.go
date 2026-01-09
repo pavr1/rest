@@ -48,7 +48,7 @@ func (h *DBHandler) List(req *models.MenuItemListRequest) (*models.MenuItemListR
 	}
 
 	var total int
-	if err := h.db.QueryRow(countQuery, req.CategoryID, req.IsAvailable, menuTypesJSON).Scan(&total); err != nil {
+	if err := h.db.QueryRow(countQuery, req.SubMenuID, req.IsAvailable, menuTypesJSON).Scan(&total); err != nil {
 		return nil, fmt.Errorf("failed to count menu items: %w", err)
 	}
 
@@ -57,7 +57,7 @@ func (h *DBHandler) List(req *models.MenuItemListRequest) (*models.MenuItemListR
 		return nil, fmt.Errorf("failed to get list query: %w", err)
 	}
 
-	rows, err := h.db.Query(listQuery, req.CategoryID, req.IsAvailable, menuTypesJSON, req.Limit, offset)
+	rows, err := h.db.Query(listQuery, req.SubMenuID, req.IsAvailable, menuTypesJSON, req.Limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list menu items: %w", err)
 	}
@@ -113,12 +113,12 @@ func (h *DBHandler) Create(req *models.MenuItemCreateRequest) (*models.MenuItem,
 	}
 
 	row := h.db.QueryRow(query,
-		req.Name, req.Description, req.CategoryID, req.Price, req.HappyHourPrice,
-		req.ImageURL, req.IsAvailable, req.ItemType, menuTypes,
-		dietaryTags, allergens, req.IsAlcoholic,
+		req.Name, req.Description, req.SubMenuID, req.Price, req.HappyHourPrice,
+		req.ImageURL, req.IsAvailable, req.PreparationTime, menuTypes,
+		dietaryTags, allergens, req.IsAlcoholic, req.DisplayOrder,
 	)
 
-	return h.scanMenuItemRowWithoutCategory(row)
+	return h.scanMenuItemRowWithoutSubMenu(row)
 }
 
 // Update updates an existing menu item
@@ -142,12 +142,12 @@ func (h *DBHandler) Update(id string, req *models.MenuItemUpdateRequest) (*model
 	}
 
 	row := h.db.QueryRow(query, id,
-		req.Name, req.Description, req.CategoryID, req.Price, req.HappyHourPrice,
-		req.ImageURL, req.IsAvailable, req.ItemType, menuTypes,
-		dietaryTags, allergens, req.IsAlcoholic,
+		req.Name, req.Description, req.SubMenuID, req.Price, req.HappyHourPrice,
+		req.ImageURL, req.IsAvailable, req.PreparationTime, menuTypes,
+		dietaryTags, allergens, req.IsAlcoholic, req.DisplayOrder,
 	)
 
-	return h.scanMenuItemRowWithoutCategory(row)
+	return h.scanMenuItemRowWithoutSubMenu(row)
 }
 
 // Delete deletes a menu item
@@ -179,7 +179,7 @@ func (h *DBHandler) UpdateAvailability(id string, isAvailable bool) (*models.Men
 	}
 
 	row := h.db.QueryRow(query, id, isAvailable)
-	return h.scanMenuItemRowWithoutCategory(row)
+	return h.scanMenuItemRowWithoutSubMenu(row)
 }
 
 // UpdateImage updates the image URL of a menu item
@@ -190,7 +190,7 @@ func (h *DBHandler) UpdateImage(id string, imageURL string) (*models.MenuItem, e
 	}
 
 	row := h.db.QueryRow(query, id, imageURL)
-	return h.scanMenuItemRowWithoutCategory(row)
+	return h.scanMenuItemRowWithoutSubMenu(row)
 }
 
 // UpdateCost updates the item cost
@@ -201,21 +201,22 @@ func (h *DBHandler) UpdateCost(id string, cost float64) (*models.MenuItem, error
 	}
 
 	row := h.db.QueryRow(query, id, cost)
-	return h.scanMenuItemRowWithoutCategory(row)
+	return h.scanMenuItemRowWithoutSubMenu(row)
 }
 
 // Helper functions for scanning
 func (h *DBHandler) scanMenuItem(rows *sql.Rows) (*models.MenuItem, error) {
 	var item models.MenuItem
-	var description, categoryName, imageURL sql.NullString
+	var description, subMenuName, itemType, imageURL sql.NullString
 	var itemCost, happyHourPrice sql.NullFloat64
+	var preparationTime sql.NullInt32
 	var dietaryTags, allergens []byte
 
 	err := rows.Scan(
-		&item.ID, &item.Name, &description, &item.CategoryID, &categoryName,
-		&item.Price, &itemCost, &happyHourPrice, &imageURL, &item.IsAvailable,
-		&item.ItemType, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
-		&item.CreatedAt, &item.UpdatedAt,
+		&item.ID, &item.Name, &description, &item.SubMenuID, &subMenuName,
+		&itemType, &item.Price, &itemCost, &happyHourPrice, &imageURL, &item.IsAvailable,
+		&preparationTime, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
+		&item.DisplayOrder, &item.CreatedAt, &item.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan menu item: %w", err)
@@ -224,8 +225,11 @@ func (h *DBHandler) scanMenuItem(rows *sql.Rows) (*models.MenuItem, error) {
 	if description.Valid {
 		item.Description = &description.String
 	}
-	if categoryName.Valid {
-		item.CategoryName = categoryName.String
+	if subMenuName.Valid {
+		item.SubMenuName = subMenuName.String
+	}
+	if itemType.Valid {
+		item.ItemType = itemType.String
 	}
 	if itemCost.Valid {
 		item.ItemCost = &itemCost.Float64
@@ -235,6 +239,10 @@ func (h *DBHandler) scanMenuItem(rows *sql.Rows) (*models.MenuItem, error) {
 	}
 	if imageURL.Valid {
 		item.ImageURL = &imageURL.String
+	}
+	if preparationTime.Valid {
+		prepTime := int(preparationTime.Int32)
+		item.PreparationTime = &prepTime
 	}
 	if dietaryTags != nil {
 		item.DietaryTags = json.RawMessage(dietaryTags)
@@ -248,15 +256,16 @@ func (h *DBHandler) scanMenuItem(rows *sql.Rows) (*models.MenuItem, error) {
 
 func (h *DBHandler) scanMenuItemRow(row *sql.Row) (*models.MenuItem, error) {
 	var item models.MenuItem
-	var description, categoryName, imageURL sql.NullString
+	var description, subMenuName, itemType, imageURL sql.NullString
 	var itemCost, happyHourPrice sql.NullFloat64
+	var preparationTime sql.NullInt32
 	var dietaryTags, allergens []byte
 
 	err := row.Scan(
-		&item.ID, &item.Name, &description, &item.CategoryID, &categoryName,
-		&item.Price, &itemCost, &happyHourPrice, &imageURL, &item.IsAvailable,
-		&item.ItemType, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
-		&item.CreatedAt, &item.UpdatedAt,
+		&item.ID, &item.Name, &description, &item.SubMenuID, &subMenuName,
+		&itemType, &item.Price, &itemCost, &happyHourPrice, &imageURL, &item.IsAvailable,
+		&preparationTime, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
+		&item.DisplayOrder, &item.CreatedAt, &item.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -268,8 +277,11 @@ func (h *DBHandler) scanMenuItemRow(row *sql.Row) (*models.MenuItem, error) {
 	if description.Valid {
 		item.Description = &description.String
 	}
-	if categoryName.Valid {
-		item.CategoryName = categoryName.String
+	if subMenuName.Valid {
+		item.SubMenuName = subMenuName.String
+	}
+	if itemType.Valid {
+		item.ItemType = itemType.String
 	}
 	if itemCost.Valid {
 		item.ItemCost = &itemCost.Float64
@@ -279,6 +291,10 @@ func (h *DBHandler) scanMenuItemRow(row *sql.Row) (*models.MenuItem, error) {
 	}
 	if imageURL.Valid {
 		item.ImageURL = &imageURL.String
+	}
+	if preparationTime.Valid {
+		prepTime := int(preparationTime.Int32)
+		item.PreparationTime = &prepTime
 	}
 	if dietaryTags != nil {
 		item.DietaryTags = json.RawMessage(dietaryTags)
@@ -290,17 +306,18 @@ func (h *DBHandler) scanMenuItemRow(row *sql.Row) (*models.MenuItem, error) {
 	return &item, nil
 }
 
-func (h *DBHandler) scanMenuItemRowWithoutCategory(row *sql.Row) (*models.MenuItem, error) {
+func (h *DBHandler) scanMenuItemRowWithoutSubMenu(row *sql.Row) (*models.MenuItem, error) {
 	var item models.MenuItem
 	var description, imageURL sql.NullString
 	var itemCost, happyHourPrice sql.NullFloat64
+	var preparationTime sql.NullInt32
 	var dietaryTags, allergens []byte
 
 	err := row.Scan(
-		&item.ID, &item.Name, &description, &item.CategoryID,
+		&item.ID, &item.Name, &description, &item.SubMenuID,
 		&item.Price, &itemCost, &happyHourPrice, &imageURL, &item.IsAvailable,
-		&item.ItemType, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
-		&item.CreatedAt, &item.UpdatedAt,
+		&preparationTime, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
+		&item.DisplayOrder, &item.CreatedAt, &item.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -320,6 +337,10 @@ func (h *DBHandler) scanMenuItemRowWithoutCategory(row *sql.Row) (*models.MenuIt
 	}
 	if imageURL.Valid {
 		item.ImageURL = &imageURL.String
+	}
+	if preparationTime.Valid {
+		prepTime := int(preparationTime.Int32)
+		item.PreparationTime = &prepTime
 	}
 	if dietaryTags != nil {
 		item.DietaryTags = json.RawMessage(dietaryTags)

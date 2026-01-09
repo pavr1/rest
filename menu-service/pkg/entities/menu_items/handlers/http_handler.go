@@ -40,8 +40,8 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 		Limit: limit,
 	}
 
-	if categoryID := r.URL.Query().Get("category_id"); categoryID != "" {
-		req.CategoryID = &categoryID
+	if subMenuID := r.URL.Query().Get("sub_menu_id"); subMenuID != "" {
+		req.SubMenuID = &subMenuID
 	}
 
 	if menuType := r.URL.Query().Get("menu_type"); menuType != "" {
@@ -97,13 +97,8 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.CategoryID == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Category ID is required", nil)
-		return
-	}
-
-	if req.ItemType == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Item type is required (kitchen or bar)", nil)
+	if req.SubMenuID == "" {
+		sharedHttp.SendError(w, http.StatusBadRequest, "Sub Menu ID is required", nil)
 		return
 	}
 

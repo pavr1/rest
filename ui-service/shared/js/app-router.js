@@ -22,8 +22,9 @@ class AppRouter {
             'reservations': { title: 'Reservations', icon: 'fa-calendar-alt', partial: 'pages/tables/reservations.html' },
             
             // Menu
-            'menu-items': { title: 'Menu Items', icon: 'fa-hamburger', partial: 'pages/menu/items.html' },
             'menu-categories': { title: 'Menu Categories', icon: 'fa-tags', partial: 'pages/menu/categories.html' },
+            'menu-submenus': { title: 'Sub Menus', icon: 'fa-layer-group', partial: 'pages/menu/submenus.html' },
+            'menu-items': { title: 'Menu Items', icon: 'fa-hamburger', partial: 'pages/menu/items.html' },
             'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
             
             // Inventory
