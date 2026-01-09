@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -21,6 +23,7 @@ import (
 
 type MainHTTPHandler struct {
 	db                   *sharedDb.DbHandler
+	httpHealthMonitor    *sharedHttp.HTTPHealthMonitor
 	menuCategoryHandler  *menuCategoryHandlers.HTTPHandler
 	menuItemHandler      *menuItemHandlers.HTTPHandler
 	stockCategoryHandler *stockCategoryHandlers.HTTPHandler
@@ -93,8 +96,22 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 	ingredientHTTPHandler := ingredientHandlers.NewHTTPHandler(ingredientDBHandler, menuItemDBHandler, logger)
 
+	// Create cancellable context for health monitor
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	//pvillalobos this should be configurable
+	// Create HTTP health monitor for data-service
+	httpHealthMonitor, err := sharedHttp.NewHealthMonitor(logger, 1*time.Second)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create HTTP health monitor: %w", err)
+	}
+	httpHealthMonitor.AddService("data-service", sharedConfig.DATA_SERVICE_URL+"/api/v1/data/p/health")
+	httpHealthMonitor.Start(ctx)
+
 	return &MainHTTPHandler{
 		db:                   db,
+		httpHealthMonitor:    httpHealthMonitor,
 		menuCategoryHandler:  menuCategoryHTTPHandler,
 		menuItemHandler:      menuItemHTTPHandler,
 		stockCategoryHandler: stockCategoryHTTPHandler,
@@ -158,22 +175,29 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	client := &http.Client{Timeout: 1 * time.Second}
-	resp, err := client.Get(sharedConfig.DATA_SERVICE_URL + "/api/v1/data/p/health")
-	if err != nil {
-		h.logger.WithError(err).Error("data-service is not healthy")
-		sharedHttp.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		sharedHttp.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", nil)
-		return
+	response := map[string]interface{}{
+		"service":   "menu-service",
+		"timestamp": time.Now(),
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu service healthy", map[string]interface{}{
-		"status":  "healthy",
-		"service": "menu-service",
-	})
+	// Check cached health state from background monitor
+	healthStatus := h.httpHealthMonitor.GetHealthStatus()
+	if !healthStatus.IsHealthy {
+		response["status"] = "unhealthy"
+		response["message"] = "Dependent services are not healthy"
+		response["services"] = healthStatus.Services
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	response["status"] = "healthy"
+	response["message"] = "Menu service is healthy"
+	response["services"] = healthStatus.Services
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

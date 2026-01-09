@@ -6,22 +6,16 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"session-service/pkg/entities/sessions/handlers"
+	"session-service/pkg/handlers"
 	"syscall"
 	"time"
 
 	sharedConfig "shared/config"
-	sharedHttp "shared/http"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
-
-type MainHTTPHandler struct {
-	sessionsHandler *handlers.HTTPHandler
-	logger          *logrus.Logger
-}
 
 func main() {
 	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_SESSION_SERVICE, "INFO")
@@ -38,11 +32,11 @@ func main() {
 		"host": config.GetString("SERVER_HOST"),
 	}).Info("Configuration loaded")
 
-	mainHandler, dbHandler, err := newMainHTTPHandler(config, logger)
+	mainHandler, err := handlers.NewHTTPHandler(config, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
-	defer dbHandler.Close()
+	defer mainHandler.CloseDB()
 
 	router := mux.NewRouter()
 	mainHandler.SetupRoutes(router)
@@ -75,47 +69,4 @@ func main() {
 		logger.WithError(err).Fatal("Shutdown failed")
 	}
 	logger.Info("Session Service stopped")
-}
-
-func newMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, *handlers.DBHandler, error) {
-	jwtHandler := handlers.NewJWTHandler(cfg.GetString("JWT_SECRET"), cfg.GetDuration("JWT_EXPIRATION_TIME"), logger)
-	dbHandler, err := handlers.NewDBHandler(cfg, jwtHandler, logger)
-	if err != nil {
-		return nil, nil, err
-	}
-	sessionsHandler := handlers.NewHTTPHandler(dbHandler, logger)
-	return &MainHTTPHandler{
-		sessionsHandler: sessionsHandler,
-		logger:          logger,
-	}, dbHandler, nil
-}
-
-func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
-	router.HandleFunc("/api/v1/sessions/p/health", h.HealthCheck).Methods("GET")
-	router.HandleFunc("/api/v1/sessions/p/login", h.sessionsHandler.CreateSession).Methods("POST")
-	router.HandleFunc("/api/v1/sessions/p/validate", h.sessionsHandler.ValidateSession).Methods("POST")
-	router.HandleFunc("/api/v1/sessions/logout", h.sessionsHandler.LogoutSession).Methods("POST")
-}
-
-func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	// Check data-service health via HTTP
-	//pvillalobos configure timeout to 1 second
-	client := &http.Client{Timeout: 1 * time.Second}
-	resp, err := client.Get(sharedConfig.DATA_SERVICE_URL + "/api/v1/data/p/health")
-	if err != nil {
-		h.logger.WithError(err).Error("data-service is not healthy")
-		sharedHttp.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		sharedHttp.SendError(w, http.StatusServiceUnavailable, "data-service is not healthy", nil)
-		return
-	}
-
-	sharedHttp.SendSuccess(w, http.StatusOK, "Session service healthy", map[string]interface{}{
-		"status":  "healthy",
-		"service": "session-service",
-	})
 }
