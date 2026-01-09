@@ -109,6 +109,63 @@
             text-align: center;
         }
         
+        /* Collapsible Menu */
+        .nav-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 0.25rem 0.75rem;
+            transition: var(--transition);
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .nav-toggle:hover {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+        
+        .nav-toggle .toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .nav-toggle .toggle-left i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .nav-toggle .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.7rem;
+        }
+        
+        .nav-toggle.expanded .toggle-icon {
+            transform: rotate(90deg);
+        }
+        
+        .nav-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .nav-submenu.expanded {
+            max-height: 300px;
+        }
+        
+        .nav-submenu .nav-link {
+            padding-left: 3rem;
+            font-size: 0.85rem;
+        }
+        
         .sidebar-footer {
             padding: 1rem;
             border-top: 1px solid rgba(255,255,255,0.1);
@@ -383,16 +440,21 @@
             </div>
             
             <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main</div>
-                    <a href="dashboard.html" class="nav-link active">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </div>
+                <!-- Dashboard -->
+                <a href="dashboard.html" class="nav-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
                 
-                <div class="nav-section" id="ordersSection">
-                    <div class="nav-section-title">Orders</div>
+                <!-- Orders (collapsible) -->
+                <div class="nav-toggle" data-target="ordersSubmenu">
+                    <span class="toggle-left">
+                        <i class="fas fa-receipt"></i>
+                        <span>Orders</span>
+                    </span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <div class="nav-submenu" id="ordersSubmenu">
                     <a href="#" class="nav-link">
                         <i class="fas fa-clipboard-list"></i>
                         <span>Active Orders</span>
@@ -403,10 +465,17 @@
                     </a>
                 </div>
                 
-                <div class="nav-section" id="tablesSection">
-                    <div class="nav-section-title">Tables</div>
-                    <a href="#" class="nav-link">
+                <!-- Tables (collapsible) -->
+                <div class="nav-toggle" data-target="tablesSubmenu">
+                    <span class="toggle-left">
                         <i class="fas fa-chair"></i>
+                        <span>Tables</span>
+                    </span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <div class="nav-submenu" id="tablesSubmenu">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-map"></i>
                         <span>Table Map</span>
                     </a>
                     <a href="#" class="nav-link">
@@ -415,20 +484,34 @@
                     </a>
                 </div>
                 
-                <div class="nav-section" id="menuSection">
-                    <div class="nav-section-title">Menu</div>
-                    <a href="menu-items.html" class="nav-link">
+                <!-- Menu (collapsible) -->
+                <div class="nav-toggle" data-target="menuSubmenu">
+                    <span class="toggle-left">
                         <i class="fas fa-utensils"></i>
+                        <span>Menu</span>
+                    </span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <div class="nav-submenu" id="menuSubmenu">
+                    <a href="menu-items.html" class="nav-link">
+                        <i class="fas fa-hamburger"></i>
                         <span>Menu Items</span>
                     </a>
                     <a href="menu-categories.html" class="nav-link">
                         <i class="fas fa-tags"></i>
-                        <span>Categories</span>
+                        <span>Menu Categories</span>
                     </a>
                 </div>
                 
-                <div class="nav-section" id="inventorySection">
-                    <div class="nav-section-title">Inventory</div>
+                <!-- Inventory (collapsible) -->
+                <div class="nav-toggle" data-target="inventorySubmenu">
+                    <span class="toggle-left">
+                        <i class="fas fa-warehouse"></i>
+                        <span>Inventory</span>
+                    </span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <div class="nav-submenu" id="inventorySubmenu">
                     <a href="stock-items.html" class="nav-link">
                         <i class="fas fa-boxes"></i>
                         <span>Stock Items</span>
@@ -439,8 +522,15 @@
                     </a>
                 </div>
                 
-                <div class="nav-section" id="adminSection">
-                    <div class="nav-section-title">Administration</div>
+                <!-- Admin (collapsible) -->
+                <div class="nav-toggle" data-target="adminSubmenu">
+                    <span class="toggle-left">
+                        <i class="fas fa-cog"></i>
+                        <span>Administration</span>
+                    </span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <div class="nav-submenu" id="adminSubmenu">
                     <a href="#" class="nav-link">
                         <i class="fas fa-users"></i>
                         <span>Staff</span>
@@ -450,7 +540,7 @@
                         <span>Reports</span>
                     </a>
                     <a href="#" class="nav-link">
-                        <i class="fas fa-cog"></i>
+                        <i class="fas fa-sliders-h"></i>
                         <span>Settings</span>
                     </a>
                 </div>
@@ -747,6 +837,24 @@
                     this.sidebarOverlay.classList.remove('show');
                 });
                 
+                // Collapsible menu toggles
+                document.querySelectorAll('.nav-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', () => {
+                        const targetId = toggle.dataset.target;
+                        const submenu = document.getElementById(targetId);
+                        
+                        // Toggle this submenu
+                        toggle.classList.toggle('expanded');
+                        submenu.classList.toggle('expanded');
+                        
+                        // Save state to localStorage
+                        this.saveMenuState();
+                    });
+                });
+                
+                // Restore menu state from localStorage
+                this.restoreMenuState();
+                
                 // Logout
                 this.logoutBtn?.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -763,6 +871,29 @@
                         }
                     });
                 });
+            }
+            
+            saveMenuState() {
+                const expandedMenus = [];
+                document.querySelectorAll('.nav-toggle.expanded').forEach(toggle => {
+                    expandedMenus.push(toggle.dataset.target);
+                });
+                localStorage.setItem('barrest_menu_state', JSON.stringify(expandedMenus));
+            }
+            
+            restoreMenuState() {
+                const saved = localStorage.getItem('barrest_menu_state');
+                if (saved) {
+                    const expandedMenus = JSON.parse(saved);
+                    expandedMenus.forEach(targetId => {
+                        const toggle = document.querySelector(`[data-target="${targetId}"]`);
+                        const submenu = document.getElementById(targetId);
+                        if (toggle && submenu) {
+                            toggle.classList.add('expanded');
+                            submenu.classList.add('expanded');
+                        }
+                    });
+                }
             }
             
             setupTheme() {

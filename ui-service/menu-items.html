@@ -36,6 +36,17 @@
         .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.15); color: white; }
         .nav-link i { width: 20px; text-align: center; }
         
+        /* Collapsible Menu */
+        .nav-toggle { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; color: rgba(255,255,255,0.9); border-radius: 8px; margin: 0.25rem 0.75rem; cursor: pointer; background: rgba(255,255,255,0.05); transition: var(--transition); }
+        .nav-toggle:hover, .nav-toggle.active { background: rgba(255,255,255,0.15); color: white; }
+        .nav-toggle .toggle-left { display: flex; align-items: center; gap: 0.75rem; }
+        .nav-toggle .toggle-left i { width: 20px; text-align: center; }
+        .nav-toggle .toggle-icon { transition: transform 0.3s ease; font-size: 0.7rem; }
+        .nav-toggle.expanded .toggle-icon { transform: rotate(90deg); }
+        .nav-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .nav-submenu.expanded { max-height: 300px; }
+        .nav-submenu .nav-link { padding-left: 3rem; font-size: 0.85rem; }
+        
         .main-content { flex: 1; display: flex; flex-direction: column; background: var(--background-light); }
         
         .top-navbar { background: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-light); z-index: 10; }
@@ -98,19 +109,24 @@
             </div>
             
             <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main</div>
-                    <a href="dashboard.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="dashboard.html" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                
+                <!-- Menu (collapsible) - Active -->
+                <div class="nav-toggle expanded active" data-target="menuSubmenu">
+                    <span class="toggle-left"><i class="fas fa-utensils"></i><span>Menu</span></span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <div class="nav-submenu expanded" id="menuSubmenu">
+                    <a href="menu-items.html" class="nav-link active"><i class="fas fa-hamburger"></i><span>Menu Items</span></a>
+                    <a href="menu-categories.html" class="nav-link"><i class="fas fa-tags"></i><span>Menu Categories</span></a>
                 </div>
                 
-                <div class="nav-section">
-                    <div class="nav-section-title">Menu</div>
-                    <a href="menu-items.html" class="nav-link active"><i class="fas fa-utensils"></i><span>Menu Items</span></a>
-                    <a href="menu-categories.html" class="nav-link"><i class="fas fa-tags"></i><span>Categories</span></a>
+                <!-- Inventory (collapsible) -->
+                <div class="nav-toggle" data-target="inventorySubmenu">
+                    <span class="toggle-left"><i class="fas fa-warehouse"></i><span>Inventory</span></span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
-                
-                <div class="nav-section">
-                    <div class="nav-section-title">Inventory</div>
+                <div class="nav-submenu" id="inventorySubmenu">
                     <a href="stock-items.html" class="nav-link"><i class="fas fa-boxes"></i><span>Stock Items</span></a>
                     <a href="stock-categories.html" class="nav-link"><i class="fas fa-layer-group"></i><span>Stock Categories</span></a>
                 </div>
@@ -312,6 +328,15 @@
                 document.getElementById('sidebarOverlay')?.addEventListener('click', () => {
                     document.getElementById('sidebar').classList.remove('show');
                     document.getElementById('sidebarOverlay').classList.remove('show');
+                });
+                // Collapsible menu toggles
+                document.querySelectorAll('.nav-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', () => {
+                        const targetId = toggle.dataset.target;
+                        const submenu = document.getElementById(targetId);
+                        toggle.classList.toggle('expanded');
+                        submenu.classList.toggle('expanded');
+                    });
                 });
                 document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
                     e.preventDefault();
