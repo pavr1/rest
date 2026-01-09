@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "bar-restaurant-api",
 		"name": "Bar Restaurant API",
-		"description": "Bar Restaurant Management System API Collection\n\nServices:\n- Gateway: 8082 (main entry point)\n- Data: 8086\n- Session: 8087\n- UI: 3000",
+		"description": "Bar Restaurant Management System API Collection\n\nServices:\n- Gateway: 8082 (main entry point)\n- Data: 8086\n- Session: 8087\n- Menu: 8088\n- UI: 3000",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -22,12 +22,37 @@
 			"type": "string"
 		},
 		{
+			"key": "menu_url",
+			"value": "http://localhost:8088",
+			"type": "string"
+		},
+		{
 			"key": "ui_url",
 			"value": "http://localhost:3000",
 			"type": "string"
 		},
 		{
 			"key": "session_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "menu_category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "menu_item_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "stock_category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "stock_item_id",
 			"value": "",
 			"type": "string"
 		}
@@ -95,7 +120,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+							"raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin\"\n}"
 						},
 						"url": {
 							"raw": "{{gateway_url}}/api/v1/sessions/p/login",
@@ -148,6 +173,498 @@
 						},
 						"description": "Logout and invalidate session (requires authentication)"
 					}
+				}
+			]
+		},
+		{
+			"name": "Menu Service",
+			"description": "Menu items, categories, stock items, and ingredients management",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{menu_url}}/api/v1/menu/p/health",
+							"host": ["{{menu_url}}"],
+							"path": ["api", "v1", "menu", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Menu Categories",
+					"item": [
+						{
+							"name": "List Menu Categories",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/categories?page=1&limit=20",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "categories"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Menu Category",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/categories/{{menu_category_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "categories", "{{menu_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Create Menu Category",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('menu_category_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"New Category\",\n    \"display_order\": 10,\n    \"description\": \"A new menu category\"\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/categories",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "categories"]
+								}
+							}
+						},
+						{
+							"name": "Update Menu Category",
+							"request": {
+								"method": "PUT",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Category\",\n    \"display_order\": 5\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/categories/{{menu_category_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "categories", "{{menu_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Menu Category",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/categories/{{menu_category_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "categories", "{{menu_category_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Menu Items",
+					"item": [
+						{
+							"name": "List Menu Items",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items?page=1&limit=20",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "category_id", "value": "", "disabled": true},
+										{"key": "menu_type", "value": "", "disabled": true},
+										{"key": "is_available", "value": "true", "disabled": true}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Menu Item",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Create Menu Item",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('menu_item_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"New Dish\",\n    \"description\": \"A delicious new dish\",\n    \"category_id\": \"{{menu_category_id}}\",\n    \"price\": 15.99,\n    \"is_available\": true,\n    \"item_type\": \"kitchen\",\n    \"menu_types\": [\"lunch\", \"dinner\"],\n    \"is_alcoholic\": false\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items"]
+								}
+							}
+						},
+						{
+							"name": "Update Menu Item",
+							"request": {
+								"method": "PUT",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Dish\",\n    \"price\": 18.99\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Toggle Availability",
+							"request": {
+								"method": "PATCH",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"is_available\": false\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/availability",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "availability"]
+								}
+							}
+						},
+						{
+							"name": "Delete Menu Item",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Menu Item Ingredients",
+					"item": [
+						{
+							"name": "List Ingredients",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Add Ingredient",
+							"request": {
+								"method": "POST",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"stock_item_id\": \"{{stock_item_id}}\",\n    \"quantity\": 0.5\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Update Ingredient Quantity",
+							"request": {
+								"method": "PUT",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"quantity\": 0.75\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients", "{{stock_item_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Remove Ingredient",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients", "{{stock_item_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Cost Calculation",
+					"item": [
+						{
+							"name": "Get Menu Item Cost",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/cost",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "cost"]
+								}
+							}
+						},
+						{
+							"name": "Recalculate Cost",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/cost/recalculate",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "cost", "recalculate"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Stock Item Categories",
+					"item": [
+						{
+							"name": "List Stock Categories",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/categories?page=1&limit=20",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "categories"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Stock Category",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Create Stock Category",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('stock_category_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Vegetables\",\n    \"description\": \"Fresh vegetables\"\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/categories",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "categories"]
+								}
+							}
+						},
+						{
+							"name": "Update Stock Category",
+							"request": {
+								"method": "PUT",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Fresh Vegetables\"\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Stock Category",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Stock Items",
+					"item": [
+						{
+							"name": "List Stock Items",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/items?page=1&limit=20",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "items"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "category_id", "value": "", "disabled": true}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Stock Item",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Create Stock Item",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('stock_item_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Tomatoes\",\n    \"unit\": \"kg\",\n    \"description\": \"Fresh tomatoes\",\n    \"category_id\": \"{{stock_category_id}}\"\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/items",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "items"]
+								}
+							}
+						},
+						{
+							"name": "Update Stock Item",
+							"request": {
+								"method": "PUT",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Cherry Tomatoes\",\n    \"unit\": \"kg\"\n}"
+								},
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Stock Item",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{menu_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"host": ["{{menu_url}}"],
+									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
+								}
+							}
+						}
+					]
 				}
 			]
 		},
@@ -337,6 +854,18 @@
 					}
 				},
 				{
+					"name": "Menu Service - Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{menu_url}}/api/v1/menu/p/health",
+							"host": ["{{menu_url}}"],
+							"path": ["api", "v1", "menu", "p", "health"]
+						}
+					}
+				},
+				{
 					"name": "UI Service - Health",
 					"request": {
 						"method": "GET",
@@ -352,4 +881,3 @@
 		}
 	]
 }
-

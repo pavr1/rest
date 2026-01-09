@@ -1,0 +1,30 @@
+# Menu Service Docker Compose
+# =============================================================================
+# Service pings data-service health endpoint to check availability.
+# Use root Makefile: make fresh (handles startup order)
+# =============================================================================
+
+services:
+  menu-service:
+    build:
+      context: ../..
+      dockerfile: menu-service/docker/Dockerfile
+    container_name: barrest_menu_service
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8088
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/api/v1/menu/p/health"]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - docker_barrest_network
+
+networks:
+  docker_barrest_network:
+    external: true
