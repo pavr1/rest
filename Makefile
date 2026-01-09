@@ -1,7 +1,7 @@
 # Bar-Restaurant Root Makefile
 # Orchestrates all services
 
-.PHONY: test test-data test-session test-gateway test-coverage start stop restart status logs clean fresh help
+.PHONY: test test-data test-session test-gateway test-menu test-coverage start stop restart status logs clean fresh help
 
 .DEFAULT_GOAL := help
 
@@ -24,6 +24,10 @@ test: ## Run all tests across all services
 	@echo "────────────────────────"
 	@cd gateway-service && go test -v ./...
 	@echo ""
+	@echo "🍽️ Menu Service Tests"
+	@echo "─────────────────────"
+	@cd menu-service && go test -v ./...
+	@echo ""
 	@echo "✅ All tests complete!"
 
 test-data: ## Run data-service tests only
@@ -38,11 +42,16 @@ test-gateway: ## Run gateway-service tests only
 	@echo "🌐 Running Gateway Service tests..."
 	@cd gateway-service && go test -v ./...
 
+test-menu: ## Run menu-service tests only
+	@echo "🍽️ Running Menu Service tests..."
+	@cd menu-service && go test -v ./...
+
 test-coverage: ## Run all tests with coverage
 	@echo "🧪 Running tests with coverage..."
 	@cd data-service && go test -cover ./...
 	@cd session-service && go test -cover ./...
 	@cd gateway-service && go test -cover ./...
+	@cd menu-service && go test -cover ./...
 
 # =============================================================================
 # 🚀 SERVICE MANAGEMENT
@@ -55,6 +64,8 @@ start: ## Start all services
 	@sleep 3
 	@cd session-service && make start
 	@sleep 2
+	@cd menu-service && make start
+	@sleep 2
 	@cd gateway-service && make start
 	@sleep 2
 	@cd ui-service && make start
@@ -66,6 +77,7 @@ stop: ## Stop all services
 	@echo "🛑 Stopping all services..."
 	@cd ui-service && make stop
 	@cd gateway-service && make stop
+	@cd menu-service && make stop
 	@cd session-service && make stop
 	@cd data-service && make stop
 	@echo "✅ All services stopped!"
@@ -75,7 +87,7 @@ restart: stop start ## Restart all services
 logs: ## View logs for a service (usage: make logs s=gateway)
 	@if [ -z "$(s)" ]; then \
 		echo "Usage: make logs s=<service>"; \
-		echo "  Services: data, session, gateway, ui"; \
+		echo "  Services: data, session, gateway, menu, ui"; \
 	else \
 		cd $(s)-service && make logs; \
 	fi
@@ -89,6 +101,9 @@ status: ## Show status of all services
 	@echo "🔐 Session Service:"
 	@cd session-service && make status
 	@echo ""
+	@echo "🍽️ Menu Service:"
+	@cd menu-service && make status
+	@echo ""
 	@echo "🌐 Gateway Service:"
 	@cd gateway-service && make status
 	@echo ""
@@ -99,6 +114,7 @@ clean: ## Clean all services
 	@echo "🧹 Cleaning all services..."
 	@cd ui-service && make clean
 	@cd gateway-service && make clean
+	@cd menu-service && make clean
 	@cd session-service && make clean
 	@cd data-service && make clean
 	@echo "✅ All cleaned!"
@@ -108,6 +124,8 @@ fresh: clean ## Fresh install of all services
 	@cd data-service && make fresh
 	@sleep 2
 	@cd session-service && make start
+	@sleep 2
+	@cd menu-service && make start
 	@sleep 2
 	@cd gateway-service && make start
 	@sleep 2
@@ -135,3 +153,4 @@ help: ## Show this help
 	@echo "  make fresh           # Clean install everything"
 	@echo "  make test            # Run all tests"
 	@echo "  make logs s=gateway  # View gateway service logs"
+	@echo "  make logs s=menu     # View menu service logs"

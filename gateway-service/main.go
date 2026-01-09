@@ -33,6 +33,7 @@ func main() {
 	// Service URLs
 	sessionServiceUrl := config.GetString("SESSION_SERVICE_URL")
 	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
+	menuServiceUrl := config.GetString("MENU_SERVICE_URL")
 
 	logger.WithFields(map[string]interface{}{
 		"session_service": sessionServiceUrl,
@@ -50,6 +51,7 @@ func main() {
 	}
 	httpHealthMonitor.AddService("session-service", sessionServiceUrl+"/api/v1/sessions/p/health")
 	httpHealthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
+	httpHealthMonitor.AddService("menu-service", menuServiceUrl+"/api/v1/menu/p/health")
 	httpHealthMonitor.Start(ctx)
 
 	// Create session manager for authentication

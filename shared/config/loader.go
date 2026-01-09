@@ -274,7 +274,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("GATEWAY_SERVICE_URL", "http://localhost:8082")
 		config.Set("SESSION_SERVICE_URL", "http://barrest_session_service:8087")
 		config.Set("ORDERS_SERVICE_URL", "http://localhost:8083")
-		config.Set("MENU_SERVICE_URL", "http://localhost:8087")
+		config.Set("MENU_SERVICE_URL", "http://barrest_menu_service:8088")
 		config.Set("INVENTORY_SERVICE_URL", "http://localhost:8084")
 		config.Set("PAYMENT_SERVICE_URL", "http://localhost:8088")
 		config.Set("CUSTOMER_SERVICE_URL", "http://localhost:8089")

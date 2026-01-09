@@ -202,6 +202,10 @@ class SystemStatusMonitor {
         const sessionStatus = services['session-service'] === true ? 'online' : 'offline';
         this.updateStatusIndicator('session-status', sessionStatus);
         
+        // Update menu service status
+        const menuStatus = services['menu-service'] === true ? 'online' : 'offline';
+        this.updateStatusIndicator('menu-status', menuStatus);
+        
         // Update data service status from actual gateway response
         const dataStatus = services['data-service'] === true ? 'online' : 'offline';
         this.updateStatusIndicator('data-status', dataStatus);
@@ -228,6 +232,7 @@ class SystemStatusMonitor {
         this.updateStatusIndicator('main-status', 'offline');
         this.updateStatusIndicator('gateway-status', 'offline');
         this.updateStatusIndicator('session-status', 'offline');
+        this.updateStatusIndicator('menu-status', 'offline');
         this.updateStatusIndicator('data-status', 'offline');
     }
 
@@ -237,6 +242,7 @@ class SystemStatusMonitor {
             'main-status',
             'gateway-status',
             'session-status',
+            'menu-status',
             'data-status'
         ];
         
@@ -266,6 +272,7 @@ class SystemStatusMonitor {
         return {
             gateway: this.getIndicatorStatus('gateway-status'),
             session: this.getIndicatorStatus('session-status'),
+            menu: this.getIndicatorStatus('menu-status'),
             data: this.getIndicatorStatus('data-status')
         };
     }
