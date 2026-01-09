@@ -248,9 +248,9 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DEFAULT_TAX_RATE", "13.0")
 		config.Set("DEFAULT_SERVICE_RATE", "10.0")
 	case "menu":
-		config.Set("SERVER_PORT", "8087")
+		config.Set("SERVER_PORT", "8088")
 		config.Set("SERVER_HOST", "0.0.0.0")
-		config.Set("DB_HOST", "localhost")
+		config.Set("DB_HOST", "barrest_postgres")
 		config.Set("DB_PORT", "5432")
 		config.Set("DB_USER", "postgres")
 		config.Set("DB_PASSWORD", "postgres123")

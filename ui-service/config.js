@@ -36,6 +36,7 @@ const CONFIG = {
     SERVICES: {
         gateway: SERVICE_URLS.gateway + '/api/v1/gateway/p/health',
         session: SERVICE_URLS.gateway + '/api/v1/sessions/p/health',
+        menu: SERVICE_URLS.gateway + '/api/v1/menu/p/health',
         data: SERVICE_URLS.gateway + '/api/v1/data/p/health'
     },
     AUTH: {
@@ -45,13 +46,23 @@ const CONFIG = {
         SESSION_ID_KEY: 'barrest_session_id',
         USER_KEY: 'barrest_user_data',
         REMEMBER_KEY: 'barrest_remember_me'
+    },
+    MENU: {
+        // Menu Categories
+        categories: SERVICE_URLS.gateway + '/api/v1/menu/categories',
+        // Menu Items
+        items: SERVICE_URLS.gateway + '/api/v1/menu/items',
+        // Stock Item Categories
+        stockCategories: SERVICE_URLS.gateway + '/api/v1/stock/categories',
+        // Stock Items
+        stockItems: SERVICE_URLS.gateway + '/api/v1/stock/items'
     }
 };
 
 console.log('🔧 Configuration loaded:', {
-    gateway: SERVICE_URLS.gateway
+    gateway: SERVICE_URLS.gateway,
+    menu: CONFIG.MENU
 });
 
 // Export for global access
 window.CONFIG = CONFIG;
-

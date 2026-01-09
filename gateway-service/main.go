@@ -38,6 +38,7 @@ func main() {
 	logger.WithFields(map[string]interface{}{
 		"session_service": sessionServiceUrl,
 		"data_service":    dataServiceUrl,
+		"menu_service":    menuServiceUrl,
 	}).Info("Configuration loaded")
 
 	// Create cancellable context for graceful shutdown
@@ -59,7 +60,7 @@ func main() {
 	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger)
 
 	// Create HTTP handler with all dependencies
-	httpHandler := handlers.NewHTTPHandler(config, sessionServiceUrl, httpHealthMonitor, logger)
+	httpHandler := handlers.NewHTTPHandler(config, sessionServiceUrl, menuServiceUrl, httpHealthMonitor, logger)
 	router := httpHandler.SetupRoutes(sessionMiddleware)
 
 	// Start server

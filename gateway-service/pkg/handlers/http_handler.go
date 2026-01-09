@@ -22,6 +22,7 @@ import (
 type HTTPHandler struct {
 	config            *sharedConfig.Config
 	sessionServiceUrl string
+	menuServiceUrl    string
 	httpHealthMonitor *sharedHttp.HTTPHealthMonitor
 	logger            *logrus.Logger
 }
@@ -29,12 +30,14 @@ type HTTPHandler struct {
 func NewHTTPHandler(
 	config *sharedConfig.Config,
 	sessionServiceUrl string,
+	menuServiceUrl string,
 	httpHealthMonitor *sharedHttp.HTTPHealthMonitor,
 	logger *logrus.Logger,
 ) *HTTPHandler {
 	return &HTTPHandler{
 		config:            config,
 		sessionServiceUrl: sessionServiceUrl,
+		menuServiceUrl:    menuServiceUrl,
 		httpHealthMonitor: httpHealthMonitor,
 		logger:            logger,
 	}
@@ -149,6 +152,35 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	protectedSessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 	protectedSessionRouter.Use(sessionMiddleware.ValidateSession)
 	protectedSessionRouter.HandleFunc("/logout", h.CreateProxyHandler(h.sessionServiceUrl)).Methods("POST")
+
+	// ==== MENU SERVICE ENDPOINTS ====
+	// Public - health check
+	api.HandleFunc("/v1/menu/p/health", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET")
+
+	// Protected - Menu Categories
+	menuRouter := api.PathPrefix("/v1/menu").Subrouter()
+	menuRouter.Use(sessionMiddleware.ValidateSession)
+	menuRouter.HandleFunc("/categories", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	menuRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Protected - Menu Items
+	menuRouter.HandleFunc("/items", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	menuRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+	menuRouter.HandleFunc("/items/{id}/availability", h.CreateProxyHandler(h.menuServiceUrl)).Methods("PATCH")
+	menuRouter.HandleFunc("/items/{id}/ingredients", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	menuRouter.HandleFunc("/items/{id}/ingredients/{stockItemId}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("PUT", "DELETE")
+	menuRouter.HandleFunc("/items/{id}/cost", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET")
+	menuRouter.HandleFunc("/items/{id}/cost/recalculate", h.CreateProxyHandler(h.menuServiceUrl)).Methods("POST")
+
+	// Protected - Stock Categories
+	stockRouter := api.PathPrefix("/v1/stock").Subrouter()
+	stockRouter.Use(sessionMiddleware.ValidateSession)
+	stockRouter.HandleFunc("/categories", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	stockRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Protected - Stock Items
+	stockRouter.HandleFunc("/items", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	stockRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
 
 	// OPTIONS handling for CORS preflight
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
