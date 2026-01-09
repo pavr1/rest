@@ -24,6 +24,7 @@ class AppRouter {
             // Menu
             'menu-items': { title: 'Menu Items', icon: 'fa-hamburger', partial: 'pages/menu/items.html' },
             'menu-categories': { title: 'Menu Categories', icon: 'fa-tags', partial: 'pages/menu/categories.html' },
+            'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
             
             // Inventory
             'stock-items': { title: 'Stock Items', icon: 'fa-boxes', partial: 'pages/inventory/items.html' },

@@ -8,7 +8,7 @@
     .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
     .data-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
     .data-table tbody tr:hover { background: #f8f9fa; }
-    .action-btns { display: flex; gap: 0.5rem; }
+    .action-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
     .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
@@ -21,6 +21,10 @@
     .price { font-weight: 600; color: var(--primary-color); }
     .item-image { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; background: #f8f9fa; }
     .item-image-placeholder { width: 50px; height: 50px; border-radius: 8px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; color: #ccc; }
+    .ingredient-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 6px; margin-bottom: 0.5rem; }
+    .ingredient-row .ingredient-name { flex: 1; }
+    .ingredient-row .ingredient-qty { width: 100px; }
+    .ingredient-count { font-size: 0.7rem; background: var(--primary-color); color: white; border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; }
 </style>
 
 <div class="page-header">
@@ -64,7 +68,7 @@
                     <th>Price</th>
                     <th>Cost</th>
                     <th>Status</th>
-                    <th width="150">Actions</th>
+                    <th width="180">Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -72,7 +76,7 @@
     </div>
 </div>
 
-<!-- Modal -->
+<!-- Item Modal -->
 <div class="modal fade" id="itemModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -133,17 +137,87 @@
     </div>
 </div>
 
+<!-- Ingredients Modal -->
+<div class="modal fade" id="ingredientsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-list-ul me-2"></i>Ingredients for <span id="ingredientItemName">-</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="ingredientMenuItemId">
+                
+                <!-- Add Ingredient Form -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="fas fa-plus me-2"></i>Add Ingredient</h6>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label">Stock Item</label>
+                                <select class="form-select" id="newIngredientStockItem">
+                                    <option value="">Select stock item...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="newIngredientQty" step="0.01" min="0.01" placeholder="0.00">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-success w-100" id="addIngredientBtn">
+                                    <i class="fas fa-plus me-1"></i>Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ingredients List -->
+                <div id="ingredientsLoading" class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary"></div>
+                    <span class="ms-2">Loading ingredients...</span>
+                </div>
+                <div id="ingredientsEmpty" class="text-center py-3 text-muted d-none">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p class="mb-0">No ingredients added yet</p>
+                </div>
+                <div id="ingredientsList"></div>
+                
+                <!-- Cost Summary -->
+                <div class="card mt-3 bg-light">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Total Cost:</strong> <span id="totalCost" class="text-primary fs-5">$0.00</span>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="recalculateCostBtn">
+                            <i class="fas fa-calculator me-1"></i>Recalculate & Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function() {
     let items = [];
     let categories = [];
+    let stockItems = [];
+    let currentIngredients = [];
     let modal = null;
+    let ingredientsModal = null;
     let editingId = null;
     
     function init() {
         modal = new bootstrap.Modal(document.getElementById('itemModal'));
+        ingredientsModal = new bootstrap.Modal(document.getElementById('ingredientsModal'));
         setupEventListeners();
         loadCategories();
+        loadStockItems();
         loadItems();
     }
     
@@ -154,6 +228,8 @@
         document.getElementById('categoryFilter')?.addEventListener('change', () => loadItems());
         document.getElementById('typeFilter')?.addEventListener('change', () => loadItems());
         document.getElementById('availabilityFilter')?.addEventListener('change', () => loadItems());
+        document.getElementById('addIngredientBtn')?.addEventListener('click', addIngredient);
+        document.getElementById('recalculateCostBtn')?.addEventListener('click', recalculateCost);
     }
     
     async function loadCategories() {
@@ -168,10 +244,27 @@
         } catch (e) { console.error('Error loading categories:', e); }
     }
     
+    async function loadStockItems() {
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(CONFIG.MENU.stockItems, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (resp.ok) {
+                const result = await resp.json();
+                stockItems = result.data?.items || result.data || [];
+                populateStockItemsDropdown();
+            }
+        } catch (e) { console.error('Error loading stock items:', e); }
+    }
+    
     function populateCategoryDropdowns() {
         const options = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         document.getElementById('categoryFilter').innerHTML = '<option value="">All Categories</option>' + options;
         document.getElementById('itemCategory').innerHTML = '<option value="">Select...</option>' + options;
+    }
+    
+    function populateStockItemsDropdown() {
+        const options = stockItems.map(s => `<option value="${s.id}">${s.name} (${s.unit})</option>`).join('');
+        document.getElementById('newIngredientStockItem').innerHTML = '<option value="">Select stock item...</option>' + options;
     }
     
     async function loadItems() {
@@ -220,10 +313,13 @@
                     <td><span class="type-badge ${item.item_type || 'kitchen'}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
                     <td>${cat?.name || '-'}</td>
                     <td class="price">$${(item.price || 0).toFixed(2)}</td>
-                    <td>$${(item.cost || 0).toFixed(2)}</td>
+                    <td>$${(item.item_cost || 0).toFixed(2)}</td>
                     <td><span class="status-badge ${item.is_available ? 'available' : 'unavailable'}">${item.is_available ? 'Available' : 'Unavailable'}</span></td>
                     <td>
                         <div class="action-btns">
+                            <button class="btn btn-outline-info btn-action" onclick="window.menuItemsPage.ingredients('${item.id}')" title="Ingredients">
+                                <i class="fas fa-list-ul"></i>
+                            </button>
                             <button class="btn btn-outline-${item.is_available ? 'warning' : 'success'} btn-action" onclick="window.menuItemsPage.toggle('${item.id}', ${!item.is_available})" title="${item.is_available ? 'Unavailable' : 'Available'}">
                                 <i class="fas fa-${item.is_available ? 'eye-slash' : 'eye'}"></i>
                             </button>
@@ -302,12 +398,189 @@
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
+    // === INGREDIENTS MANAGEMENT ===
+    async function openIngredientsModal(menuItemId) {
+        const item = items.find(i => i.id === menuItemId);
+        if (!item) return;
+        
+        document.getElementById('ingredientMenuItemId').value = menuItemId;
+        document.getElementById('ingredientItemName').textContent = item.name;
+        document.getElementById('newIngredientStockItem').value = '';
+        document.getElementById('newIngredientQty').value = '';
+        
+        ingredientsModal.show();
+        await loadIngredients(menuItemId);
+    }
+    
+    async function loadIngredients(menuItemId) {
+        const listEl = document.getElementById('ingredientsList');
+        const loadingEl = document.getElementById('ingredientsLoading');
+        const emptyEl = document.getElementById('ingredientsEmpty');
+        
+        listEl.innerHTML = '';
+        loadingEl.classList.remove('d-none');
+        emptyEl.classList.add('d-none');
+        
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(CONFIG.MENU.ingredients(menuItemId), { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed');
+            const result = await resp.json();
+            currentIngredients = result.data?.ingredients || [];
+            renderIngredients();
+        } catch (e) {
+            console.error('Error:', e);
+            Swal.fire('Error', 'Failed to load ingredients', 'error');
+        } finally {
+            loadingEl.classList.add('d-none');
+        }
+    }
+    
+    function renderIngredients() {
+        const listEl = document.getElementById('ingredientsList');
+        const emptyEl = document.getElementById('ingredientsEmpty');
+        
+        if (!currentIngredients.length) {
+            emptyEl.classList.remove('d-none');
+            listEl.innerHTML = '';
+            document.getElementById('totalCost').textContent = '$0.00';
+            return;
+        }
+        
+        emptyEl.classList.add('d-none');
+        let totalCost = 0;
+        
+        listEl.innerHTML = currentIngredients.map(ing => {
+            const stockItem = stockItems.find(s => s.id === ing.stock_item_id);
+            const unitCost = stockItem?.cost_per_unit || 0;
+            const ingCost = unitCost * ing.quantity;
+            totalCost += ingCost;
+            
+            return `
+                <div class="ingredient-row">
+                    <div class="ingredient-name">
+                        <strong>${escapeHtml(ing.stock_item_name || stockItem?.name || 'Unknown')}</strong>
+                        <small class="text-muted ms-2">(${ing.stock_item_unit || stockItem?.unit || '-'})</small>
+                    </div>
+                    <input type="number" class="form-control form-control-sm ingredient-qty" 
+                           value="${ing.quantity}" step="0.01" min="0.01"
+                           data-stock-id="${ing.stock_item_id}"
+                           onchange="window.menuItemsPage.updateIngredient('${ing.stock_item_id}', this.value)">
+                    <small class="text-muted" style="width: 80px;">$${ingCost.toFixed(2)}</small>
+                    <button class="btn btn-outline-danger btn-sm" onclick="window.menuItemsPage.removeIngredient('${ing.stock_item_id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+        
+        document.getElementById('totalCost').textContent = '$' + totalCost.toFixed(2);
+    }
+    
+    async function addIngredient() {
+        const menuItemId = document.getElementById('ingredientMenuItemId').value;
+        const stockItemId = document.getElementById('newIngredientStockItem').value;
+        const quantity = parseFloat(document.getElementById('newIngredientQty').value);
+        
+        if (!stockItemId || !quantity || quantity <= 0) {
+            Swal.fire('Error', 'Please select a stock item and enter a valid quantity', 'warning');
+            return;
+        }
+        
+        // Check if already added
+        if (currentIngredients.some(i => i.stock_item_id === stockItemId)) {
+            Swal.fire('Error', 'This ingredient is already added', 'warning');
+            return;
+        }
+        
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(CONFIG.MENU.ingredients(menuItemId), {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stock_item_id: stockItemId, quantity: quantity })
+            });
+            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
+            
+            document.getElementById('newIngredientStockItem').value = '';
+            document.getElementById('newIngredientQty').value = '';
+            await loadIngredients(menuItemId);
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
+    }
+    
+    async function updateIngredient(stockItemId, newQuantity) {
+        const menuItemId = document.getElementById('ingredientMenuItemId').value;
+        const quantity = parseFloat(newQuantity);
+        
+        if (!quantity || quantity <= 0) {
+            Swal.fire('Error', 'Quantity must be greater than 0', 'warning');
+            await loadIngredients(menuItemId);
+            return;
+        }
+        
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(`${CONFIG.MENU.ingredients(menuItemId)}/${stockItemId}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: quantity })
+            });
+            if (!resp.ok) throw new Error('Failed');
+            await loadIngredients(menuItemId);
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
+    }
+    
+    async function removeIngredient(stockItemId) {
+        const menuItemId = document.getElementById('ingredientMenuItemId').value;
+        
+        const result = await Swal.fire({
+            title: 'Remove?', text: 'Remove this ingredient?', icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Remove'
+        });
+        if (!result.isConfirmed) return;
+        
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(`${CONFIG.MENU.ingredients(menuItemId)}/${stockItemId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!resp.ok) throw new Error('Failed');
+            await loadIngredients(menuItemId);
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
+    }
+    
+    async function recalculateCost() {
+        const menuItemId = document.getElementById('ingredientMenuItemId').value;
+        const btn = document.getElementById('recalculateCostBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+        
+        try {
+            const token = window.authService.getSessionId();
+            const resp = await fetch(`${CONFIG.MENU.itemCost(menuItemId)}/recalculate`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!resp.ok) throw new Error('Failed');
+            Swal.fire({ icon: 'success', title: 'Cost saved!', timer: 1500, showConfirmButton: false });
+            await loadItems();
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
+        finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-calculator me-1"></i>Recalculate & Save';
+        }
+    }
+    
     function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
     
     window.menuItemsPage = {
         edit: (id) => { const item = items.find(i => i.id === id); if (item) openModal(item); },
         delete: deleteItem,
-        toggle: toggleAvailability
+        toggle: toggleAvailability,
+        ingredients: openIngredientsModal,
+        updateIngredient: updateIngredient,
+        removeIngredient: removeIngredient
     };
     
     init();

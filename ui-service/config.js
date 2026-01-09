@@ -52,6 +52,10 @@ const CONFIG = {
         categories: SERVICE_URLS.gateway + '/api/v1/menu/categories',
         // Menu Items
         items: SERVICE_URLS.gateway + '/api/v1/menu/items',
+        // Menu Item Ingredients (use with item ID: `${CONFIG.MENU.items}/${itemId}/ingredients`)
+        ingredients: (itemId) => SERVICE_URLS.gateway + `/api/v1/menu/items/${itemId}/ingredients`,
+        // Menu Item Cost
+        itemCost: (itemId) => SERVICE_URLS.gateway + `/api/v1/menu/items/${itemId}/cost`,
         // Stock Item Categories
         stockCategories: SERVICE_URLS.gateway + '/api/v1/stock/categories',
         // Stock Items
