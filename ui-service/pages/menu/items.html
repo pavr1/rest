@@ -110,6 +110,25 @@
                             <input type="number" class="form-control" id="itemDisplayOrder" value="0" min="0">
                         </div>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Menu Types <span class="text-danger">*</span></label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="menuTypeBreakfast" value="breakfast">
+                            <label class="form-check-label" for="menuTypeBreakfast">Breakfast</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="menuTypeLunch" value="lunch" checked>
+                            <label class="form-check-label" for="menuTypeLunch">Lunch</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="menuTypeDinner" value="dinner" checked>
+                            <label class="form-check-label" for="menuTypeDinner">Dinner</label>
+                        </div>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="itemAlcoholic">
+                        <label class="form-check-label" for="itemAlcoholic">Contains Alcohol</label>
+                    </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="itemAvailable" checked>
                         <label class="form-check-label" for="itemAvailable">Available for ordering</label>
@@ -224,7 +243,8 @@
             const resp = await fetch(CONFIG.MENU.subMenus, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
-                subMenus = result.sub_menus || result.data?.sub_menus || result.data || [];
+                // Response is wrapped in { success, message, data: { sub_menus, total, page, limit } }
+                subMenus = result.data?.sub_menus || result.sub_menus || [];
                 populateSubMenuDropdowns();
             }
         } catch (e) { console.error('Error loading sub menus:', e); }
@@ -331,6 +351,23 @@
         document.getElementById('itemPrepTime').value = item?.preparation_time || '';
         document.getElementById('itemDisplayOrder').value = item?.display_order || 0;
         document.getElementById('itemAvailable').checked = item?.is_available !== false;
+        document.getElementById('itemAlcoholic').checked = item?.is_alcoholic || false;
+        
+        // Parse menu_types JSON
+        let menuTypes = [];
+        if (item?.menu_types) {
+            try {
+                menuTypes = JSON.parse(item.menu_types);
+            } catch (e) {
+                menuTypes = ['lunch', 'dinner']; // default
+            }
+        } else {
+            menuTypes = ['lunch', 'dinner']; // default
+        }
+        document.getElementById('menuTypeBreakfast').checked = menuTypes.includes('breakfast');
+        document.getElementById('menuTypeLunch').checked = menuTypes.includes('lunch');
+        document.getElementById('menuTypeDinner').checked = menuTypes.includes('dinner');
+        
         modal.show();
     }
     
@@ -340,6 +377,19 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
             const token = window.authService.getSessionId();
+            
+            // Build menu_types array from checkboxes
+            const menuTypes = [];
+            if (document.getElementById('menuTypeBreakfast').checked) menuTypes.push('breakfast');
+            if (document.getElementById('menuTypeLunch').checked) menuTypes.push('lunch');
+            if (document.getElementById('menuTypeDinner').checked) menuTypes.push('dinner');
+            if (menuTypes.length === 0) {
+                btn.disabled = false;
+                btn.innerHTML = 'Save';
+                Swal.fire('Error', 'Please select at least one menu type', 'warning');
+                return;
+            }
+            
             const data = {
                 name: document.getElementById('itemName').value,
                 sub_menu_id: document.getElementById('itemSubMenu').value,
@@ -347,7 +397,11 @@
                 price: parseFloat(document.getElementById('itemPrice').value) || 0,
                 preparation_time: parseInt(document.getElementById('itemPrepTime').value) || null,
                 display_order: parseInt(document.getElementById('itemDisplayOrder').value) || 0,
-                is_available: document.getElementById('itemAvailable').checked
+                is_available: document.getElementById('itemAvailable').checked,
+                is_alcoholic: document.getElementById('itemAlcoholic').checked,
+                menu_types: JSON.stringify(menuTypes),
+                dietary_tags: JSON.stringify([]),
+                allergens: JSON.stringify([])
             };
             const url = editingId ? `${CONFIG.MENU.items}/${editingId}` : CONFIG.MENU.items;
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });

@@ -182,7 +182,8 @@
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
-            subMenus = result.sub_menus || result.data?.sub_menus || result.data || [];
+            // Response is wrapped in { success, message, data: { sub_menus, total, page, limit } }
+            subMenus = result.data?.sub_menus || result.sub_menus || [];
             renderTable();
         } catch (e) {
             console.error('Error:', e);

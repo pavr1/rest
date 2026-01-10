@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "bar-restaurant-api",
 		"name": "Bar Restaurant API",
-		"description": "Bar Restaurant Management System API Collection\n\nServices:\n- Gateway: 8082 (main entry point)\n- Data: 8086\n- Session: 8087\n- Menu: 8088\n- UI: 3000",
+		"description": "Bar Restaurant Management System API Collection\n\nServices:\n- Gateway: 8082 (main entry point - use this for all requests)\n- Data: 8086\n- Session: 8081\n- Menu: 8088\n- UI: 3000\n\nNote: All menu endpoints should go through the Gateway (8082) with authentication.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -18,7 +18,7 @@
 		},
 		{
 			"key": "session_url",
-			"value": "http://localhost:8087",
+			"value": "http://localhost:8081",
 			"type": "string"
 		},
 		{
@@ -38,6 +38,11 @@
 		},
 		{
 			"key": "menu_category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sub_menu_id",
 			"value": "",
 			"type": "string"
 		},
@@ -199,28 +204,34 @@
 							"name": "List Menu Categories",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/categories?page=1&limit=20",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/categories?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "categories"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"}
 									]
-								}
+								},
+								"description": "List menu categories (requires authentication)"
 							}
 						},
 						{
 							"name": "Get Menu Category",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/categories/{{menu_category_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/categories/{{menu_category_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "categories", "{{menu_category_id}}"]
-								}
+								},
+								"description": "Get a specific menu category (requires authentication)"
 							}
 						},
 						{
@@ -241,44 +252,162 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"name\": \"New Category\",\n    \"display_order\": 10,\n    \"description\": \"A new menu category\"\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/categories",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/categories",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "categories"]
-								}
+								},
+								"description": "Create a new menu category (requires authentication)"
 							}
 						},
 						{
 							"name": "Update Menu Category",
 							"request": {
 								"method": "PUT",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"name\": \"Updated Category\",\n    \"display_order\": 5\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/categories/{{menu_category_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/categories/{{menu_category_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "categories", "{{menu_category_id}}"]
-								}
+								},
+								"description": "Update a menu category (requires authentication)"
 							}
 						},
 						{
 							"name": "Delete Menu Category",
 							"request": {
 								"method": "DELETE",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/categories/{{menu_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "categories", "{{menu_category_id}}"]
+								},
+								"description": "Delete a menu category (requires authentication)"
+							}
+						}
+					]
+				},
+				{
+					"name": "Sub Menus",
+					"item": [
+						{
+							"name": "List Sub Menus",
+							"request": {
+								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/categories/{{menu_category_id}}",
-									"host": ["{{menu_url}}"],
-									"path": ["api", "v1", "menu", "categories", "{{menu_category_id}}"]
+									"raw": "{{gateway_url}}/api/v1/menu/submenus?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "submenus"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "category_id", "value": "", "disabled": true},
+										{"key": "item_type", "value": "", "disabled": true},
+										{"key": "is_active", "value": "true", "disabled": true}
+									]
+								},
+								"description": "List all sub menus with optional filters"
+							}
+						},
+						{
+							"name": "Get Sub Menu",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "submenus", "{{sub_menu_id}}"]
+								},
+								"description": "Get a specific sub menu by ID"
+							}
+						},
+						{
+							"name": "Create Sub Menu",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('sub_menu_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
 								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Smoothies\",\n    \"description\": \"Fresh fruit smoothies\",\n    \"category_id\": \"{{menu_category_id}}\",\n    \"item_type\": \"bar\",\n    \"display_order\": 1,\n    \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/submenus",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "submenus"]
+								},
+								"description": "Create a new sub menu (requires authentication)"
+							}
+						},
+						{
+							"name": "Update Sub Menu",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Smoothies\",\n    \"display_order\": 2\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "submenus", "{{sub_menu_id}}"]
+								},
+								"description": "Update an existing sub menu (requires authentication)"
+							}
+						},
+						{
+							"name": "Delete Sub Menu",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "submenus", "{{sub_menu_id}}"]
+								},
+								"description": "Delete a sub menu (requires authentication, fails if it has menu items)"
 							}
 						}
 					]
@@ -292,17 +421,18 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items?page=1&limit=20",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"},
-										{"key": "category_id", "value": "", "disabled": true},
+										{"key": "sub_menu_id", "value": "", "disabled": true},
 										{"key": "menu_type", "value": "", "disabled": true},
 										{"key": "is_available", "value": "true", "disabled": true}
 									]
-								}
+								},
+								"description": "List menu items (now uses sub_menu_id instead of category_id)"
 							}
 						},
 						{
@@ -311,10 +441,11 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
-								}
+								},
+								"description": "Get a specific menu item by ID"
 							}
 						},
 						{
@@ -335,60 +466,75 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"New Dish\",\n    \"description\": \"A delicious new dish\",\n    \"category_id\": \"{{menu_category_id}}\",\n    \"price\": 15.99,\n    \"is_available\": true,\n    \"item_type\": \"kitchen\",\n    \"menu_types\": [\"lunch\", \"dinner\"],\n    \"is_alcoholic\": false\n}"
+									"raw": "{\n    \"name\": \"Banana Smoothie\",\n    \"description\": \"Fresh banana smoothie\",\n    \"sub_menu_id\": \"{{sub_menu_id}}\",\n    \"price\": 5.99,\n    \"preparation_time\": 5,\n    \"display_order\": 1,\n    \"is_available\": true,\n    \"menu_types\": [\"lunch\", \"dinner\"],\n    \"dietary_tags\": [],\n    \"allergens\": [],\n    \"is_alcoholic\": false\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items"]
-								}
+								},
+								"description": "Create a new menu item (requires authentication). Note: item_type is inherited from sub_menu, no longer required here."
 							}
 						},
 						{
 							"name": "Update Menu Item",
 							"request": {
 								"method": "PUT",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Updated Dish\",\n    \"price\": 18.99\n}"
+									"raw": "{\n    \"name\": \"Updated Banana Smoothie\",\n    \"price\": 6.49,\n    \"preparation_time\": 6\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
-								}
+								},
+								"description": "Update an existing menu item (requires authentication)"
 							}
 						},
 						{
 							"name": "Toggle Availability",
 							"request": {
 								"method": "PATCH",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"is_available\": false\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/availability",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/availability",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "availability"]
-								}
+								},
+								"description": "Toggle menu item availability (requires authentication)"
 							}
 						},
 						{
 							"name": "Delete Menu Item",
 							"request": {
 								"method": "DELETE",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
-								}
+								},
+								"description": "Delete a menu item (requires authentication)"
 							}
 						}
 					]
@@ -400,56 +546,70 @@
 							"name": "List Ingredients",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients"]
-								}
+								},
+								"description": "List ingredients for a menu item (requires authentication)"
 							}
 						},
 						{
 							"name": "Add Ingredient",
 							"request": {
 								"method": "POST",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"stock_item_id\": \"{{stock_item_id}}\",\n    \"quantity\": 0.5\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients"]
-								}
+								},
+								"description": "Add an ingredient to a menu item (requires authentication)"
 							}
 						},
 						{
 							"name": "Update Ingredient Quantity",
 							"request": {
 								"method": "PUT",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"quantity\": 0.75\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients", "{{stock_item_id}}"]
-								}
+								},
+								"description": "Update ingredient quantity (requires authentication)"
 							}
 						},
 						{
 							"name": "Remove Ingredient",
 							"request": {
 								"method": "DELETE",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients", "{{stock_item_id}}"]
-								}
+								},
+								"description": "Remove an ingredient from a menu item (requires authentication)"
 							}
 						}
 					]
@@ -461,24 +621,30 @@
 							"name": "Get Menu Item Cost",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/cost",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/cost",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "cost"]
-								}
+								},
+								"description": "Get calculated cost for a menu item (requires authentication)"
 							}
 						},
 						{
 							"name": "Recalculate Cost",
 							"request": {
 								"method": "POST",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/menu/items/{{menu_item_id}}/cost/recalculate",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/cost/recalculate",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "cost", "recalculate"]
-								}
+								},
+								"description": "Recalculate and save menu item cost based on ingredients (requires authentication)"
 							}
 						}
 					]
@@ -490,28 +656,34 @@
 							"name": "List Stock Categories",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/categories?page=1&limit=20",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/categories?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"}
 									]
-								}
+								},
+								"description": "List stock item categories (requires authentication)"
 							}
 						},
 						{
 							"name": "Get Stock Category",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/categories/{{stock_category_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
-								}
+								},
+								"description": "Get a specific stock category (requires authentication)"
 							}
 						},
 						{
@@ -532,44 +704,55 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"name\": \"Vegetables\",\n    \"description\": \"Fresh vegetables\"\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/categories",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/categories",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories"]
-								}
+								},
+								"description": "Create a new stock category (requires authentication)"
 							}
 						},
 						{
 							"name": "Update Stock Category",
 							"request": {
 								"method": "PUT",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"name\": \"Fresh Vegetables\"\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/categories/{{stock_category_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
-								}
+								},
+								"description": "Update a stock category (requires authentication)"
 							}
 						},
 						{
 							"name": "Delete Stock Category",
 							"request": {
 								"method": "DELETE",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/categories/{{stock_category_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
-								}
+								},
+								"description": "Delete a stock category (requires authentication)"
 							}
 						}
 					]
@@ -581,29 +764,35 @@
 							"name": "List Stock Items",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/items?page=1&limit=20",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/items?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "items"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"},
 										{"key": "category_id", "value": "", "disabled": true}
 									]
-								}
+								},
+								"description": "List stock items (requires authentication)"
 							}
 						},
 						{
 							"name": "Get Stock Item",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/items/{{stock_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
-								}
+								},
+								"description": "Get a specific stock item (requires authentication)"
 							}
 						},
 						{
@@ -624,44 +813,55 @@
 							],
 							"request": {
 								"method": "POST",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"name\": \"Tomatoes\",\n    \"unit\": \"kg\",\n    \"description\": \"Fresh tomatoes\",\n    \"category_id\": \"{{stock_category_id}}\"\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/items",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/items",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "items"]
-								}
+								},
+								"description": "Create a new stock item (requires authentication)"
 							}
 						},
 						{
 							"name": "Update Stock Item",
 							"request": {
 								"method": "PUT",
-								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"body": {
 									"mode": "raw",
 									"raw": "{\n    \"name\": \"Cherry Tomatoes\",\n    \"unit\": \"kg\"\n}"
 								},
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/items/{{stock_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
-								}
+								},
+								"description": "Update a stock item (requires authentication)"
 							}
 						},
 						{
 							"name": "Delete Stock Item",
 							"request": {
 								"method": "DELETE",
-								"header": [],
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+								],
 								"url": {
-									"raw": "{{menu_url}}/api/v1/stock/items/{{stock_item_id}}",
-									"host": ["{{menu_url}}"],
+									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
-								}
+								},
+								"description": "Delete a stock item (requires authentication)"
 							}
 						}
 					]
