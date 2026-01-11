@@ -37,7 +37,8 @@ const CONFIG = {
         gateway: SERVICE_URLS.gateway + '/api/v1/gateway/p/health',
         session: SERVICE_URLS.gateway + '/api/v1/sessions/p/health',
         menu: SERVICE_URLS.gateway + '/api/v1/menu/p/health',
-        data: SERVICE_URLS.gateway + '/api/v1/data/p/health'
+        data: SERVICE_URLS.gateway + '/api/v1/data/p/health',
+        inventory: SERVICE_URLS.gateway + '/api/v1/inventory/p/health'
     },
     AUTH: {
         login: SERVICE_URLS.gateway + '/api/v1/sessions/p/login',
@@ -66,7 +67,7 @@ const CONFIG = {
     }
 };
 
-console.log('🔧 Configuration loaded:', {
+console.log('🔧 Configuration loaded (v1.1):', {
     gateway: SERVICE_URLS.gateway,
     menu: CONFIG.MENU
 });
