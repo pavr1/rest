@@ -20,26 +20,29 @@ import (
 )
 
 type HTTPHandler struct {
-	config            *sharedConfig.Config
-	sessionServiceUrl string
-	menuServiceUrl    string
-	httpHealthMonitor *sharedHttp.HTTPHealthMonitor
-	logger            *logrus.Logger
+	config              *sharedConfig.Config
+	sessionServiceUrl   string
+	menuServiceUrl      string
+	inventoryServiceUrl string
+	httpHealthMonitor   *sharedHttp.HTTPHealthMonitor
+	logger              *logrus.Logger
 }
 
 func NewHTTPHandler(
 	config *sharedConfig.Config,
 	sessionServiceUrl string,
 	menuServiceUrl string,
+	inventoryServiceUrl string,
 	httpHealthMonitor *sharedHttp.HTTPHealthMonitor,
 	logger *logrus.Logger,
 ) *HTTPHandler {
 	return &HTTPHandler{
-		config:            config,
-		sessionServiceUrl: sessionServiceUrl,
-		menuServiceUrl:    menuServiceUrl,
-		httpHealthMonitor: httpHealthMonitor,
-		logger:            logger,
+		config:              config,
+		sessionServiceUrl:   sessionServiceUrl,
+		menuServiceUrl:      menuServiceUrl,
+		inventoryServiceUrl: inventoryServiceUrl,
+		httpHealthMonitor:   httpHealthMonitor,
+		logger:              logger,
 	}
 }
 
@@ -156,6 +159,7 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	// ==== MENU SERVICE ENDPOINTS ====
 	// Public - health check
 	api.HandleFunc("/v1/menu/p/health", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET")
+	api.HandleFunc("/v1/inventory/p/health", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET")
 
 	// Protected - Menu Categories
 	menuRouter := api.PathPrefix("/v1/menu").Subrouter()
@@ -179,12 +183,12 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	// Protected - Stock Categories
 	stockRouter := api.PathPrefix("/v1/stock").Subrouter()
 	stockRouter.Use(sessionMiddleware.ValidateSession)
-	stockRouter.HandleFunc("/categories", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
-	stockRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+	stockRouter.HandleFunc("/categories", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
+	stockRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
 
 	// Protected - Stock Items
-	stockRouter.HandleFunc("/items", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
-	stockRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+	stockRouter.HandleFunc("/items", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
+	stockRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
 
 	// OPTIONS handling for CORS preflight
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

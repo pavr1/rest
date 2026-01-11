@@ -17,5 +17,6 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates curl
 WORKDIR /root/
 COPY --from=builder /build/inventory-service/main .
+RUN chmod +x ./main
 EXPOSE 8090
 CMD ["./main"]

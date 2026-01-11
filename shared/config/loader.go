@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -196,6 +197,7 @@ func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*
 	config := newConfig(logger)
 	setDefaultValues(config, serviceName)
 	//populateConfigFromSettings(config, settings, logger)
+	populateConfigFromEnvironment(config, logger)
 
 	logger.WithFields(logrus.Fields{
 		"service": serviceName,
@@ -237,7 +239,7 @@ func setDefaultValues(config *Config, serviceName string) {
 	case "orders":
 		config.Set("SERVER_PORT", "8083")
 		config.Set("SERVER_HOST", "0.0.0.0")
-		config.Set("DB_HOST", "localhost")
+		config.Set("DB_HOST", "barrest_postgres")
 		config.Set("DB_PORT", "5432")
 		config.Set("DB_USER", "postgres")
 		config.Set("DB_PASSWORD", "postgres123")
@@ -260,7 +262,7 @@ func setDefaultValues(config *Config, serviceName string) {
 	case "inventory":
 		config.Set("SERVER_PORT", "8084")
 		config.Set("SERVER_HOST", "0.0.0.0")
-		config.Set("DB_HOST", "localhost")
+		config.Set("DB_HOST", "barrest_postgres")
 		config.Set("DB_PORT", "5432")
 		config.Set("DB_USER", "postgres")
 		config.Set("DB_PASSWORD", "postgres123")
@@ -299,3 +301,44 @@ func setDefaultValues(config *Config, serviceName string) {
 
 // 	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
 // }
+
+// populateConfigFromEnvironment loads configuration values from environment variables
+func populateConfigFromEnvironment(config *Config, logger *logrus.Logger) {
+	// List of configuration keys that can be overridden by environment variables
+	envKeys := []string{
+		"SERVER_HOST",
+		"SERVER_PORT",
+		"DB_HOST",
+		"DB_PORT",
+		"DB_USER",
+		"DB_PASSWORD",
+		"DB_NAME",
+		"DB_SSL_MODE",
+		"LOG_LEVEL",
+		"JWT_SECRET",
+		"JWT_EXPIRATION_TIME",
+		"GATEWAY_SERVICE_URL",
+		"SESSION_SERVICE_URL",
+		"ORDERS_SERVICE_URL",
+		"MENU_SERVICE_URL",
+		"INVENTORY_SERVICE_URL",
+		"PAYMENT_SERVICE_URL",
+		"CUSTOMER_SERVICE_URL",
+		"DATA_SERVICE_URL",
+		"CORS_ALLOWED_ORIGINS",
+		"CORS_ALLOWED_METHODS",
+		"CORS_ALLOWED_HEADERS",
+		"DEFAULT_TAX_RATE",
+		"DEFAULT_SERVICE_RATE",
+	}
+
+	for _, key := range envKeys {
+		if value := os.Getenv(key); value != "" {
+			config.Set(key, value)
+			logger.WithFields(logrus.Fields{
+				"key":   key,
+				"value": value,
+			}).Debug("Populated config from environment variable")
+		}
+	}
+}

@@ -216,7 +216,7 @@ clean: ## Clean all services (reverse order)
 	@# @cd customer-service && make clean  # Future
 	@cd menu-service && make clean
 	@# @cd invoice-service && make clean  # Future
-	@# @cd inventory-service && make clean  # Future
+	@cd inventory-service && make clean 
 	@cd session-service && make clean
 	@cd data-service && make clean
 	@echo "✅ All cleaned!"
@@ -230,7 +230,7 @@ fresh: clean ## Fresh install of all services
 	@echo ""
 	@echo "Level 2: Auth + Inventory"
 	@cd session-service && make start
-	@# @cd inventory-service && make start  # Future
+	@cd inventory-service && make start
 	@sleep 2
 	@echo ""
 	@echo "Level 3: Business Services"

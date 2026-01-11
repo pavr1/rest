@@ -12,12 +12,12 @@ services:
     container_name: barrest_inventory_service
     restart: unless-stopped
     ports:
-      - "8090:8090"
+      - "8084:8084"
     environment:
       - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8090
+      - SERVER_PORT=8084
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/api/v1/inventory/p/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8084/api/v1/inventory/p/health"]
       interval: 1s
       timeout: 5s
       retries: 3

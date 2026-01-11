@@ -15,7 +15,7 @@ class SystemStatusMonitor {
         this.mainDot = document.getElementById('main-status');
         this.dotTrigger = document.getElementById('statusDotTrigger');
         this.dropdownMenu = document.getElementById('statusDropdownMenu');
-        
+        this.inventoryStatus = document.getElementById('inventory-status');
         // State
         this.healthCheckInterval = null;
         this.isRunning = false;
@@ -209,6 +209,10 @@ class SystemStatusMonitor {
         // Update data service status from actual gateway response
         const dataStatus = services['data-service'] === true ? 'online' : 'offline';
         this.updateStatusIndicator('data-status', dataStatus);
+
+        // Update inventory service status
+        const inventoryStatus = services['inventory-service'] === true ? 'online' : 'offline';
+        this.updateStatusIndicator('inventory-status', inventoryStatus);
     }
     
     updateTooltip(isHealthy) {
@@ -234,6 +238,7 @@ class SystemStatusMonitor {
         this.updateStatusIndicator('session-status', 'offline');
         this.updateStatusIndicator('menu-status', 'offline');
         this.updateStatusIndicator('data-status', 'offline');
+        this.updateStatusIndicator('inventory-status', 'offline');
     }
 
     triggerHeartbeat() {
@@ -243,7 +248,8 @@ class SystemStatusMonitor {
             'gateway-status',
             'session-status',
             'menu-status',
-            'data-status'
+            'data-status',
+            'inventory-status'
         ];
         
         indicators.forEach(id => {
@@ -273,7 +279,8 @@ class SystemStatusMonitor {
             gateway: this.getIndicatorStatus('gateway-status'),
             session: this.getIndicatorStatus('session-status'),
             menu: this.getIndicatorStatus('menu-status'),
-            data: this.getIndicatorStatus('data-status')
+            data: this.getIndicatorStatus('data-status'),
+            inventory: this.getIndicatorStatus('inventory-status')
         };
     }
 

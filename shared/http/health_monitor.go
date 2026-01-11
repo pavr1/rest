@@ -115,6 +115,8 @@ func (hm *HTTPHealthMonitor) checkService(svc *ServiceHealth) {
 		hm.setServiceHealth(svc.Name, false)
 		hm.logger.WithFields(logrus.Fields{
 			"service": svc.Name,
+			"url":     svc.URL,
+			"error":   err.Error(),
 		}).Error("Health check failed")
 		return
 	}
