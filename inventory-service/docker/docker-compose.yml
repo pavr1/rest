@@ -1,0 +1,30 @@
+# Inventory Service Docker Compose
+# =============================================================================
+# Service pings data-service health endpoint to check availability.
+# Use root Makefile: make fresh (handles startup order)
+# =============================================================================
+
+services:
+  inventory-service:
+    build:
+      context: ../..
+      dockerfile: inventory-service/docker/Dockerfile
+    container_name: barrest_inventory_service
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8090
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/api/v1/inventory/p/health"]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - docker_barrest_network
+
+networks:
+  docker_barrest_network:
+    external: true

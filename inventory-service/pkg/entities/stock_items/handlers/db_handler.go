@@ -3,8 +3,8 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
-	"menu-service/pkg/entities/stock_items/models"
-	stockItemSQL "menu-service/pkg/entities/stock_items/sql"
+	"inventory-service/pkg/entities/stock_items/models"
+	stockItemSQL "inventory-service/pkg/entities/stock_items/sql"
 	sharedDb "shared/db"
 
 	"github.com/sirupsen/logrus"

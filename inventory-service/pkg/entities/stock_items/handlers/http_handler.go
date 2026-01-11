@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"menu-service/pkg/entities/stock_items/models"
+	"inventory-service/pkg/entities/stock_items/models"
 	sharedHttp "shared/http"
 
 	"github.com/gorilla/mux"
