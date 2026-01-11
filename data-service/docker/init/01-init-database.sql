@@ -39,7 +39,7 @@ CREATE TABLE customers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Menu Categories
+-- 6. Menu Categories (top level: Drinks, Desserts, etc.)
 CREATE TABLE menu_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
@@ -49,18 +49,33 @@ CREATE TABLE menu_categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Menu Items
-CREATE TABLE menu_items (
+-- 7. Sub Menus (second level: Smoothies, Sodas, etc. - grouped by category)
+CREATE TABLE sub_menus (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
     category_id UUID NOT NULL REFERENCES menu_categories(id) ON DELETE RESTRICT,
+    image_url VARCHAR(500),
+    item_type VARCHAR(20) NOT NULL CHECK (item_type IN ('kitchen', 'bar')),
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. Menu Items (third level: Banana Smoothie, Pineapple Smoothie, etc. - with pricing)
+CREATE TABLE menu_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    sub_menu_id UUID NOT NULL REFERENCES sub_menus(id) ON DELETE RESTRICT,
     price DECIMAL(10,2) NOT NULL,
     item_cost DECIMAL(10,2),
     happy_hour_price DECIMAL(10,2),
     image_url VARCHAR(500),
     is_available BOOLEAN NOT NULL DEFAULT true,
-    item_type VARCHAR(20) NOT NULL CHECK (item_type IN ('kitchen', 'bar')),
+    preparation_time INTEGER,
+    display_order INTEGER NOT NULL DEFAULT 0,
     menu_types JSONB NOT NULL DEFAULT '["lunch", "dinner"]',
     dietary_tags JSONB,
     allergens JSONB,
@@ -69,7 +84,7 @@ CREATE TABLE menu_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. Stock Item Categories
+-- 9. Stock Item Categories
 CREATE TABLE stock_item_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
@@ -78,7 +93,7 @@ CREATE TABLE stock_item_categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Stock Items
+-- 10. Stock Items
 CREATE TABLE stock_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
@@ -89,7 +104,7 @@ CREATE TABLE stock_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Menu Item Stock Items (junction table)
+-- 11. Menu Item Stock Items (Ingredients - junction table)
 CREATE TABLE menu_item_stock_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
@@ -420,10 +435,14 @@ CREATE INDEX idx_tables_status ON tables(status);
 CREATE INDEX idx_customers_customer_id ON customers(customer_id);
 CREATE INDEX idx_customers_phone ON customers(phone);
 
+-- Sub Menus indexes
+CREATE INDEX idx_sub_menus_category ON sub_menus(category_id);
+CREATE INDEX idx_sub_menus_active ON sub_menus(is_active);
+CREATE INDEX idx_sub_menus_item_type ON sub_menus(item_type);
+
 -- Menu Items indexes
-CREATE INDEX idx_menu_items_category ON menu_items(category_id);
+CREATE INDEX idx_menu_items_sub_menu ON menu_items(sub_menu_id);
 CREATE INDEX idx_menu_items_available ON menu_items(is_available);
-CREATE INDEX idx_menu_items_type ON menu_items(item_type);
 
 -- Stock Items indexes
 CREATE INDEX idx_stock_items_category ON stock_items(stock_item_category_id);
@@ -497,6 +516,9 @@ CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_menu_categories_updated_at BEFORE UPDATE ON menu_categories 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_sub_menus_updated_at BEFORE UPDATE ON sub_menus 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items 
