@@ -104,8 +104,8 @@ CREATE TABLE stock_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 11. Menu Item Stock Items (Ingredients - junction table)
-CREATE TABLE menu_item_stock_items (
+-- 11. Ingredients (links menu items to stock items with quantities)
+CREATE TABLE ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
     stock_item_id UUID NOT NULL REFERENCES stock_items(id) ON DELETE CASCADE,
@@ -448,8 +448,8 @@ CREATE INDEX idx_menu_items_available ON menu_items(is_available);
 CREATE INDEX idx_stock_items_category ON stock_items(stock_item_category_id);
 
 -- Menu Item Stock Items indexes
-CREATE INDEX idx_menu_item_stock_items_menu ON menu_item_stock_items(menu_item_id);
-CREATE INDEX idx_menu_item_stock_items_stock ON menu_item_stock_items(stock_item_id);
+CREATE INDEX idx_ingredients_menu ON ingredients(menu_item_id);
+CREATE INDEX idx_ingredients_stock ON ingredients(stock_item_id);
 
 -- Existences indexes
 CREATE INDEX idx_existences_stock_item ON existences(stock_item_id);
@@ -530,7 +530,7 @@ CREATE TRIGGER update_stock_item_categories_updated_at BEFORE UPDATE ON stock_it
 CREATE TRIGGER update_stock_items_updated_at BEFORE UPDATE ON stock_items 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_menu_item_stock_items_updated_at BEFORE UPDATE ON menu_item_stock_items 
+CREATE TRIGGER update_ingredients_updated_at BEFORE UPDATE ON ingredients 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers 
