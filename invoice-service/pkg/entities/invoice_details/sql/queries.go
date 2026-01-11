@@ -1,46 +1,58 @@
-// Package sql provides SQL queries for invoice details
 package sql
 
-// Invoice detail queries
+import (
+	"embed"
+	"fmt"
+	"strings"
+)
+
+//go:embed scripts/*.sql
+var sqlFiles embed.FS
+
+// Queries holds all SQL queries
+type Queries struct {
+	queries map[string]string
+}
+
+// LoadQueries loads all SQL queries from the scripts directory
+func LoadQueries() (*Queries, error) {
+	queries := &Queries{
+		queries: make(map[string]string),
+	}
+
+	files, err := sqlFiles.ReadDir("scripts")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read SQL scripts directory: %w", err)
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".sql") {
+			content, err := sqlFiles.ReadFile("scripts/" + file.Name())
+			if err != nil {
+				return nil, fmt.Errorf("failed to read SQL file %s: %w", file.Name(), err)
+			}
+
+			queryName := strings.TrimSuffix(file.Name(), ".sql")
+			queries.queries[queryName] = string(content)
+		}
+	}
+	return queries, nil
+}
+
+// Get retrieves a query by name
+func (q *Queries) Get(name string) (string, error) {
+	query, exists := q.queries[name]
+	if !exists {
+		return "", fmt.Errorf("query '%s' not found", name)
+	}
+	return query, nil
+}
+
+// SQL query constants
 const (
-	CreateInvoiceDetail = `
-		INSERT INTO invoice_details (
-			invoice_id, stock_item_id, description, quantity, unit_of_measure,
-			items_per_unit, unit_price, total_price, expiry_date, batch_number
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, invoice_id, stock_item_id, description, quantity,
-		          unit_of_measure, items_per_unit, unit_price, total_price,
-		          expiry_date, batch_number, created_at, updated_at`
-
-	GetInvoiceDetailByID = `
-		SELECT id, invoice_id, stock_item_id, description, quantity, unit_of_measure,
-		       items_per_unit, unit_price, total_price, expiry_date, batch_number,
-		       created_at, updated_at
-		FROM invoice_details WHERE id = $1 AND invoice_id = $2`
-
-	UpdateInvoiceDetail = `
-		UPDATE invoice_details SET
-			stock_item_id = COALESCE($1, stock_item_id),
-			description = COALESCE($2, description),
-			quantity = COALESCE($3, quantity),
-			unit_of_measure = COALESCE($4, unit_of_measure),
-			items_per_unit = COALESCE($5, items_per_unit),
-			unit_price = COALESCE($6, unit_price),
-			total_price = COALESCE($7, total_price),
-			expiry_date = COALESCE($8, expiry_date),
-			batch_number = COALESCE($9, batch_number),
-			updated_at = NOW()
-		WHERE id = $10 AND invoice_id = $11`
-
-	DeleteInvoiceDetail = `DELETE FROM invoice_details WHERE id = $1 AND invoice_id = $2`
-
-	ListInvoiceDetails = `
-		SELECT id, invoice_id, stock_item_id, si.name as stock_item_name,
-		       description, quantity, unit_of_measure, items_per_unit,
-		       unit_price, total_price, expiry_date, batch_number,
-		       id.created_at, id.updated_at
-		FROM invoice_details id
-		LEFT JOIN stock_items si ON id.stock_item_id = si.id
-		WHERE id.invoice_id = $1
-		ORDER BY id.created_at`
+	CreateInvoiceDetailQuery = "create_invoice_detail"
+	GetInvoiceDetailQuery    = "get_invoice_detail"
+	UpdateInvoiceDetailQuery = "update_invoice_detail"
+	DeleteInvoiceDetailQuery = "delete_invoice_detail"
+	ListInvoiceDetailsQuery  = "list_invoice_details"
 )

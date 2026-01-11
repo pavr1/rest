@@ -13,20 +13,18 @@ import (
 
 	purchaseInvoiceHandlers "invoice-service/pkg/entities/purchase_invoices/handlers"
 	invoiceDetailHandlers "invoice-service/pkg/entities/invoice_details/handlers"
-	existenceHandlers "invoice-service/pkg/entities/existences/handlers"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type MainHTTPHandler struct {
-	db                        *sharedDb.DbHandler
-	httpHealthMonitor         *sharedHttp.HTTPHealthMonitor
-	cancelHealthMonitor       context.CancelFunc
-	purchaseInvoiceHandler    *purchaseInvoiceHandlers.HTTPHandler
-	invoiceDetailHandler      *invoiceDetailHandlers.HTTPHandler
-	existenceHandler          *existenceHandlers.HTTPHandler
-	logger                    *logrus.Logger
+	db                     *sharedDb.DbHandler
+	httpHealthMonitor      *sharedHttp.HTTPHealthMonitor
+	cancelHealthMonitor    context.CancelFunc
+	purchaseInvoiceHandler *purchaseInvoiceHandlers.HTTPHandler
+	invoiceDetailHandler   *invoiceDetailHandlers.HTTPHandler
+	logger                 *logrus.Logger
 }
 
 func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
@@ -69,13 +67,6 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 	invoiceDetailHTTPHandler := invoiceDetailHandlers.NewHTTPHandler(invoiceDetailDBHandler, logger)
 
-	// Create existence handlers
-	existenceDBHandler, err := existenceHandlers.NewDBHandler(db, logger)
-	if err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to create existence handler: %w", err)
-	}
-	existenceHTTPHandler := existenceHandlers.NewHTTPHandler(existenceDBHandler, logger)
 
 	// Create cancellable context for health monitor
 	ctx, cancel := context.WithCancel(context.Background())
@@ -95,7 +86,6 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		cancelHealthMonitor:    cancel,
 		purchaseInvoiceHandler: purchaseInvoiceHTTPHandler,
 		invoiceDetailHandler:   invoiceDetailHTTPHandler,
-		existenceHandler:       existenceHTTPHandler,
 		logger:                 logger,
 	}, nil
 }
@@ -131,12 +121,6 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details/{id}", h.invoiceDetailHandler.GetByID).Methods("GET")
 	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details/{id}", h.invoiceDetailHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details/{id}", h.invoiceDetailHandler.Delete).Methods("DELETE")
-
-	// Existences
-	router.HandleFunc("/api/v1/invoices/existences", h.existenceHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/existences", h.existenceHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/invoices/existences/{id}", h.existenceHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/existences/{id}", h.existenceHandler.Update).Methods("PUT")
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {

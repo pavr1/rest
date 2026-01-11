@@ -1,46 +1,59 @@
-// Package sql provides SQL queries for purchase invoices
 package sql
 
-// Purchase invoice queries
+import (
+	"embed"
+	"fmt"
+	"strings"
+)
+
+//go:embed scripts/*.sql
+var sqlFiles embed.FS
+
+// Queries holds all SQL queries
+type Queries struct {
+	queries map[string]string
+}
+
+// LoadQueries loads all SQL queries from the scripts directory
+func LoadQueries() (*Queries, error) {
+	queries := &Queries{
+		queries: make(map[string]string),
+	}
+
+	files, err := sqlFiles.ReadDir("scripts")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read SQL scripts directory: %w", err)
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".sql") {
+			content, err := sqlFiles.ReadFile("scripts/" + file.Name())
+			if err != nil {
+				return nil, fmt.Errorf("failed to read SQL file %s: %w", file.Name(), err)
+			}
+
+			queryName := strings.TrimSuffix(file.Name(), ".sql")
+			queries.queries[queryName] = string(content)
+		}
+	}
+	return queries, nil
+}
+
+// Get retrieves a query by name
+func (q *Queries) Get(name string) (string, error) {
+	query, exists := q.queries[name]
+	if !exists {
+		return "", fmt.Errorf("query '%s' not found", name)
+	}
+	return query, nil
+}
+
+// SQL query constants
 const (
-	CreatePurchaseInvoice = `
-		INSERT INTO purchase_invoices (
-			invoice_number, supplier_name, invoice_date, due_date,
-			total_amount, status, image_url, notes
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, invoice_number, supplier_name, invoice_date, due_date,
-		          total_amount, status, image_url, notes, created_at, updated_at`
-
-	GetPurchaseInvoiceByID = `
-		SELECT id, invoice_number, supplier_name, invoice_date, due_date,
-		       total_amount, status, image_url, notes, created_at, updated_at
-		FROM purchase_invoices WHERE id = $1`
-
-	UpdatePurchaseInvoice = `
-		UPDATE purchase_invoices SET
-			supplier_name = COALESCE($1, supplier_name),
-			invoice_date = COALESCE($2, invoice_date),
-			due_date = COALESCE($3, due_date),
-			total_amount = COALESCE($4, total_amount),
-			status = COALESCE($5, status),
-			image_url = COALESCE($6, image_url),
-			notes = COALESCE($7, notes),
-			updated_at = NOW()
-		WHERE id = $8`
-
-	DeletePurchaseInvoice = `DELETE FROM purchase_invoices WHERE id = $1`
-
-	ListPurchaseInvoices = `
-		SELECT id, invoice_number, supplier_name, invoice_date, due_date,
-		       total_amount, status, image_url, notes, created_at, updated_at
-		FROM purchase_invoices
-		WHERE ($1::text IS NULL OR supplier_name ILIKE '%' || $1 || '%')
-		  AND ($2::text IS NULL OR status = $2)
-		ORDER BY invoice_date DESC
-		LIMIT $3 OFFSET $4`
-
-	CountPurchaseInvoices = `
-		SELECT COUNT(*) FROM purchase_invoices
-		WHERE ($1::text IS NULL OR supplier_name ILIKE '%' || $1 || '%')
-		  AND ($2::text IS NULL OR status = $2)`
+	CreatePurchaseInvoiceQuery = "create_purchase_invoice"
+	GetPurchaseInvoiceQuery    = "get_purchase_invoice"
+	UpdatePurchaseInvoiceQuery = "update_purchase_invoice"
+	DeletePurchaseInvoiceQuery = "delete_purchase_invoice"
+	ListPurchaseInvoicesQuery  = "list_purchase_invoices"
+	CountPurchaseInvoicesQuery = "count_purchase_invoices"
 )
