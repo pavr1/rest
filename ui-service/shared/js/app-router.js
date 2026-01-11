@@ -22,14 +22,15 @@ class AppRouter {
             'reservations': { title: 'Reservations', icon: 'fa-calendar-alt', partial: 'pages/tables/reservations.html' },
             
             // Menu
-            'menu-categories': { title: 'Menu Categories', icon: 'fa-tags', partial: 'pages/menu/categories.html' },
-            'menu-submenus': { title: 'Sub Menus', icon: 'fa-layer-group', partial: 'pages/menu/submenus.html' },
-            'menu-items': { title: 'Menu Items', icon: 'fa-hamburger', partial: 'pages/menu/items.html' },
+            'menu-categories': { title: 'Categories', icon: 'fa-tags', partial: 'pages/menu/categories.html' },
+            'menu-submenus': { title: 'Menus', icon: 'fa-layer-group', partial: 'pages/menu/submenus.html' },
+            'menu-items': { title: 'Items', icon: 'fa-hamburger', partial: 'pages/menu/items.html' },
             'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
             
             // Inventory
             'stock-items': { title: 'Stock Items', icon: 'fa-boxes', partial: 'pages/inventory/items.html' },
             'stock-categories': { title: 'Stock Categories', icon: 'fa-layer-group', partial: 'pages/inventory/categories.html' },
+            'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
             
             // Admin
             'staff': { title: 'Staff', icon: 'fa-users', partial: 'pages/admin/staff.html' },
@@ -132,10 +133,16 @@ class AppRouter {
         
         // Navigation links
         document.querySelectorAll('.nav-link[data-page]').forEach(link => {
-            link.addEventListener('click', () => {
+            link.addEventListener('click', (e) => {
+                // If this element is also a nav-toggle, don't navigate on click
+                // The toggle functionality will handle the expand/collapse
+                if (link.classList.contains('nav-toggle')) {
+                    return;
+                }
+
                 const page = link.dataset.page;
                 this.navigateTo(page);
-                
+
                 // Close mobile sidebar
                 document.getElementById('sidebar').classList.remove('show');
                 document.getElementById('sidebarOverlay').classList.remove('show');

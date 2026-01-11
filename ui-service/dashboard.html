@@ -154,6 +154,43 @@
             padding-left: 3rem;
             font-size: 0.85rem;
         }
+
+        .nav-submenu-level-2 .nav-link {
+            padding-left: 4.5rem;
+            font-size: 0.8rem;
+        }
+
+        .nav-submenu-level-3 .nav-link {
+            padding-left: 6rem;
+            font-size: 0.75rem;
+        }
+
+        .nav-submenu-toggle {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.2s;
+            border-radius: 6px;
+            margin: 0.125rem 0;
+        }
+
+        .nav-submenu-toggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .nav-submenu-toggle .toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        .nav-submenu-toggle .toggle-icon {
+            transition: transform 0.2s;
+            font-size: 0.7rem;
+        }
         
         /* Main Content */
         .main-content {
@@ -361,8 +398,30 @@
                         <span>Reservations</span>
                     </div>
                 </div>
+
+                <div class="nav-toggle" data-target="menu-submenu">
+                    <span class="toggle-left">
+                        <i class="fas fa-utensils"></i>
+                        <span>Menu</span>
+                    </span>
+                    <i class="fas fa-chevron-right toggle-icon"></i>
+                </div>
+                <div class="nav-submenu" id="menu-submenu">
+                    <div class="nav-link" data-page="menu-categories">
+                        <i class="fas fa-tags"></i>
+                        <span>Categories</span>
+                    </div>
+                    <div class="nav-link" data-page="menu-submenus">
+                        <i class="fas fa-folder-open"></i>
+                        <span>Menus</span>
+                    </div>
+                    <div class="nav-link" data-page="menu-items">
+                        <i class="fas fa-hamburger"></i>
+                        <span>Items</span>
+                    </div>
+                </div>
                 
-                <!-- Menu (collapsible) -->
+                <!-- Menu (collapsible)
                 <div class="nav-toggle" data-target="menuSubmenu">
                     <span class="toggle-left">
                         <i class="fas fa-utensils"></i>
@@ -371,31 +430,29 @@
                     <i class="fas fa-chevron-right toggle-icon"></i>
                 </div>
                 <div class="nav-submenu" id="menuSubmenu">
-                    <div class="nav-link" data-page="menu-categories">
-                        <i class="fas fa-tags"></i>
-                        <span>Menu Categories</span>
+                    <div class="nav-link nav-toggle nav-submenu-toggle" data-page="menu-categories" data-target="categoriesSubmenu">
+                        <span class="toggle-left">
+                            <i class="fas fa-tags"></i>
+                            <span>Categories</span>
+                        </span>
+                        <i class="fas fa-chevron-right toggle-icon"></i>
                     </div>
-                    <div class="nav-link" data-page="menu-submenus">
-                        <i class="fas fa-folder-open"></i>
-                        <span>Sub Menus</span>
+                    <div class="nav-submenu nav-submenu-level-2" id="categoriesSubmenu">
+                        <div class="nav-link nav-toggle nav-submenu-toggle" data-page="menu-submenus" data-target="menusSubmenu">
+                            <span class="toggle-left">
+                                <i class="fas fa-folder-open"></i>
+                                <span>Menus</span>
+                            </span>
+                            <i class="fas fa-chevron-right toggle-icon"></i>
+                        </div>
+                        <div class="nav-submenu nav-submenu-level-3" id="menusSubmenu">
+                            <div class="nav-link" data-page="menu-items">
+                                <i class="fas fa-hamburger"></i>
+                                <span>Items</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="nav-link" data-page="menu-items">
-                        <i class="fas fa-hamburger"></i>
-                        <span>Menu Items</span>
-                    </div>
-                    <div class="nav-link" data-page="menu-ingredients">
-                        <i class="fas fa-list-ul"></i>
-                        <span>Ingredients</span>
-                    </div>
-                    <div class="nav-link" data-page="stock-items">
-                        <i class="fas fa-boxes"></i>
-                        <span>Stock Items</span>
-                    </div>
-                    <div class="nav-link" data-page="stock-categories">
-                        <i class="fas fa-layer-group"></i>
-                        <span>Stock Categories</span>
-                    </div>
-                </div>
+                </div> -->
                 
                 <!-- Inventory (collapsible) -->
                 <div class="nav-toggle" data-target="inventorySubmenu">
@@ -413,6 +470,10 @@
                     <div class="nav-link" data-page="stock-categories">
                         <i class="fas fa-layer-group"></i>
                         <span>Stock Categories</span>
+                    </div>
+                    <div class="nav-link" data-page="menu-ingredients">
+                        <i class="fas fa-list-ul"></i>
+                        <span>Ingredients</span>
                     </div>
                 </div>
                 

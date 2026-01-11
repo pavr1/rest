@@ -234,51 +234,83 @@ function initializeAuthService() {
 
 async function makeAuthenticatedRequest(url, options = {}) {
     const authService = window.authService;
-    
+
     if (!authService) {
         throw new Error('Authentication service not available');
     }
-    
+
     if (!authService.isAuthenticated()) {
         console.warn('⚠️ User not authenticated');
         window.location.href = 'login.html';
         throw new Error('User not authenticated');
     }
-    
+
     const token = authService.getToken();
-    
+
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
         ...options.headers
     };
-    
+
     const response = await fetch(url, {
         ...options,
         headers
     });
-    
+
     if (response.status === 401) {
         console.warn('⚠️ Session expired');
         authService.clearAuthData();
         window.location.href = 'login.html';
         throw new Error('Session expired');
     }
-    
+
     return response;
+}
+
+// === GLOBAL FETCH INTERCEPTOR FOR UNAUTHORIZED RESPONSES ===
+
+function initializeFetchInterceptor() {
+    // Store the original fetch function
+    const originalFetch = window.fetch;
+
+    // Replace fetch with our interceptor
+    window.fetch = async function(...args) {
+        try {
+            const response = await originalFetch.apply(this, args);
+
+            // Check for 401 Unauthorized responses
+            if (response.status === 401) {
+                console.warn('🚪 Session expired (caught by interceptor)');
+                if (window.authService) {
+                    window.authService.clearAuthData();
+                }
+                window.location.href = 'login.html';
+                throw new Error('Session expired');
+            }
+
+            return response;
+        } catch (error) {
+            // Re-throw the error after our handling
+            throw error;
+        }
+    };
+
+    console.log('🛡️ Fetch interceptor initialized for 401 handling');
 }
 
 // Export for global access
 window.AuthService = AuthService;
 window.initializeAuthService = initializeAuthService;
 window.makeAuthenticatedRequest = makeAuthenticatedRequest;
+window.initializeFetchInterceptor = initializeFetchInterceptor;
 
 // Auto-initialize when script loads
 document.addEventListener('DOMContentLoaded', () => {
     try {
         initializeAuthService();
+        initializeFetchInterceptor();
     } catch (error) {
-        console.warn('⚠️ AuthService will be initialized later');
+        console.warn('⚠️ Services will be initialized later');
     }
 });
-
