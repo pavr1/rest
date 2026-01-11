@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestSessionValidationRequest_JSON(t *testing.T) {
-	req := SessionValidationRequest{
-		SessionID: "test-session-123",
+func TestTokenValidationRequest_JSON(t *testing.T) {
+	req := TokenValidationRequest{
+		Token: "test-token-123",
 	}
 
 	data, err := json.Marshal(req)
@@ -15,24 +15,24 @@ func TestSessionValidationRequest_JSON(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	var decoded SessionValidationRequest
+	var decoded TokenValidationRequest
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	if decoded.SessionID != req.SessionID {
-		t.Errorf("SessionID = %s; want %s", decoded.SessionID, req.SessionID)
+	if decoded.Token != req.Token {
+		t.Errorf("Token = %s; want %s", decoded.Token, req.Token)
 	}
 }
 
-func TestSessionValidationResponse_JSON(t *testing.T) {
-	resp := SessionValidationResponse{
+func TestTokenValidationResponse_JSON(t *testing.T) {
+	resp := TokenValidationResponse{
 		Valid:       true,
-		SessionID:   "session-123",
+		Token:       "test-token-123",
 		Message:     "Session valid",
-		UserID:      "user-456",
+		StaffID:     "user-456",
 		Username:    "testuser",
-		RoleName:    "admin",
+		Role:        "admin",
 		FullName:    "Test User",
 		Permissions: []string{"read", "write"},
 	}
@@ -42,7 +42,7 @@ func TestSessionValidationResponse_JSON(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	var decoded SessionValidationResponse
+	var decoded TokenValidationResponse
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestSessionCreateRequest_JSON(t *testing.T) {
 
 func TestSessionLogoutRequest_JSON(t *testing.T) {
 	req := SessionLogoutRequest{
-		SessionID: "session-to-logout",
+		Token: "token-to-logout",
 	}
 
 	data, err := json.Marshal(req)
@@ -94,7 +94,7 @@ func TestSessionLogoutRequest_JSON(t *testing.T) {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	if decoded.SessionID != req.SessionID {
-		t.Errorf("SessionID = %s; want %s", decoded.SessionID, req.SessionID)
+	if decoded.Token != req.Token {
+		t.Errorf("Token = %s; want %s", decoded.Token, req.Token)
 	}
 }

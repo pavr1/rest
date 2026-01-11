@@ -50,7 +50,12 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := h.dbHandler.ValidateSession(req.SessionID)
+	if req.Token == "" {
+		sharedHttp.SendError(w, http.StatusBadRequest, "Token is required", nil)
+		return
+	}
+
+	response, err := h.dbHandler.ValidateSession(req.Token)
 	if err != nil {
 		sharedHttp.SendError(w, http.StatusInternalServerError, "Validation failed", err)
 		return
@@ -66,17 +71,17 @@ func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.SessionID == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Session ID required", nil)
+	if req.Token == "" {
+		sharedHttp.SendError(w, http.StatusBadRequest, "Token required", nil)
 		return
 	}
 
-	response, err := h.dbHandler.DeleteSession(req.SessionID)
+	response, err := h.dbHandler.DeleteSession(req.Token)
 	if err != nil {
 		sharedHttp.SendError(w, http.StatusInternalServerError, "Logout failed", err)
 		return
 	}
 
-	h.logger.WithField("session_id", req.SessionID).Info("Logout successful")
+	h.logger.WithField("session_id", response.SessionID).Info("Logout successful")
 	sharedHttp.SendSuccess(w, http.StatusOK, "Logged out", response)
 }

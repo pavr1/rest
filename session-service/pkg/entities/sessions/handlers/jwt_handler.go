@@ -48,7 +48,7 @@ func (h *JWTHandler) GenerateSessionID() (string, error) {
 }
 
 // GenerateToken creates a JWT token for a staff member and returns the token string
-func (h *JWTHandler) GenerateToken(sessionID string, staff *models.Staff) (string, time.Time, error) {
+func (h *JWTHandler) GenerateToken(staff *models.Staff) (string, error) {
 	// Create claims
 	now := time.Now()
 	expiresAt := now.Add(h.expirationTime)
@@ -74,18 +74,17 @@ func (h *JWTHandler) GenerateToken(sessionID string, staff *models.Staff) (strin
 	tokenString, err := token.SignedString([]byte(h.secretKey))
 	if err != nil {
 		h.logger.Error("Failed to sign token")
-		return "", time.Time{}, fmt.Errorf("failed to sign token: %w", err)
+		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
 
 	h.logger.WithFields(logrus.Fields{
-		"session_id": sessionID,
 		"staff_id":   staff.ID,
 		"username":   staff.Username,
 		"role":       staff.Role,
 		"expires_at": expiresAt,
 	}).Debug("JWT token generated successfully")
 
-	return tokenString, expiresAt, nil
+	return tokenString, nil
 }
 
 // GenerateTokenHash generates a SHA256 hash of the JWT token

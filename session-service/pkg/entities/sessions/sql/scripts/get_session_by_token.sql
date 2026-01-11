@@ -1,3 +1,3 @@
 SELECT session_id, token
 FROM sessions
-WHERE session_id = $1
+WHERE token = $1

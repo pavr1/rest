@@ -93,16 +93,16 @@ func TestSessionManager_ValidateSession_Success(t *testing.T) {
 		t.Error("Valid should be true")
 	}
 
-	if resp.UserID != "user-456" {
-		t.Errorf("UserID = %s; want user-456", resp.UserID)
+	if resp.StaffID != "user-456" {
+		t.Errorf("StaffID = %s; want user-456", resp.StaffID)
 	}
 
 	if resp.Username != "testuser" {
 		t.Errorf("Username = %s; want testuser", resp.Username)
 	}
 
-	if resp.RoleName != "admin" {
-		t.Errorf("RoleName = %s; want admin", resp.RoleName)
+	if resp.Role != "admin" {
+		t.Errorf("Role = %s; want admin", resp.Role)
 	}
 }
 

@@ -67,7 +67,7 @@ func TestGenerateToken(t *testing.T) {
 	handler := NewJWTHandler("test-secret-key", 1*time.Hour, logger)
 	staff := newTestStaff()
 
-	token, expiresAt, err := handler.GenerateToken("session-123", staff)
+	token, err := handler.GenerateToken(staff)
 	if err != nil {
 		t.Fatalf("GenerateToken() error = %v", err)
 	}
@@ -76,9 +76,16 @@ func TestGenerateToken(t *testing.T) {
 		t.Error("GenerateToken returned empty token")
 	}
 
+	// Validate the token to check expiration
+	claims, err := handler.ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken() error = %v", err)
+	}
+
 	// Check expiration is approximately 1 hour from now
 	expectedExpiry := time.Now().Add(1 * time.Hour)
-	diff := expiresAt.Sub(expectedExpiry)
+	actualExpiry := claims.ExpiresAt.Time
+	diff := actualExpiry.Sub(expectedExpiry)
 	if diff > time.Second || diff < -time.Second {
 		t.Errorf("expiresAt diff from expected = %v, should be < 1 second", diff)
 	}
@@ -90,7 +97,7 @@ func TestValidateToken(t *testing.T) {
 	staff := newTestStaff()
 
 	// Generate token
-	token, _, err := handler.GenerateToken("session-123", staff)
+	token, err := handler.GenerateToken(staff)
 	if err != nil {
 		t.Fatalf("GenerateToken() error = %v", err)
 	}
@@ -126,7 +133,7 @@ func TestValidateTokenInvalidSecret(t *testing.T) {
 	staff := newTestStaff()
 
 	// Generate token with handler1
-	token, _, _ := handler1.GenerateToken("session-123", staff)
+	token, _ := handler1.GenerateToken(staff)
 
 	// Try to validate with handler2 (different secret)
 	_, err := handler2.ValidateToken(token)
@@ -184,14 +191,14 @@ func TestGetTokenExpiration(t *testing.T) {
 	handler := NewJWTHandler("test-secret", 2*time.Hour, logger)
 	staff := newTestStaff()
 
-	token, expectedExpiry, _ := handler.GenerateToken("session-123", staff)
+	token, _ := handler.GenerateToken(staff)
 
 	expiry, err := handler.GetTokenExpiration(token)
 	if err != nil {
 		t.Fatalf("GetTokenExpiration() error = %v", err)
 	}
 
-	diff := expiry.Sub(expectedExpiry)
+	diff := time.Now().Add(2 * time.Hour).Sub(expiry)
 	if diff > time.Second || diff < -time.Second {
 		t.Errorf("expiry diff = %v, should be < 1 second", diff)
 	}

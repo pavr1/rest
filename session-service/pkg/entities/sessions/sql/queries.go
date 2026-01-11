@@ -55,7 +55,10 @@ const (
 	GetStaffByUsernameQuery    = "get_staff_by_username"
 	UpdateLastLoginQuery       = "update_last_login"
 	GetSessionByIDQuery        = "get_session_by_id"
+	GetSessionByTokenQuery     = "get_session_by_token"
+	GetStaffByIDQuery           = "get_staff_by_id"
 	DeleteSessionQuery         = "delete_session"
+	DeleteSessionByTokenQuery  = "delete_session_by_token"
 	UpdateSessionTokenQuery    = "update_session_token"
 	DeleteExpiredSessionsQuery = "delete_expired_sessions"
 )

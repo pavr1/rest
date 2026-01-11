@@ -4,13 +4,10 @@ import (
 	"time"
 )
 
-// Session represents a user session
+// Session represents a user session (simplified - only session_id and token stored in DB)
 type Session struct {
-	SessionID string    `json:"session_id"`
-	Token     string    `json:"token"`
-	StaffID   string    `json:"staff_id"`
-	CreatedAt time.Time `json:"created_at"`
-	ExpiresAt time.Time `json:"expires_at"`
+	SessionID string `json:"session_id"`
+	Token     string `json:"token"`
 }
 
 // SessionCreateRequest represents a session creation request (login)
@@ -29,7 +26,7 @@ type SessionCreateResponse struct {
 
 // SessionValidationRequest represents a session validation request
 type SessionValidationRequest struct {
-	SessionID string `json:"session_id"`
+	Token string `json:"token"`
 }
 
 // SessionValidationResponse represents a session validation response
@@ -45,7 +42,7 @@ type SessionValidationResponse struct {
 
 // SessionLogoutRequest represents a session logout request
 type SessionLogoutRequest struct {
-	SessionID string `json:"session_id"`
+	Token string `json:"token"`
 }
 
 // SessionLogoutResponse represents a session logout response

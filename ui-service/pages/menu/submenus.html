@@ -150,7 +150,7 @@
     
     async function loadCategories() {
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.categories, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
@@ -169,7 +169,7 @@
     async function loadSubMenus() {
         showLoading();
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const params = new URLSearchParams();
             const catId = document.getElementById('categoryFilter').value;
             const itemType = document.getElementById('typeFilter').value;
@@ -246,7 +246,7 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const data = {
                 name: document.getElementById('subMenuName').value,
                 category_id: document.getElementById('subMenuCategory').value,
@@ -270,7 +270,7 @@
         const result = await Swal.fire({ title: 'Delete?', text: `Delete "${sm?.name}"? This will fail if it has menu items.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
         if (!result.isConfirmed) return;
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.subMenus}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) {
                 const err = await resp.text();

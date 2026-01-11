@@ -86,12 +86,12 @@ func (h *DBHandler) CreateSession(req *models.SessionCreateRequest) (*models.Ses
 		return nil, fmt.Errorf("failed to generate session ID: %w", err)
 	}
 
-	tokenString, expiresAt, err := h.jwtHandler.GenerateToken(sessionID, staff)
+	tokenString, err := h.jwtHandler.GenerateToken(staff)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate JWT token: %w", err)
 	}
 
-	err = h.storeSession(sessionID, tokenString, staff.ID, expiresAt)
+	err = h.storeSession(sessionID, tokenString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
@@ -157,14 +157,14 @@ func (h *DBHandler) authenticateStaff(username, password string) (*models.Staff,
 	return &staff, nil
 }
 
-func (h *DBHandler) storeSession(sessionID, token, staffID string, expiresAt time.Time) error {
+func (h *DBHandler) storeSession(sessionID, token string) error {
 	query, err := h.queries.Get("create_session")
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get create session query")
 		return fmt.Errorf("failed to get query: %w", err)
 	}
 
-	_, err = h.db.Exec(query, sessionID, token, staffID, expiresAt)
+	_, err = h.db.Exec(query, sessionID, token)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create session")
 		return fmt.Errorf("failed to create session: %w", err)
@@ -184,9 +184,28 @@ func (h *DBHandler) updateLastLogin(staffID string) error {
 	return err
 }
 
-// ValidateSession validates a session
-func (h *DBHandler) ValidateSession(sessionID string) (*models.SessionValidationResponse, error) {
-	session, staff, err := h.getSessionByID(sessionID)
+// ValidateSession validates a session token
+func (h *DBHandler) ValidateSession(token string) (*models.SessionValidationResponse, error) {
+	// First validate the JWT token
+	claims, err := h.jwtHandler.ValidateToken(token)
+	if err != nil {
+		return &models.SessionValidationResponse{
+			Valid:   false,
+			Message: "Invalid token",
+		}, nil
+	}
+
+	// Check if token is expired
+	if time.Now().After(claims.ExpiresAt.Time) {
+		h.deleteSessionByToken(token)
+		return &models.SessionValidationResponse{
+			Valid:   false,
+			Message: "Session expired",
+		}, nil
+	}
+
+	// Check if token exists in database
+	session, err := h.getSessionByToken(token)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &models.SessionValidationResponse{
@@ -194,71 +213,104 @@ func (h *DBHandler) ValidateSession(sessionID string) (*models.SessionValidation
 				Message: "Session not found",
 			}, nil
 		}
-		h.logger.WithError(err).Error("Failed to get session")
+		h.logger.WithError(err).Error("Failed to get session by token")
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
 
-	claims, err := h.jwtHandler.ValidateToken(session.Token)
+	// Get staff information from JWT claims
+	staff, err := h.getStaffByID(claims.StaffID)
 	if err != nil {
-		h.deleteSession(sessionID)
+		h.logger.WithError(err).Error("Failed to get staff by ID")
 		return &models.SessionValidationResponse{
 			Valid:   false,
-			Message: "Invalid token",
-		}, nil
-	}
-
-	if time.Now().After(claims.ExpiresAt.Time) {
-		h.deleteSession(sessionID)
-		return &models.SessionValidationResponse{
-			Valid:   false,
-			Message: "Session expired",
+			Message: "User not found",
 		}, nil
 	}
 
 	// Renew if expiring within 5 minutes
 	if time.Until(claims.ExpiresAt.Time) < 5*time.Minute {
-		newToken, newExpiry, err := h.jwtHandler.GenerateToken(sessionID, staff)
+		newToken, err := h.jwtHandler.GenerateToken(staff)
 		if err == nil {
-			h.updateSessionToken(sessionID, newToken, newExpiry)
+			h.updateSessionToken(session.SessionID, newToken)
+			// Return new token in response (optional, can be handled by client)
 		}
 	}
 
 	return &models.SessionValidationResponse{
 		Valid:     true,
-		SessionID: sessionID,
+		SessionID: session.SessionID,
 		Message:   "Session valid",
-		StaffID:   staff.ID,
-		Username:  staff.Username,
-		Role:      staff.Role,
-		FullName:  fmt.Sprintf("%s %s", staff.FirstName, staff.LastName),
+		StaffID:   claims.StaffID,
+		Username:  claims.Username,
+		Role:      claims.Role,
+		FullName:  claims.FullName,
 	}, nil
 }
 
-func (h *DBHandler) getSessionByID(sessionID string) (*models.Session, *models.Staff, error) {
+func (h *DBHandler) getSessionByID(sessionID string) (*models.Session, error) {
 	query, err := h.queries.Get(sessionSQL.GetSessionByIDQuery)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get session by ID query")
-		return nil, nil, fmt.Errorf("failed to get query: %w", err)
+		return nil, fmt.Errorf("failed to get query: %w", err)
 	}
 
 	var session models.Session
-	var staff models.Staff
-	var email sql.NullString
-
 	err = h.db.QueryRow(query, sessionID).Scan(
-		&session.SessionID, &session.Token, &session.StaffID, &session.CreatedAt, &session.ExpiresAt,
-		&staff.ID, &staff.Username, &email, &staff.FirstName, &staff.LastName, &staff.Role, &staff.IsActive,
+		&session.SessionID, &session.Token,
 	)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get session by ID")
-		return nil, nil, err
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func (h *DBHandler) getSessionByToken(token string) (*models.Session, error) {
+	query, err := h.queries.Get(sessionSQL.GetSessionByTokenQuery)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get session by token query")
+		return nil, fmt.Errorf("failed to get query: %w", err)
+	}
+
+	var session models.Session
+	err = h.db.QueryRow(query, token).Scan(
+		&session.SessionID, &session.Token,
+	)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get session by token")
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+func (h *DBHandler) getStaffByID(staffID string) (*models.Staff, error) {
+	query, err := h.queries.Get("get_staff_by_id")
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get staff by ID query")
+		return nil, fmt.Errorf("failed to get query: %w", err)
+	}
+
+	var staff models.Staff
+	var email sql.NullString
+	var lastLoginAt sql.NullTime
+
+	err = h.db.QueryRow(query, staffID).Scan(
+		&staff.ID, &staff.Username, &email, &staff.FirstName, &staff.LastName, &staff.Role, &staff.IsActive, &lastLoginAt, &staff.CreatedAt, &staff.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	if email.Valid {
 		staff.Email = &email.String
 	}
+	if lastLoginAt.Valid {
+		staff.LastLoginAt = &lastLoginAt.Time
+	}
 
-	return &session, &staff, nil
+	return &staff, nil
 }
 
 func (h *DBHandler) deleteSession(sessionID string) error {
@@ -275,13 +327,27 @@ func (h *DBHandler) deleteSession(sessionID string) error {
 	return nil
 }
 
-func (h *DBHandler) updateSessionToken(sessionID, token string, expiresAt time.Time) error {
+func (h *DBHandler) deleteSessionByToken(token string) error {
+	query, err := h.queries.Get(sessionSQL.DeleteSessionByTokenQuery)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get delete session by token query")
+		return err
+	}
+	_, err = h.db.Exec(query, token)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to delete session by token")
+		return err
+	}
+	return nil
+}
+
+func (h *DBHandler) updateSessionToken(sessionID, token string) error {
 	query, err := h.queries.Get(sessionSQL.UpdateSessionTokenQuery)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get update session token query")
 		return err
 	}
-	_, err = h.db.Exec(query, sessionID, token, expiresAt)
+	_, err = h.db.Exec(query, sessionID, token)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update session token")
 		return err
@@ -289,28 +355,27 @@ func (h *DBHandler) updateSessionToken(sessionID, token string, expiresAt time.T
 	return nil
 }
 
-// DeleteSession handles logout
-func (h *DBHandler) DeleteSession(sessionID string) (*models.SessionLogoutResponse, error) {
-	_, _, err := h.getSessionByID(sessionID)
+// DeleteSession handles logout by token
+func (h *DBHandler) DeleteSession(token string) (*models.SessionLogoutResponse, error) {
+	session, err := h.getSessionByToken(token)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &models.SessionLogoutResponse{
-				Success:   false,
-				SessionID: sessionID,
-				Message:   "Session not found",
+				Success: false,
+				Message: "Session not found",
 			}, nil
 		}
 		h.logger.WithError(err).Error("Failed to get session")
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
 
-	if err := h.deleteSession(sessionID); err != nil {
+	if err := h.deleteSessionByToken(token); err != nil {
 		return nil, fmt.Errorf("failed to delete session: %w", err)
 	}
 
 	return &models.SessionLogoutResponse{
 		Success:   true,
-		SessionID: sessionID,
+		SessionID: session.SessionID,
 		Message:   "Logged out successfully",
 	}, nil
 }

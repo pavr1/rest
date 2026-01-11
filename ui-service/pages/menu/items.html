@@ -239,7 +239,7 @@
     
     async function loadSubMenus() {
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.subMenus, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
@@ -252,7 +252,7 @@
     
     async function loadStockItems() {
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.stockItems, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
@@ -276,7 +276,7 @@
     async function loadItems() {
         showLoading();
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const params = new URLSearchParams();
             const subMenuId = document.getElementById('subMenuFilter').value;
             const avail = document.getElementById('availabilityFilter').value;
@@ -376,7 +376,7 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             
             // Build menu_types array from checkboxes
             const menuTypes = [];
@@ -415,7 +415,7 @@
     
     async function toggleAvailability(id, available) {
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.items}/${id}/availability`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_available: available }) });
             if (!resp.ok) throw new Error('Failed');
             await loadItems();
@@ -427,7 +427,7 @@
         const result = await Swal.fire({ title: 'Delete?', text: `Delete "${item?.name}"?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
         if (!result.isConfirmed) return;
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.items}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
@@ -459,7 +459,7 @@
         emptyEl.classList.add('d-none');
         
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.ingredients(menuItemId), { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
@@ -531,7 +531,7 @@
         }
         
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.ingredients(menuItemId), {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -556,7 +556,7 @@
         }
         
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.ingredients(menuItemId)}/${stockItemId}`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -577,7 +577,7 @@
         if (!result.isConfirmed) return;
         
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.ingredients(menuItemId)}/${stockItemId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -594,7 +594,7 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
         
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.itemCost(menuItemId)}/recalculate`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }

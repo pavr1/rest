@@ -7,46 +7,46 @@ import (
 	"testing"
 )
 
-func TestExtractSessionIdFromHeader_Bearer(t *testing.T) {
+func TestExtractTokenFromHeader_Bearer(t *testing.T) {
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.Header.Set("Authorization", "Bearer test-session-id-123")
 
-	sessionId := extractSessionIdFromHeader(req)
+	token := extractTokenFromHeader(req)
 
-	if sessionId != "test-session-id-123" {
-		t.Errorf("extractSessionIdFromHeader() = %s; want test-session-id-123", sessionId)
+	if token != "test-session-id-123" {
+		t.Errorf("extractTokenFromHeader() = %s; want test-session-id-123", token)
 	}
 }
 
-func TestExtractSessionIdFromHeader_Empty(t *testing.T) {
+func TestExtractTokenFromHeader_Empty(t *testing.T) {
 	req := httptest.NewRequest("GET", "/test", nil)
 
-	sessionId := extractSessionIdFromHeader(req)
+	token := extractTokenFromHeader(req)
 
-	if sessionId != "" {
-		t.Errorf("extractSessionIdFromHeader() = %s; want empty string", sessionId)
+	if token != "" {
+		t.Errorf("extractTokenFromHeader() = %s; want empty string", token)
 	}
 }
 
-func TestExtractSessionIdFromHeader_NoBearerPrefix(t *testing.T) {
+func TestExtractTokenFromHeader_NoBearerPrefix(t *testing.T) {
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.Header.Set("Authorization", "Basic some-credentials")
 
-	sessionId := extractSessionIdFromHeader(req)
+	token := extractTokenFromHeader(req)
 
-	if sessionId != "" {
-		t.Errorf("extractSessionIdFromHeader() = %s; want empty string for non-Bearer auth", sessionId)
+	if token != "" {
+		t.Errorf("extractTokenFromHeader() = %s; want empty string for non-Bearer auth", token)
 	}
 }
 
-func TestExtractSessionIdFromHeader_BearerOnly(t *testing.T) {
+func TestExtractTokenFromHeader_BearerOnly(t *testing.T) {
 	req := httptest.NewRequest("GET", "/test", nil)
 	req.Header.Set("Authorization", "Bearer ")
 
-	sessionId := extractSessionIdFromHeader(req)
+	token := extractTokenFromHeader(req)
 
-	if sessionId != "" {
-		t.Errorf("extractSessionIdFromHeader() = %s; want empty string for 'Bearer ' only", sessionId)
+	if token != "" {
+		t.Errorf("extractTokenFromHeader() = %s; want empty string for 'Bearer ' only", token)
 	}
 }
 
@@ -119,7 +119,7 @@ func TestSessionMiddleware_ValidateSession_MissingAuth(t *testing.T) {
 	var response map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &response)
 
-	if response["error"] != "missing_session" {
-		t.Errorf("error = %s; want missing_session", response["error"])
+	if response["error"] != "missing_token" {
+		t.Errorf("error = %s; want missing_token", response["error"])
 	}
 }

@@ -31,36 +31,40 @@ CREATE TRIGGER update_sub_menus_updated_at BEFORE UPDATE ON sub_menus
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================================================
--- Step 4: Migrate existing menu_items to sub_menus (if any exist)
--- Each unique (name, category_id, item_type) becomes a sub_menu
+-- Step 4: Add sub_menu_id column to menu_items (nullable for now)
+-- =============================================================================
+ALTER TABLE menu_items ADD COLUMN sub_menu_id UUID;
+
+-- =============================================================================
+-- Step 5: Migrate existing menu_items to sub_menus (if any exist)
+-- Strategy: Create one sub_menu per existing menu_item (using menu_item name)
+-- This preserves the existing structure - each old menu_item becomes a sub_menu
+-- Then the old menu_items become the new detailed menu_items
 -- =============================================================================
 INSERT INTO sub_menus (id, name, description, category_id, image_url, item_type, display_order, is_active, created_at, updated_at)
 SELECT 
     gen_random_uuid(),
-    name,
-    description,
-    category_id,
-    image_url,
-    item_type,
+    mi.name,
+    mi.description,
+    mi.category_id,
+    mi.image_url,
+    mi.item_type,
     0,
-    is_available,
-    created_at,
-    updated_at
-FROM menu_items;
-
--- =============================================================================
--- Step 5: Add sub_menu_id column to menu_items
--- =============================================================================
-ALTER TABLE menu_items ADD COLUMN sub_menu_id UUID REFERENCES sub_menus(id) ON DELETE RESTRICT;
+    mi.is_available,
+    mi.created_at,
+    mi.updated_at
+FROM menu_items mi;
 
 -- =============================================================================
 -- Step 6: Update menu_items to reference the migrated sub_menus
--- Match by name (temporary - this assumes 1:1 migration for existing data)
+-- Match by name, category_id, and item_type (1:1 mapping)
 -- =============================================================================
 UPDATE menu_items mi
 SET sub_menu_id = sm.id
 FROM sub_menus sm
-WHERE mi.name = sm.name AND mi.category_id = sm.category_id;
+WHERE mi.name = sm.name 
+  AND mi.category_id = sm.category_id 
+  AND mi.item_type = sm.item_type;
 
 -- =============================================================================
 -- Step 7: Add preparation_time and display_order columns to menu_items
@@ -78,6 +82,7 @@ ALTER TABLE menu_items DROP COLUMN item_type;
 
 -- =============================================================================
 -- Step 9: Make sub_menu_id NOT NULL after data migration
+-- PostgreSQL allows setting NOT NULL on empty tables (just enforces for future inserts)
 -- =============================================================================
 ALTER TABLE menu_items ALTER COLUMN sub_menu_id SET NOT NULL;
 

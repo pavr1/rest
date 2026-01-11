@@ -32,9 +32,15 @@
 			"type": "string"
 		},
 		{
-			"key": "session_id",
+			"key": "token",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "session_id",
+			"value": "",
+			"type": "string",
+			"description": "Deprecated - use token instead"
 		},
 		{
 			"key": "menu_category_id",
@@ -106,9 +112,11 @@
 							"script": {
 								"exec": [
 									"var jsonData = pm.response.json();",
-									"if (jsonData.data && jsonData.data.session_id) {",
-									"    pm.collectionVariables.set('session_id', jsonData.data.session_id);",
-									"    console.log('Session ID saved:', jsonData.data.session_id);",
+									"if (jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set('token', jsonData.data.token);",
+									"    console.log('Token saved:', jsonData.data.token);",
+									"} else {",
+									"    console.warn('No token found in response');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -147,7 +155,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"session_id\": \"{{session_id}}\"\n}"
+							"raw": "{\n    \"token\": \"{{token}}\"\n}"
 						},
 						"url": {
 							"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
@@ -168,9 +176,13 @@
 							},
 							{
 								"key": "Authorization",
-								"value": "Bearer {{session_id}}"
+								"value": "Bearer {{token}}"
 							}
 						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"{{token}}\"\n}"
+						},
 						"url": {
 							"raw": "{{gateway_url}}/api/v1/sessions/logout",
 							"host": ["{{gateway_url}}"],
@@ -205,7 +217,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/categories?page=1&limit=20",
@@ -224,7 +236,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/categories/{{menu_category_id}}",
@@ -254,7 +266,7 @@
 								"method": "POST",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -274,7 +286,7 @@
 								"method": "PUT",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -293,7 +305,7 @@
 							"request": {
 								"method": "DELETE",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/categories/{{menu_category_id}}",
@@ -361,7 +373,7 @@
 								"method": "POST",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -381,7 +393,7 @@
 								"method": "PUT",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -400,7 +412,7 @@
 							"request": {
 								"method": "DELETE",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
@@ -468,7 +480,7 @@
 								"method": "POST",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -488,7 +500,7 @@
 								"method": "PUT",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -508,7 +520,7 @@
 								"method": "PATCH",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -527,7 +539,7 @@
 							"request": {
 								"method": "DELETE",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
@@ -547,7 +559,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
@@ -563,7 +575,7 @@
 								"method": "POST",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -583,7 +595,7 @@
 								"method": "PUT",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -602,7 +614,7 @@
 							"request": {
 								"method": "DELETE",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
@@ -622,7 +634,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/cost",
@@ -637,7 +649,7 @@
 							"request": {
 								"method": "POST",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/cost/recalculate",
@@ -657,7 +669,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/stock/categories?page=1&limit=20",
@@ -676,7 +688,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
@@ -706,7 +718,7 @@
 								"method": "POST",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -726,7 +738,7 @@
 								"method": "PUT",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -745,7 +757,7 @@
 							"request": {
 								"method": "DELETE",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
@@ -765,7 +777,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/stock/items?page=1&limit=20",
@@ -785,7 +797,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",
@@ -815,7 +827,7 @@
 								"method": "POST",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -835,7 +847,7 @@
 								"method": "PUT",
 								"header": [
 									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"body": {
 									"mode": "raw",
@@ -854,7 +866,7 @@
 							"request": {
 								"method": "DELETE",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{session_id}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",

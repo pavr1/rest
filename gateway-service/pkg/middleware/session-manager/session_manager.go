@@ -50,17 +50,17 @@ func (sm *SessionManager) makeRequest(method, path string, body io.Reader, reque
 	return sm.client.Do(httpReq)
 }
 
-// ValidateSession validates a session ID against the session service
-func (sm *SessionManager) ValidateSession(sessionId string, requestID string) (*models.SessionValidationResponse, error) {
-	if sessionId == "" {
-		return &models.SessionValidationResponse{
+// ValidateSession validates a token against the session service
+func (sm *SessionManager) ValidateSession(token string, requestID string) (*models.TokenValidationResponse, error) {
+	if token == "" {
+		return &models.TokenValidationResponse{
 			Valid:   false,
-			Message: "Session ID is required",
+			Message: "Token is required",
 		}, nil
 	}
 
-	validationReq := models.SessionValidationRequest{
-		SessionID: sessionId,
+	validationReq := models.TokenValidationRequest{
+		Token: token,
 	}
 
 	reqBody, err := json.Marshal(validationReq)
@@ -84,7 +84,7 @@ func (sm *SessionManager) ValidateSession(sessionId string, requestID string) (*
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	var validationResp models.SessionValidationResponse
+	var validationResp models.TokenValidationResponse
 	if responseWrapper.Data != nil {
 		if dataBytes, err := json.Marshal(responseWrapper.Data); err == nil {
 			json.Unmarshal(dataBytes, &validationResp)
@@ -94,10 +94,10 @@ func (sm *SessionManager) ValidateSession(sessionId string, requestID string) (*
 	return &validationResp, nil
 }
 
-// LogoutSession revokes a session
-func (sm *SessionManager) LogoutSession(sessionId string, requestID string) error {
+// LogoutSession revokes a session by token
+func (sm *SessionManager) LogoutSession(token string, requestID string) error {
 	req := models.SessionLogoutRequest{
-		SessionID: sessionId,
+		Token: token,
 	}
 
 	reqBody, err := json.Marshal(req)

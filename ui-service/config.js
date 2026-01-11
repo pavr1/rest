@@ -43,7 +43,8 @@ const CONFIG = {
         login: SERVICE_URLS.gateway + '/api/v1/sessions/p/login',
         logout: SERVICE_URLS.gateway + '/api/v1/sessions/logout',
         validate: SERVICE_URLS.gateway + '/api/v1/sessions/p/validate',
-        SESSION_ID_KEY: 'barrest_session_id',
+        TOKEN_KEY: 'barrest_token',
+        SESSION_ID_KEY: 'barrest_session_id', // Deprecated - kept for backward compatibility
         USER_KEY: 'barrest_user_data',
         REMEMBER_KEY: 'barrest_remember_me'
     },

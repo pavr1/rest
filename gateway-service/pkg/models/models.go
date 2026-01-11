@@ -1,18 +1,18 @@
 package models
 
-// SessionValidationRequest represents a session validation request
-type SessionValidationRequest struct {
-	SessionID string `json:"session_id"`
+// TokenValidationRequest represents a token validation request
+type TokenValidationRequest struct {
+	Token string `json:"token"`
 }
 
-// SessionValidationResponse represents a session validation response
-type SessionValidationResponse struct {
+// TokenValidationResponse represents a token validation response
+type TokenValidationResponse struct {
 	Valid       bool     `json:"valid"`
-	SessionID   string   `json:"session_id,omitempty"`
+	Token       string   `json:"token,omitempty"`
 	Message     string   `json:"message,omitempty"`
-	UserID      string   `json:"user_id,omitempty"`
+	StaffID     string   `json:"staff_id,omitempty"`
 	Username    string   `json:"username,omitempty"`
-	RoleName    string   `json:"role_name,omitempty"`
+	Role        string   `json:"role,omitempty"`
 	FullName    string   `json:"full_name,omitempty"`
 	Permissions []string `json:"permissions,omitempty"`
 }
@@ -31,5 +31,5 @@ type SessionCreateResponse struct {
 
 // SessionLogoutRequest represents a session logout request
 type SessionLogoutRequest struct {
-	SessionID string `json:"session_id"`
+	Token string `json:"token"`
 }

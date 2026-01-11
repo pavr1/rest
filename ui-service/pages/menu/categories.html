@@ -116,7 +116,7 @@
     async function loadCategories() {
         showLoading();
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.categories, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed to load');
             const result = await resp.json();
@@ -185,7 +185,7 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const data = {
                 name: document.getElementById('categoryName').value,
                 description: document.getElementById('categoryDescription').value,
@@ -218,7 +218,7 @@
         });
         if (!result.isConfirmed) return;
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.categories}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });

@@ -10,7 +10,7 @@ class AuthService {
 
         // Use the gateway URL for authentication
         this.baseURL = CONFIG.GATEWAY_URL;
-        this.sessionIdKey = CONFIG.AUTH.SESSION_ID_KEY;
+        this.tokenKey = CONFIG.AUTH.TOKEN_KEY || CONFIG.AUTH.SESSION_ID_KEY; // Fallback for backward compatibility
         this.userKey = CONFIG.AUTH.USER_KEY;
         this.rememberKey = CONFIG.AUTH.REMEMBER_KEY;
 
@@ -34,8 +34,8 @@ class AuthService {
             const { success, result } = await isSuccessfulResponse(response);
             
             if (success) {
-                // Store authentication data
-                this.setSessionId(result.data.session_id, rememberMe);
+                // Store authentication data (token instead of session_id)
+                this.setToken(result.data.token, rememberMe);
                 this.setUserData(result.data.user, result.data.role, result.data.permissions || []);
                 
                 console.log('✅ Login successful for:', username);
@@ -63,8 +63,8 @@ class AuthService {
         try {
             console.log('🚪 Attempting logout...');
             
-            const sessionId = this.getSessionId();
-            if (!sessionId) {
+            const token = this.getToken();
+            if (!token) {
                 this.clearAuthData();
                 return { success: true };
             }
@@ -73,8 +73,9 @@ class AuthService {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionId}`
-                }
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ token: token })
             });
 
             // Always clear local data regardless of server response
@@ -95,8 +96,8 @@ class AuthService {
     
     async validateSession() {
         try {
-            const sessionId = this.getSessionId();
-            if (!sessionId) {
+            const token = this.getToken();
+            if (!token) {
                 return false;
             }
 
@@ -105,7 +106,7 @@ class AuthService {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ session_id: sessionId })
+                body: JSON.stringify({ token: token })
             });
 
             if (response.ok) {
@@ -122,9 +123,9 @@ class AuthService {
 
     // === SESSION MANAGEMENT ===
     
-    setSessionId(sessionId, rememberMe = false) {
+    setToken(token, rememberMe = false) {
         const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem(this.sessionIdKey, sessionId);
+        storage.setItem(this.tokenKey, token);
         
         if (rememberMe) {
             localStorage.setItem(this.rememberKey, 'true');
@@ -132,16 +133,27 @@ class AuthService {
             localStorage.removeItem(this.rememberKey);
         }
         
-        console.log('💾 Session ID stored');
+        console.log('💾 Token stored');
+    }
+
+    getToken() {
+        // Check sessionStorage first, then localStorage
+        let token = sessionStorage.getItem(this.tokenKey);
+        if (!token) {
+            token = localStorage.getItem(this.tokenKey);
+        }
+        return token;
+    }
+
+    // Backward compatibility methods (deprecated - use getToken/setToken)
+    setSessionId(sessionId, rememberMe = false) {
+        console.warn('⚠️ setSessionId is deprecated, use setToken instead');
+        this.setToken(sessionId, rememberMe);
     }
 
     getSessionId() {
-        // Check sessionStorage first, then localStorage
-        let sessionId = sessionStorage.getItem(this.sessionIdKey);
-        if (!sessionId) {
-            sessionId = localStorage.getItem(this.sessionIdKey);
-        }
-        return sessionId;
+        console.warn('⚠️ getSessionId is deprecated, use getToken instead');
+        return this.getToken();
     }
 
     setUserData(user, role, permissions) {
@@ -162,20 +174,20 @@ class AuthService {
     }
 
     clearAuthData() {
-        sessionStorage.removeItem(this.sessionIdKey);
+        sessionStorage.removeItem(this.tokenKey);
         sessionStorage.removeItem(this.userKey);
-        localStorage.removeItem(this.sessionIdKey);
+        localStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
         localStorage.removeItem(this.rememberKey);
         console.log('🧹 Auth data cleared');
     }
 
     isAuthenticated() {
-        const sessionId = this.getSessionId();
-        if (!sessionId) {
+        const token = this.getToken();
+        if (!token) {
             return false;
         }
-        return sessionId.length > 0 && sessionId !== 'null' && sessionId !== 'undefined';
+        return token.length > 0 && token !== 'null' && token !== 'undefined';
     }
 
     getCurrentUser() {
@@ -233,11 +245,11 @@ async function makeAuthenticatedRequest(url, options = {}) {
         throw new Error('User not authenticated');
     }
     
-    const sessionId = authService.getSessionId();
+    const token = authService.getToken();
     
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionId}`,
+        'Authorization': `Bearer ${token}`,
         ...options.headers
     };
     

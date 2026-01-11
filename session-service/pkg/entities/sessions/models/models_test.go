@@ -64,6 +64,41 @@ func TestSessionCreateResponse(t *testing.T) {
 	}
 }
 
+func TestSessionValidationRequest(t *testing.T) {
+	req := SessionValidationRequest{
+		Token: "jwt-token-xyz",
+	}
+
+	if req.Token != "jwt-token-xyz" {
+		t.Errorf("Token = %q, want %q", req.Token, "jwt-token-xyz")
+	}
+}
+
+func TestSessionValidationRequestJSON(t *testing.T) {
+	jsonStr := `{"token":"jwt-token-xyz"}`
+
+	var req SessionValidationRequest
+	err := json.Unmarshal([]byte(jsonStr), &req)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if req.Token != "jwt-token-xyz" {
+		t.Errorf("Token = %q, want %q", req.Token, "jwt-token-xyz")
+	}
+
+	// Marshal back to JSON
+	jsonBytes, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+
+	jsonStr2 := string(jsonBytes)
+	if !contains(jsonStr2, "jwt-token-xyz") {
+		t.Error("Token should be in JSON output")
+	}
+}
+
 func TestSessionValidationResponse(t *testing.T) {
 	resp := SessionValidationResponse{
 		Valid:     true,
@@ -82,6 +117,67 @@ func TestSessionValidationResponse(t *testing.T) {
 	if resp.Role != "manager" {
 		t.Errorf("Role = %q, want %q", resp.Role, "manager")
 	}
+
+	if resp.StaffID != "staff-456" {
+		t.Errorf("StaffID = %q, want %q", resp.StaffID, "staff-456")
+	}
+}
+
+func TestSessionValidationResponseJSON(t *testing.T) {
+	jsonStr := `{"valid":true,"session_id":"session-123","message":"Valid session","staff_id":"staff-456","username":"admin","role":"manager","full_name":"Admin User"}`
+
+	var resp SessionValidationResponse
+	err := json.Unmarshal([]byte(jsonStr), &resp)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if !resp.Valid {
+		t.Error("Valid should be true")
+	}
+
+	if resp.SessionID != "session-123" {
+		t.Errorf("SessionID = %q, want %q", resp.SessionID, "session-123")
+	}
+
+	if resp.StaffID != "staff-456" {
+		t.Errorf("StaffID = %q, want %q", resp.StaffID, "staff-456")
+	}
+}
+
+func TestSessionLogoutRequest(t *testing.T) {
+	req := SessionLogoutRequest{
+		Token: "jwt-token-xyz",
+	}
+
+	if req.Token != "jwt-token-xyz" {
+		t.Errorf("Token = %q, want %q", req.Token, "jwt-token-xyz")
+	}
+}
+
+func TestSessionLogoutRequestJSON(t *testing.T) {
+	jsonStr := `{"token":"jwt-token-xyz"}`
+
+	var req SessionLogoutRequest
+	err := json.Unmarshal([]byte(jsonStr), &req)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if req.Token != "jwt-token-xyz" {
+		t.Errorf("Token = %q, want %q", req.Token, "jwt-token-xyz")
+	}
+
+	// Marshal back to JSON
+	jsonBytes, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+
+	jsonStr2 := string(jsonBytes)
+	if !contains(jsonStr2, "jwt-token-xyz") {
+		t.Error("Token should be in JSON output")
+	}
 }
 
 func TestSessionLogoutResponse(t *testing.T) {
@@ -97,6 +193,28 @@ func TestSessionLogoutResponse(t *testing.T) {
 
 	if resp.Message != "Logged out successfully" {
 		t.Errorf("Message = %q, want %q", resp.Message, "Logged out successfully")
+	}
+
+	if resp.SessionID != "session-789" {
+		t.Errorf("SessionID = %q, want %q", resp.SessionID, "session-789")
+	}
+}
+
+func TestSessionLogoutResponseJSON(t *testing.T) {
+	jsonStr := `{"success":true,"session_id":"session-789","message":"Logged out successfully"}`
+
+	var resp SessionLogoutResponse
+	err := json.Unmarshal([]byte(jsonStr), &resp)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if !resp.Success {
+		t.Error("Success should be true")
+	}
+
+	if resp.SessionID != "session-789" {
+		t.Errorf("SessionID = %q, want %q", resp.SessionID, "session-789")
 	}
 }
 
@@ -186,23 +304,49 @@ func TestStaffNilOptionalFields(t *testing.T) {
 }
 
 func TestSession(t *testing.T) {
-	now := time.Now()
-	expires := now.Add(24 * time.Hour)
-
 	session := Session{
 		SessionID: "sess-123",
-		Token:     "jwt-token",
-		StaffID:   "staff-456",
-		CreatedAt: now,
-		ExpiresAt: expires,
+		Token:     "jwt-token-xyz",
 	}
 
 	if session.SessionID != "sess-123" {
 		t.Errorf("SessionID = %q, want %q", session.SessionID, "sess-123")
 	}
 
-	if session.ExpiresAt.Before(session.CreatedAt) {
-		t.Error("ExpiresAt should be after CreatedAt")
+	if session.Token != "jwt-token-xyz" {
+		t.Errorf("Token = %q, want %q", session.Token, "jwt-token-xyz")
+	}
+}
+
+func TestSessionJSON(t *testing.T) {
+	jsonStr := `{"session_id":"sess-123","token":"jwt-token-xyz"}`
+
+	var session Session
+	err := json.Unmarshal([]byte(jsonStr), &session)
+	if err != nil {
+		t.Fatalf("Unmarshal error: %v", err)
+	}
+
+	if session.SessionID != "sess-123" {
+		t.Errorf("SessionID = %q, want %q", session.SessionID, "sess-123")
+	}
+
+	if session.Token != "jwt-token-xyz" {
+		t.Errorf("Token = %q, want %q", session.Token, "jwt-token-xyz")
+	}
+
+	// Marshal back to JSON
+	jsonBytes, err := json.Marshal(session)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+
+	jsonStr2 := string(jsonBytes)
+	if !contains(jsonStr2, "sess-123") {
+		t.Error("SessionID should be in JSON output")
+	}
+	if !contains(jsonStr2, "jwt-token-xyz") {
+		t.Error("Token should be in JSON output")
 	}
 }
 

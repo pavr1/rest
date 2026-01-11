@@ -97,7 +97,7 @@
     async function loadData() {
         showLoading();
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.stockCategories, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
@@ -151,7 +151,7 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const data = { name: document.getElementById('itemName').value, description: document.getElementById('itemDescription').value };
             const url = editingId ? `${CONFIG.MENU.stockCategories}/${editingId}` : CONFIG.MENU.stockCategories;
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -168,7 +168,7 @@
         const result = await Swal.fire({ title: 'Delete?', text: `Delete "${item?.name}"?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
         if (!result.isConfirmed) return;
         try {
-            const token = window.authService.getSessionId();
+            const token = window.authService.getToken();
             const resp = await fetch(`${CONFIG.MENU.stockCategories}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });

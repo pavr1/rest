@@ -196,12 +196,10 @@ CREATE TABLE staff (
 );
 
 -- 18. Sessions (User authentication sessions)
+-- Simplified: only session_id and token stored (other info in JWT token)
 CREATE TABLE sessions (
     session_id VARCHAR(255) PRIMARY KEY,
-    token TEXT NOT NULL,
-    staff_id UUID NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL
+    token TEXT NOT NULL
 );
 
 -- 24. Promotions
@@ -467,8 +465,7 @@ CREATE INDEX idx_karaoke_requests_status ON karaoke_song_requests(status);
 CREATE INDEX idx_karaoke_requests_queue ON karaoke_song_requests(status, position_in_queue);
 
 -- Sessions (auth) indexes
-CREATE INDEX idx_sessions_staff_id ON sessions(staff_id);
-CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+CREATE INDEX idx_sessions_token ON sessions(token);
 
 -- Promotions indexes
 CREATE INDEX idx_promotions_type ON promotions(promotion_type);
