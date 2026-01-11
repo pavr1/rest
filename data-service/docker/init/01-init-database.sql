@@ -640,48 +640,45 @@ INSERT INTO settings (service, key, value, description) VALUES
 ('UI', 'UI_PORT', '3000', 'Port for the UI service'),
 ('UI', 'GATEWAY_URL', 'http://barrest_gateway:8082', 'Gateway service URL');
 
--- Insert default admin user (password: admin)
+-- Insertar usuario administrador por defecto (contraseña: admin)
 INSERT INTO staff (username, email, password_hash, first_name, last_name, role) VALUES
-('admin', 'admin@barrest.com', '$2a$10$o4Pv9FXpT5HNIaPRS7U.xuWj2b8EyfuGp6EhGKByB8d3vdGNkgYYq', 'System', 'Administrator', 'admin');
+('admin', 'admin@barrest.com', '$2a$10$o4Pv9FXpT5HNIaPRS7U.xuWj2b8EyfuGp6EhGKByB8d3vdGNkgYYq', 'Sistema', 'Administrador', 'admin');
 
--- Insert default menu categories
+-- Insertar categorías del menú por defecto
 INSERT INTO menu_categories (name, display_order, description) VALUES
-('Appetizers', 1, 'Starters and appetizers'),
-('Main Course', 2, 'Main dishes'),
-('Desserts', 3, 'Sweet treats and desserts'),
-('Beer', 4, 'Beer selection'),
-('Cocktails', 5, 'Mixed drinks and cocktails'),
-('Wine', 6, 'Wine selection'),
-('Soft Drinks', 7, 'Non-alcoholic beverages'),
-('Snacks', 8, 'Bar snacks');
+('Entradas', 1, 'Aperitivos y entradas'),
+('Platos Fuertes', 2, 'Platos principales'),
+('Postres', 3, 'Dulces y postres'),
+('Bebidas', 4, 'Cervezas, cocteles, vinos y refrescos'),
+('Bocadillos', 5, 'Snacks de bar');
 
--- Insert default stock item categories
+-- Insertar categorías de inventario por defecto
 INSERT INTO stock_item_categories (name, description) VALUES
-('Meat', 'Meat products'),
-('Vegetables', 'Fresh vegetables'),
-('Dairy', 'Milk, cheese, cream, eggs'),
-('Beverages', 'Drinks and beverages'),
-('Spices', 'Spices and seasonings'),
-('Grains', 'Rice, pasta, bread'),
-('Alcohol', 'Alcoholic beverages'),
-('Condiments', 'Sauces and condiments'),
-('Frozen', 'Frozen products'),
-('Dry Goods', 'Dry ingredients');
+('Carnes', 'Productos cárnicos'),
+('Verduras', 'Vegetales frescos'),
+('Lácteos', 'Leche, queso, crema, huevos'),
+('Bebidas', 'Bebidas y refrescos'),
+('Especias', 'Especias y condimentos'),
+('Granos', 'Arroz, pasta, pan'),
+('Licores', 'Bebidas alcohólicas'),
+('Salsas', 'Salsas y aderezos'),
+('Congelados', 'Productos congelados'),
+('Abarrotes', 'Ingredientes secos');
 
--- Insert sample tables
+-- Insertar mesas de ejemplo
 INSERT INTO tables (table_number, capacity, status) VALUES
-('T1', 2, 'available'),
-('T2', 2, 'available'),
-('T3', 4, 'available'),
-('T4', 4, 'available'),
-('T5', 4, 'available'),
-('T6', 6, 'available'),
-('T7', 6, 'available'),
-('T8', 8, 'available'),
-('BAR1', 1, 'available'),
-('BAR2', 1, 'available'),
-('BAR3', 1, 'available'),
-('BAR4', 1, 'available');
+('M1', 2, 'available'),
+('M2', 2, 'available'),
+('M3', 4, 'available'),
+('M4', 4, 'available'),
+('M5', 4, 'available'),
+('M6', 6, 'available'),
+('M7', 6, 'available'),
+('M8', 8, 'available'),
+('BARRA1', 1, 'available'),
+('BARRA2', 1, 'available'),
+('BARRA3', 1, 'available'),
+('BARRA4', 1, 'available');
 
 -- =============================================================================
 -- END OF SCHEMA
