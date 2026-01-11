@@ -24,6 +24,7 @@ type HTTPHandler struct {
 	sessionServiceUrl   string
 	menuServiceUrl      string
 	inventoryServiceUrl string
+	invoiceServiceUrl   string
 	httpHealthMonitor   *sharedHttp.HTTPHealthMonitor
 	logger              *logrus.Logger
 }
@@ -33,6 +34,7 @@ func NewHTTPHandler(
 	sessionServiceUrl string,
 	menuServiceUrl string,
 	inventoryServiceUrl string,
+	invoiceServiceUrl string,
 	httpHealthMonitor *sharedHttp.HTTPHealthMonitor,
 	logger *logrus.Logger,
 ) *HTTPHandler {
@@ -41,6 +43,7 @@ func NewHTTPHandler(
 		sessionServiceUrl:   sessionServiceUrl,
 		menuServiceUrl:      menuServiceUrl,
 		inventoryServiceUrl: inventoryServiceUrl,
+		invoiceServiceUrl:   invoiceServiceUrl,
 		httpHealthMonitor:   httpHealthMonitor,
 		logger:              logger,
 	}
@@ -189,6 +192,16 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	// Protected - Stock Items
 	stockRouter.HandleFunc("/items", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
 	stockRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Protected - Invoices
+	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
+	invoiceRouter.Use(sessionMiddleware.ValidateSession)
+	invoiceRouter.HandleFunc("/purchase", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
+	invoiceRouter.HandleFunc("/purchase/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
+	invoiceRouter.HandleFunc("/purchase/{invoiceId}/details", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
+	invoiceRouter.HandleFunc("/purchase/{invoiceId}/details/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
+	invoiceRouter.HandleFunc("/existences", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
+	invoiceRouter.HandleFunc("/existences/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
 
 	// OPTIONS handling for CORS preflight
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,31 @@
+# Invoice Service Docker Compose
+# =============================================================================
+# Service handles purchase invoices, invoice details, and stock existences
+# Creates stock items with unit costs from invoice data
+# Use root Makefile: make fresh (handles startup order)
+# =============================================================================
+
+services:
+  invoice-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: barrest_invoice_service
+    restart: unless-stopped
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8092
+    ports:
+      - "8092:8092"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/api/v1/invoices/p/health"]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - docker_barrest_network
+
+networks:
+  docker_barrest_network:
+    external: true

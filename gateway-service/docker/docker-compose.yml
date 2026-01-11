@@ -20,10 +20,10 @@ services:
       - SESSION_SERVICE_URL=http://barrest_session_service:8087
       - MENU_SERVICE_URL=http://barrest_menu_service:8088
       - INVENTORY_SERVICE_URL=http://barrest_inventory_service:8084
+      - INVOICE_SERVICE_URL=http://barrest_invoice_service:8092
       # Future service URLs (add as services are created):
       # - ORDERS_SERVICE_URL=http://barrest_orders_service:8089
       # - PAYMENT_SERVICE_URL=http://barrest_payment_service:8091
-      # - INVOICE_SERVICE_URL=http://barrest_invoice_service:8092
       # - KARAOKE_SERVICE_URL=http://barrest_karaoke_service:8093
       # - PROMOTION_SERVICE_URL=http://barrest_promotion_service:8094
       # - CUSTOMER_SERVICE_URL=http://barrest_customer_service:8095

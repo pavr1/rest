@@ -259,6 +259,16 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_NAME", "barrest_db")
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
+	case "invoice":
+		config.Set("SERVER_PORT", "8092")
+		config.Set("SERVER_HOST", "0.0.0.0")
+		config.Set("DB_HOST", "barrest_postgres")
+		config.Set("DB_PORT", "5432")
+		config.Set("DB_USER", "postgres")
+		config.Set("DB_PASSWORD", "postgres123")
+		config.Set("DB_NAME", "barrest_db")
+		config.Set("DB_SSL_MODE", "disable")
+		config.Set("LOG_LEVEL", "info")
 	case "inventory":
 		config.Set("SERVER_PORT", "8084")
 		config.Set("SERVER_HOST", "0.0.0.0")

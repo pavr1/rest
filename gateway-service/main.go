@@ -35,12 +35,14 @@ func main() {
 	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
 	menuServiceUrl := config.GetString("MENU_SERVICE_URL")
 	inventoryServiceUrl := config.GetString("INVENTORY_SERVICE_URL")
+	invoiceServiceUrl := config.GetString("INVOICE_SERVICE_URL")
 
 	logger.WithFields(map[string]interface{}{
 		"session_service":   sessionServiceUrl,
 		"data_service":      dataServiceUrl,
 		"menu_service":      menuServiceUrl,
 		"inventory_service": inventoryServiceUrl,
+		"invoice_service":   invoiceServiceUrl,
 	}).Info("Configuration loaded")
 
 	// Create cancellable context for graceful shutdown
@@ -56,6 +58,7 @@ func main() {
 	httpHealthMonitor.AddService("data-service", dataServiceUrl+"/api/v1/data/p/health")
 	httpHealthMonitor.AddService("menu-service", menuServiceUrl+"/api/v1/menu/p/health")
 	httpHealthMonitor.AddService("inventory-service", inventoryServiceUrl+"/api/v1/inventory/p/health")
+	httpHealthMonitor.AddService("invoice-service", invoiceServiceUrl+"/api/v1/invoices/p/health")
 	httpHealthMonitor.Start(ctx)
 
 	// Create session manager for authentication
@@ -63,7 +66,7 @@ func main() {
 	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger)
 
 	// Create HTTP handler with all dependencies
-	httpHandler := handlers.NewHTTPHandler(config, sessionServiceUrl, menuServiceUrl, inventoryServiceUrl, httpHealthMonitor, logger)
+	httpHandler := handlers.NewHTTPHandler(config, sessionServiceUrl, menuServiceUrl, inventoryServiceUrl, invoiceServiceUrl, httpHealthMonitor, logger)
 	router := httpHandler.SetupRoutes(sessionMiddleware)
 
 	// Start server
