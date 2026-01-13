@@ -1,9 +1,9 @@
 <!-- Suppliers Page Partial -->
 <style>
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
-    .filters { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
     .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; }
+    .data-card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
     .data-table { width: 100%; margin: 0; }
     .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
     .data-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
@@ -12,50 +12,52 @@
     .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
     .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
-    .supplier-info { display: flex; flex-direction: column; gap: 0.25rem; }
+    .supplier-info { display: flex; flex-direction: column; }
     .supplier-name { font-weight: 600; color: var(--text-primary); }
     .supplier-contact { font-size: 0.85rem; color: var(--text-secondary); }
 </style>
 
 <div class="page-header">
     <h1 class="page-title">Suppliers</h1>
-    <button class="btn btn-primary" id="addBtn"><i class="fas fa-plus me-2"></i>Add Supplier</button>
-</div>
-
-<div class="filters">
-    <input type="text" class="form-control" id="searchInput" placeholder="Search suppliers..." style="width: 300px;">
-    <button class="btn btn-outline-secondary" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+    <button class="btn btn-primary" id="addSupplierBtn">
+        <i class="fas fa-plus me-2"></i>Add Supplier
+    </button>
 </div>
 
 <div class="data-card">
+    <div class="data-card-header">
+        <h5 class="mb-0">All Suppliers</h5>
+        <button class="btn btn-outline-secondary btn-sm" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
     <div id="tableContainer">
         <div class="loading-state" id="loadingState">
             <div class="spinner-border text-primary mb-3"></div>
             <p>Loading suppliers...</p>
         </div>
+
         <div class="empty-state d-none" id="emptyState">
             <i class="fas fa-truck"></i>
             <h5>No suppliers yet</h5>
-            <p>Create your first supplier.</p>
+            <p>Create your first supplier to get started.</p>
         </div>
+
         <table class="data-table d-none" id="dataTable">
             <thead>
                 <tr>
                     <th>Supplier</th>
-                    <th>Contact</th>
+                    <th>Contact Person</th>
                     <th>Phone</th>
                     <th>Email</th>
-                    <th>Actions</th>
+                    <th width="120">Actions</th>
                 </tr>
             </thead>
-            <tbody id="tableBody">
-                <!-- Dynamic content will be inserted here -->
-            </tbody>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 </div>
 
-<!-- Add/Edit Supplier Modal -->
+<!-- Modal -->
 <div class="modal fade" id="supplierModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -63,341 +65,184 @@
                 <h5 class="modal-title" id="modalTitle">Add Supplier</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <form id="supplierForm">
+            <form id="supplierForm">
+                <div class="modal-body">
+                    <input type="hidden" id="supplierId">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Supplier Name *</label>
-                        <input type="text" class="form-control" id="name" required>
+                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="supplierName" required>
                     </div>
                     <div class="mb-3">
-                        <label for="contactName" class="form-label">Contact Name</label>
+                        <label class="form-label">Contact Person</label>
                         <input type="text" class="form-control" id="contactName">
                     </div>
                     <div class="mb-3">
-                        <label for="phone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="phone">
+                        <label class="form-label">Phone</label>
+                        <input type="text" class="form-control" id="supplierPhone">
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="supplierEmail">
                     </div>
                     <div class="mb-3">
-                        <label for="address" class="form-label">Address</label>
-                        <textarea class="form-control" id="address" rows="3"></textarea>
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" id="supplierAddress" rows="3"></textarea>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveBtn">Save Supplier</button>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
 (function() {
-    // Suppliers page functionality
-    console.log('🔧 Suppliers page script loaded');
-
-    // Since this page is loaded dynamically, we need to initialize immediately
-    initializeSuppliersPage();
-
-    function initializeSuppliersPage() {
-    console.log('🔧 Suppliers page initialized');
-
-    try {
-        console.log('🔧 Checking if required globals exist...');
-        console.log('CONFIG exists:', typeof CONFIG !== 'undefined');
-        console.log('makeAuthenticatedRequest exists:', typeof makeAuthenticatedRequest !== 'undefined');
-
-        if (typeof CONFIG === 'undefined') {
-            console.error('❌ CONFIG not available');
-            return;
-        }
-        if (typeof makeAuthenticatedRequest === 'undefined') {
-            console.error('❌ makeAuthenticatedRequest not available');
-            return;
-        }
-
-        console.log('🔧 Required globals are available');
-    } catch (error) {
-        console.error('❌ Error checking globals:', error);
-        return;
-    }
     let suppliers = [];
-    let currentSupplierId = null;
+    let modal = null;
+    let editingId = null;
 
-    try {
-        console.log('🔧 Setting up suppliers page functionality...');
+    function init() {
+        modal = new bootstrap.Modal(document.getElementById('supplierModal'));
+        setupEventListeners();
+        loadSuppliers();
+    }
 
-        // Check if required elements exist
-        const addBtn = document.getElementById('addBtn');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const saveBtn = document.getElementById('saveBtn');
-        const searchInput = document.getElementById('searchInput');
-        const supplierForm = document.getElementById('supplierForm');
-
-        console.log('🔧 Elements found:', {
-            addBtn: !!addBtn,
-            refreshBtn: !!refreshBtn,
-            saveBtn: !!saveBtn,
-            searchInput: !!searchInput,
-            supplierForm: !!supplierForm
-        });
-
-        // Set up event listeners first (don't let data loading failures prevent UI interaction)
-        console.log('🔧 Setting up event listeners...');
-
-        // Event listeners
-        if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                console.log('🔧 Add button clicked');
-                alert('Add button clicked!'); // Simple test
-                try {
-                    openModal();
-                } catch (error) {
-                    console.error('❌ Error in openModal:', error);
-                    alert('Error opening modal: ' + error.message);
-                }
-            });
-            console.log('🔧 Add button event listener attached');
-        } else {
-            console.error('❌ Add button not found!');
-        }
-
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-                console.log('🔧 Refresh button clicked');
-                loadSuppliers();
-            });
-            console.log('🔧 Refresh button event listener attached');
-        }
-
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => {
-                console.log('🔧 Save button clicked');
-                saveSupplier();
-            });
-            console.log('🔧 Save button event listener attached');
-        }
-
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                console.log('🔧 Search input changed:', e.target.value);
-                filterSuppliers(e.target.value);
-            });
-            console.log('🔧 Search input event listener attached');
-        }
-
-        // Form validation
-        if (supplierForm) {
-            supplierForm.addEventListener('submit', (e) => {
-                console.log('🔧 Form submitted, preventing default');
-                e.preventDefault();
-            });
-            console.log('🔧 Form submit event listener attached');
-        }
-
-        console.log('🔧 Suppliers page functionality setup complete');
-
-        // Now try to load initial data (but don't fail if it doesn't work)
-        console.log('🔧 Attempting to load initial supplier data...');
-        loadSuppliers().catch(error => {
-            console.warn('⚠️ Failed to load initial supplier data, but UI is functional:', error);
-            hideLoading();
-            showEmpty();
-        });
-
-    } catch (error) {
-        console.error('❌ Error setting up suppliers page:', error);
+    function setupEventListeners() {
+        document.getElementById('addSupplierBtn')?.addEventListener('click', () => openModal());
+        document.getElementById('refreshBtn')?.addEventListener('click', () => loadSuppliers());
+        document.getElementById('supplierForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveSupplier(); });
     }
 
     async function loadSuppliers() {
+        showLoading();
         try {
-            showLoading();
-
-            // Ensure CONFIG is available
-            if (!CONFIG || !CONFIG.INVENTORY) {
-                console.error('CONFIG not available for suppliers page');
-                showError('Configuration not loaded');
-                return;
-            }
-
-            console.log('Loading suppliers from:', CONFIG.INVENTORY.suppliers);
-            const response = await makeAuthenticatedRequest(CONFIG.INVENTORY.suppliers);
-            suppliers = response.data || response.suppliers || [];
-
-            renderSuppliers(suppliers);
-        } catch (error) {
-            console.error('Failed to load suppliers:', error);
-            showError('Failed to load suppliers');
-        } finally {
-            hideLoading();
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.INVENTORY.suppliers, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed to load');
+            const result = await resp.json();
+            suppliers = result.data?.suppliers || result.suppliers || [];
+            renderTable();
+        } catch (e) {
+            console.error('Error:', e);
+            Swal.fire('Error', 'Failed to load suppliers', 'error');
+            showEmpty();
         }
     }
 
-    function renderSuppliers(suppliersList) {
+    function renderTable() {
         const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
+        const table = document.getElementById('dataTable');
+        const empty = document.getElementById('emptyState');
+        document.getElementById('loadingState').classList.add('d-none');
 
-        if (suppliersList.length === 0) {
-            showEmpty();
-            return;
-        }
+        if (!suppliers.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
 
-        hideEmpty();
-
-        suppliersList.forEach(supplier => {
-            const row = document.createElement('tr');
-
-            row.innerHTML = `
+        empty.classList.add('d-none');
+        table.classList.remove('d-none');
+        tbody.innerHTML = suppliers.map(supplier => `
+            <tr>
                 <td>
                     <div class="supplier-info">
-                        <div class="supplier-name">${supplier.name}</div>
-                        ${supplier.address ? `<div class="supplier-contact">${supplier.address}</div>` : ''}
+                        <div class="supplier-name">${escapeHtml(supplier.name)}</div>
+                        ${supplier.address ? `<div class="supplier-contact">${escapeHtml(supplier.address)}</div>` : ''}
                     </div>
                 </td>
-                <td>${supplier.contact_name || '-'}</td>
-                <td>${supplier.phone || '-'}</td>
-                <td>${supplier.email || '-'}</td>
+                <td>${escapeHtml(supplier.contact_name || '-')}</td>
+                <td>${escapeHtml(supplier.phone || '-')}</td>
+                <td>${escapeHtml(supplier.email || '-')}</td>
                 <td>
                     <div class="action-btns">
-                        <button class="btn btn-sm btn-outline-primary btn-action" onclick="editSupplier('${supplier.id}')" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteSupplier('${supplier.id}', '${supplier.name}')" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <button class="btn btn-outline-primary btn-action" onclick="window.supplierPage.edit('${supplier.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-outline-danger btn-action" onclick="window.supplierPage.delete('${supplier.id}')" title="Delete"><i class="fas fa-trash"></i></button>
                     </div>
                 </td>
-            `;
-
-            tbody.appendChild(row);
-        });
-
-        showTable();
+            </tr>
+        `).join('');
     }
 
-    function filterSuppliers(searchTerm) {
-        const filtered = suppliers.filter(supplier =>
-            supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (supplier.contact_name && supplier.contact_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (supplier.email && supplier.email.toLowerCase().includes(searchTerm.toLowerCase()))
-        );
-        renderSuppliers(filtered);
-    }
-
-    function openModal(supplier = null) {
-        currentSupplierId = supplier ? supplier.id : null;
-        document.getElementById('modalTitle').textContent = supplier ? 'Edit Supplier' : 'Add Supplier';
-
-        // Populate form
-        document.getElementById('name').value = supplier ? supplier.name : '';
-        document.getElementById('contactName').value = supplier ? supplier.contact_name || '' : '';
-        document.getElementById('phone').value = supplier ? supplier.phone || '' : '';
-        document.getElementById('email').value = supplier ? supplier.email || '' : '';
-        document.getElementById('address').value = supplier ? supplier.address || '' : '';
-
-        const modal = new bootstrap.Modal(document.getElementById('supplierModal'));
-        modal.show();
-    }
-
-    async function saveSupplier() {
-        const supplierData = {
-            name: document.getElementById('name').value.trim(),
-            contact_name: document.getElementById('contactName').value.trim() || null,
-            phone: document.getElementById('phone').value.trim() || null,
-            email: document.getElementById('email').value.trim() || null,
-            address: document.getElementById('address').value.trim() || null
-        };
-
-        if (!supplierData.name) {
-            alert('Supplier name is required');
-            return;
-        }
-
-        try {
-            let response;
-            if (currentSupplierId) {
-                // Update
-                response = await makeAuthenticatedRequest(
-                    CONFIG.INVENTORY.supplier(currentSupplierId),
-                    'PUT',
-                    supplierData
-                );
-            } else {
-                // Create
-                response = await makeAuthenticatedRequest(
-                    CONFIG.INVENTORY.suppliers,
-                    'POST',
-                    supplierData
-                );
-            }
-
-            // Close modal and refresh
-            bootstrap.Modal.getInstance(document.getElementById('supplierModal')).hide();
-            loadSuppliers();
-
-        } catch (error) {
-            console.error('Failed to save supplier:', error);
-            alert('Failed to save supplier. Please try again.');
-        }
-    }
-
-    // Global functions for onclick handlers
-    window.editSupplier = function(id) {
-        const supplier = suppliers.find(s => s.id === id);
-        if (supplier) {
-            openModal(supplier);
-        }
-    };
-
-    window.deleteSupplier = async function(id, name) {
-        if (!confirm(`Are you sure you want to delete supplier "${name}"?`)) {
-            return;
-        }
-
-        try {
-            await makeAuthenticatedRequest(
-                CONFIG.INVENTORY.supplier(id),
-                'DELETE'
-            );
-
-            loadSuppliers();
-        } catch (error) {
-            console.error('Failed to delete supplier:', error);
-            alert('Failed to delete supplier. It may be referenced by invoices.');
-        }
-    };
-
-    // UI state management
     function showLoading() {
         document.getElementById('loadingState').classList.remove('d-none');
         document.getElementById('emptyState').classList.add('d-none');
         document.getElementById('dataTable').classList.add('d-none');
     }
 
-    function hideLoading() {
-        document.getElementById('loadingState').classList.add('d-none');
-    }
-
     function showEmpty() {
+        document.getElementById('loadingState').classList.add('d-none');
         document.getElementById('emptyState').classList.remove('d-none');
         document.getElementById('dataTable').classList.add('d-none');
     }
 
-    function hideEmpty() {
-        document.getElementById('emptyState').classList.add('d-none');
+    function openModal(supplier = null) {
+        editingId = supplier?.id || null;
+        document.getElementById('modalTitle').textContent = supplier ? 'Edit Supplier' : 'Add Supplier';
+        document.getElementById('supplierId').value = supplier?.id || '';
+        document.getElementById('supplierName').value = supplier?.name || '';
+        document.getElementById('contactName').value = supplier?.contact_name || '';
+        document.getElementById('supplierPhone').value = supplier?.phone || '';
+        document.getElementById('supplierEmail').value = supplier?.email || '';
+        document.getElementById('supplierAddress').value = supplier?.address || '';
+        modal.show();
     }
 
-    function showTable() {
-        document.getElementById('dataTable').classList.remove('d-none');
+    async function saveSupplier() {
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            const token = window.authService.getToken();
+            const data = {
+                name: document.getElementById('supplierName').value,
+                contact_name: document.getElementById('contactName').value,
+                phone: document.getElementById('supplierPhone').value,
+                email: document.getElementById('supplierEmail').value,
+                address: document.getElementById('supplierAddress').value
+            };
+            const url = editingId ? `${CONFIG.INVENTORY.suppliers}/${editingId}` : CONFIG.INVENTORY.suppliers;
+            const resp = await fetch(url, {
+                method: editingId ? 'PUT' : 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
+            modal.hide();
+            Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false });
+            await loadSuppliers();
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Save';
+        }
     }
 
-    function showError(message) {
-        // Could implement a toast notification here
-        console.error(message);
+    async function deleteSupplier(id) {
+        const supplier = suppliers.find(s => s.id === id);
+        const result = await Swal.fire({
+            title: 'Delete?', text: `Delete "${supplier?.name}"?`, icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete'
+        });
+        if (!result.isConfirmed) return;
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.INVENTORY.suppliers}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed');
+            Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
+            await loadSuppliers();
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
+
+    function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+    // Expose functions globally for onclick handlers
+    window.supplierPage = {
+        edit: (id) => { const supplier = suppliers.find(s => s.id === id); if (supplier) openModal(supplier); },
+        delete: deleteSupplier
+    };
+
+    init();
 })();
 </script>
