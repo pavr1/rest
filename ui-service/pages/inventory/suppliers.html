@@ -96,25 +96,122 @@
 </div>
 
 <script>
-// Suppliers page functionality
-console.log('🔧 Suppliers page script loaded');
+(function() {
+    // Suppliers page functionality
+    console.log('🔧 Suppliers page script loaded');
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Suppliers page DOMContentLoaded fired');
+    // Since this page is loaded dynamically, we need to initialize immediately
+    initializeSuppliersPage();
+
+    function initializeSuppliersPage() {
+    console.log('🔧 Suppliers page initialized');
+
+    try {
+        console.log('🔧 Checking if required globals exist...');
+        console.log('CONFIG exists:', typeof CONFIG !== 'undefined');
+        console.log('makeAuthenticatedRequest exists:', typeof makeAuthenticatedRequest !== 'undefined');
+
+        if (typeof CONFIG === 'undefined') {
+            console.error('❌ CONFIG not available');
+            return;
+        }
+        if (typeof makeAuthenticatedRequest === 'undefined') {
+            console.error('❌ makeAuthenticatedRequest not available');
+            return;
+        }
+
+        console.log('🔧 Required globals are available');
+    } catch (error) {
+        console.error('❌ Error checking globals:', error);
+        return;
+    }
     let suppliers = [];
     let currentSupplierId = null;
 
-    // Initialize page
-    loadSuppliers();
+    try {
+        console.log('🔧 Setting up suppliers page functionality...');
 
-    // Event listeners
-    document.getElementById('addBtn').addEventListener('click', () => openModal());
-    document.getElementById('refreshBtn').addEventListener('click', () => loadSuppliers());
-    document.getElementById('saveBtn').addEventListener('click', () => saveSupplier());
-    document.getElementById('searchInput').addEventListener('input', (e) => filterSuppliers(e.target.value));
+        // Check if required elements exist
+        const addBtn = document.getElementById('addBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const searchInput = document.getElementById('searchInput');
+        const supplierForm = document.getElementById('supplierForm');
 
-    // Form validation
-    document.getElementById('supplierForm').addEventListener('submit', (e) => e.preventDefault());
+        console.log('🔧 Elements found:', {
+            addBtn: !!addBtn,
+            refreshBtn: !!refreshBtn,
+            saveBtn: !!saveBtn,
+            searchInput: !!searchInput,
+            supplierForm: !!supplierForm
+        });
+
+        // Set up event listeners first (don't let data loading failures prevent UI interaction)
+        console.log('🔧 Setting up event listeners...');
+
+        // Event listeners
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                console.log('🔧 Add button clicked');
+                alert('Add button clicked!'); // Simple test
+                try {
+                    openModal();
+                } catch (error) {
+                    console.error('❌ Error in openModal:', error);
+                    alert('Error opening modal: ' + error.message);
+                }
+            });
+            console.log('🔧 Add button event listener attached');
+        } else {
+            console.error('❌ Add button not found!');
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                console.log('🔧 Refresh button clicked');
+                loadSuppliers();
+            });
+            console.log('🔧 Refresh button event listener attached');
+        }
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                console.log('🔧 Save button clicked');
+                saveSupplier();
+            });
+            console.log('🔧 Save button event listener attached');
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                console.log('🔧 Search input changed:', e.target.value);
+                filterSuppliers(e.target.value);
+            });
+            console.log('🔧 Search input event listener attached');
+        }
+
+        // Form validation
+        if (supplierForm) {
+            supplierForm.addEventListener('submit', (e) => {
+                console.log('🔧 Form submitted, preventing default');
+                e.preventDefault();
+            });
+            console.log('🔧 Form submit event listener attached');
+        }
+
+        console.log('🔧 Suppliers page functionality setup complete');
+
+        // Now try to load initial data (but don't fail if it doesn't work)
+        console.log('🔧 Attempting to load initial supplier data...');
+        loadSuppliers().catch(error => {
+            console.warn('⚠️ Failed to load initial supplier data, but UI is functional:', error);
+            hideLoading();
+            showEmpty();
+        });
+
+    } catch (error) {
+        console.error('❌ Error setting up suppliers page:', error);
+    }
 
     async function loadSuppliers() {
         try {
@@ -302,5 +399,5 @@ document.addEventListener('DOMContentLoaded', function() {
         // Could implement a toast notification here
         console.error(message);
     }
-});
+})();
 </script>

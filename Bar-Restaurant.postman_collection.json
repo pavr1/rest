@@ -217,7 +217,10 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{token}}"}
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/categories?page=1&limit=20",
@@ -236,7 +239,10 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{"key": "Authorization", "value": "Bearer {{token}}"}
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/categories/{{menu_category_id}}",
@@ -351,11 +357,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}",
-										"type": "text"
-									}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
@@ -444,11 +446,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}",
-										"type": "text"
-									}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items?page=1&limit=20",
@@ -470,11 +468,7 @@
 							"request": {
 								"method": "GET",
 								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}",
-										"type": "text"
-									}
+									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
@@ -1466,6 +1460,171 @@
 							}
 						}
 					]
+				}
+			]
+		},
+		{
+			"name": "Suppliers",
+			"description": "Supplier management for inventory and purchasing",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "List Suppliers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/suppliers?page=1&limit=20",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "suppliers"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "name",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "email",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "phone",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Supplier",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('supplier_id', response.id);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ABC Supplies\",\n    \"contact_name\": \"John Smith\",\n    \"phone\": \"+1-555-0123\",\n    \"email\": \"john@abc-supplies.com\",\n    \"address\": \"123 Main St, City, State 12345\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/suppliers",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "suppliers"]
+						}
+					}
+				},
+				{
+					"name": "Get Supplier",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Update Supplier",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ABC Supplies Inc.\",\n    \"contact_name\": \"John Smith Jr.\",\n    \"phone\": \"+1-555-0124\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Supplier",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+						}
+					}
 				}
 			]
 		},

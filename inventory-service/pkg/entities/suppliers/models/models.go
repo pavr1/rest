@@ -6,14 +6,14 @@ import (
 
 // Supplier represents a supplier in the system
 type Supplier struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	ContactName *string    `json:"contact_name,omitempty"`
-	Phone       *string    `json:"phone,omitempty"`
-	Email       *string    `json:"email,omitempty"`
-	Address     *string    `json:"address,omitempty"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	ContactName *string   `json:"contact_name,omitempty"`
+	Phone       *string   `json:"phone,omitempty"`
+	Email       *string   `json:"email,omitempty"`
+	Address     *string   `json:"address,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // SupplierCreateRequest represents a request to create a supplier
