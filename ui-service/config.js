@@ -79,8 +79,9 @@ const CONFIG = {
     }
 };
 
-console.log('🔧 Configuration loaded (v1.1):', {
+console.log('🔧 Configuration loaded (v1.2):', {
     gateway: SERVICE_URLS.gateway,
+    services: CONFIG.SERVICES,
     menu: CONFIG.MENU
 });
 

@@ -163,6 +163,7 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	// Public - health check
 	api.HandleFunc("/v1/menu/p/health", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET")
 	api.HandleFunc("/v1/inventory/p/health", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET")
+	api.HandleFunc("/v1/invoices/p/health", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET")
 
 	// Protected - Menu Categories
 	menuRouter := api.PathPrefix("/v1/menu").Subrouter()
@@ -196,12 +197,18 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	// Protected - Invoices
 	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
 	invoiceRouter.Use(sessionMiddleware.ValidateSession)
-	invoiceRouter.HandleFunc("/purchase", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
-	invoiceRouter.HandleFunc("/purchase/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
-	invoiceRouter.HandleFunc("/purchase/{invoiceId}/details", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
-	invoiceRouter.HandleFunc("/purchase/{invoiceId}/details/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
-	invoiceRouter.HandleFunc("/existences", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
-	invoiceRouter.HandleFunc("/existences/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Outcome Invoices (supplier purchases - formerly purchase_invoices)
+	invoiceRouter.HandleFunc("/outcome", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
+	invoiceRouter.HandleFunc("/outcome/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Income Invoices (customer billing - formerly customer_invoices)
+	invoiceRouter.HandleFunc("/income", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
+	invoiceRouter.HandleFunc("/income/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Invoice Items (line items - formerly invoice_details)
+	invoiceRouter.HandleFunc("/outcome/{invoiceId}/items", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
+	invoiceRouter.HandleFunc("/outcome/{invoiceId}/items/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
 
 	// OPTIONS handling for CORS preflight
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

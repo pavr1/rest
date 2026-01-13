@@ -253,7 +253,8 @@ class SystemStatusMonitor {
             'session-status',
             'menu-status',
             'data-status',
-            'inventory-status'
+            'inventory-status',
+            'invoice-status'
         ];
         
         indicators.forEach(id => {
