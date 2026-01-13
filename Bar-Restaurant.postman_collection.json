@@ -1014,6 +1014,408 @@
 			]
 		},
 		{
+			"name": "Invoices",
+			"description": "Invoice management for supplier purchases (outcome) and customer billing (income)",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/invoices/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "invoices", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Outcome Invoices",
+					"description": "Supplier purchase invoices (expenses)",
+					"item": [
+						{
+							"name": "List Outcome Invoices",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome"]
+								}
+							}
+						},
+						{
+							"name": "Create Outcome Invoice",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    pm.collectionVariables.set('outcome_invoice_id', response.id);",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"supplier_id\": \"supplier-uuid\",\n    \"supplier_name\": \"ABC Supplies\",\n    \"invoice_number\": \"INV-2024-001\",\n    \"invoice_date\": \"2024-01-15\",\n    \"due_date\": \"2024-02-15\",\n    \"subtotal\": 1500.00,\n    \"tax_amount\": 225.00,\n    \"total_amount\": 1725.00,\n    \"status\": \"pending\",\n    \"notes\": \"Monthly supply order\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome"]
+								}
+							}
+						},
+						{
+							"name": "Get Outcome Invoice",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Outcome Invoice",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"paid\",\n    \"payment_date\": \"2024-01-16\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Outcome Invoice",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Income Invoices",
+					"description": "Customer billing invoices (revenue)",
+					"item": [
+						{
+							"name": "List Income Invoices",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/income",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "income"]
+								}
+							}
+						},
+						{
+							"name": "Create Income Invoice",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    pm.collectionVariables.set('income_invoice_id', response.id);",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"order_id\": \"order-uuid\",\n    \"customer_name\": \"John Doe\",\n    \"customer_tax_id\": \"123456789\",\n    \"invoice_number\": \"BILL-2024-001\",\n    \"invoice_type\": \"receipt\",\n    \"subtotal\": 45.00,\n    \"tax_amount\": 4.05,\n    \"service_charge\": 2.25,\n    \"total_amount\": 51.30,\n    \"payment_method\": \"cash\",\n    \"status\": \"paid\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/income",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "income"]
+								}
+							}
+						},
+						{
+							"name": "Get Income Invoice",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/income/{{income_invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "income", "{{income_invoice_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Income Invoice",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"cancelled\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/income/{{income_invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "income", "{{income_invoice_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Income Invoice",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/income/{{income_invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "income", "{{income_invoice_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Invoice Items",
+					"description": "Line items for outcome invoices",
+					"item": [
+						{
+							"name": "List Invoice Items",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}/items",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}", "items"]
+								}
+							}
+						},
+						{
+							"name": "Add Invoice Item",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"if (pm.response.code === 201) {",
+											"    const response = pm.response.json();",
+											"    pm.collectionVariables.set('invoice_item_id', response.id);",
+											"}"
+										]
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"stock_item_id\": \"stock-item-uuid\",\n    \"item_name\": \"Bananas\",\n    \"quantity\": 10,\n    \"unit_price\": 0.50,\n    \"total_price\": 5.00,\n    \"unit\": \"kg\",\n    \"description\": \"Fresh bananas for smoothies\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}/items",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}", "items"]
+								}
+							}
+						},
+						{
+							"name": "Get Invoice Item",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}/items/{{invoice_item_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}", "items", "{{invoice_item_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Invoice Item",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"quantity\": 15,\n    \"total_price\": 7.50\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}/items/{{invoice_item_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}", "items", "{{invoice_item_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Invoice Item",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/outcome/{{outcome_invoice_id}}/items/{{invoice_item_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "outcome", "{{outcome_invoice_id}}", "items", "{{invoice_item_id}}"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
 			"name": "Direct Service Access",
 			"description": "Direct access to services (bypassing gateway)",
 			"item": [
