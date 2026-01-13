@@ -13,6 +13,7 @@ import (
 
 	stockCategoryHandlers "inventory-service/pkg/entities/stock_item_categories/handlers"
 	stockItemHandlers "inventory-service/pkg/entities/stock_items/handlers"
+	supplierHandlers "inventory-service/pkg/entities/suppliers/handlers"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,7 @@ type MainHTTPHandler struct {
 	cancelHealthMonitor  context.CancelFunc
 	stockCategoryHandler *stockCategoryHandlers.HTTPHandler
 	stockItemHandler     *stockItemHandlers.HTTPHandler
+	supplierHandler      *supplierHandlers.HTTPHandler
 	logger               *logrus.Logger
 }
 
@@ -67,6 +69,14 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 	stockItemHTTPHandler := stockItemHandlers.NewHTTPHandler(stockItemDBHandler, logger)
 
+	// Create supplier handlers
+	supplierDBHandler, err := supplierHandlers.NewDBHandler(db, logger)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to create supplier handler: %w", err)
+	}
+	supplierHTTPHandler := supplierHandlers.NewHTTPHandler(supplierDBHandler, logger)
+
 	// Create cancellable context for health monitor
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -86,6 +96,7 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		cancelHealthMonitor:  cancel,
 		stockCategoryHandler: stockCategoryHTTPHandler,
 		stockItemHandler:     stockItemHTTPHandler,
+		supplierHandler:      supplierHTTPHandler,
 		logger:               logger,
 	}, nil
 }
@@ -121,6 +132,13 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/v1/stock/items", h.stockItemHandler.Create).Methods("POST")
 	router.HandleFunc("/api/v1/stock/items/{id}", h.stockItemHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/stock/items/{id}", h.stockItemHandler.Delete).Methods("DELETE")
+
+	// Suppliers
+	router.HandleFunc("/api/v1/inventory/suppliers", h.supplierHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/suppliers/{id}", h.supplierHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/suppliers", h.supplierHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/inventory/suppliers/{id}", h.supplierHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/inventory/suppliers/{id}", h.supplierHandler.Delete).Methods("DELETE")
 
 }
 

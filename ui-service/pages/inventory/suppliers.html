@@ -1,0 +1,306 @@
+<!-- Suppliers Page Partial -->
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
+    .filters { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; }
+    .data-table { width: 100%; margin: 0; }
+    .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
+    .data-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
+    .data-table tbody tr:hover { background: #f8f9fa; }
+    .action-btns { display: flex; gap: 0.5rem; }
+    .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
+    .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+    .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .supplier-info { display: flex; flex-direction: column; gap: 0.25rem; }
+    .supplier-name { font-weight: 600; color: var(--text-primary); }
+    .supplier-contact { font-size: 0.85rem; color: var(--text-secondary); }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Suppliers</h1>
+    <button class="btn btn-primary" id="addBtn"><i class="fas fa-plus me-2"></i>Add Supplier</button>
+</div>
+
+<div class="filters">
+    <input type="text" class="form-control" id="searchInput" placeholder="Search suppliers..." style="width: 300px;">
+    <button class="btn btn-outline-secondary" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+</div>
+
+<div class="data-card">
+    <div id="tableContainer">
+        <div class="loading-state" id="loadingState">
+            <div class="spinner-border text-primary mb-3"></div>
+            <p>Loading suppliers...</p>
+        </div>
+        <div class="empty-state d-none" id="emptyState">
+            <i class="fas fa-truck"></i>
+            <h5>No suppliers yet</h5>
+            <p>Create your first supplier.</p>
+        </div>
+        <table class="data-table d-none" id="dataTable">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th>Contact</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Dynamic content will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add/Edit Supplier Modal -->
+<div class="modal fade" id="supplierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Supplier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="supplierForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Supplier Name *</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactName" class="form-label">Contact Name</label>
+                        <input type="text" class="form-control" id="contactName">
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <textarea class="form-control" id="address" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveBtn">Save Supplier</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Suppliers page functionality
+console.log('🔧 Suppliers page script loaded');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Suppliers page DOMContentLoaded fired');
+    let suppliers = [];
+    let currentSupplierId = null;
+
+    // Initialize page
+    loadSuppliers();
+
+    // Event listeners
+    document.getElementById('addBtn').addEventListener('click', () => openModal());
+    document.getElementById('refreshBtn').addEventListener('click', () => loadSuppliers());
+    document.getElementById('saveBtn').addEventListener('click', () => saveSupplier());
+    document.getElementById('searchInput').addEventListener('input', (e) => filterSuppliers(e.target.value));
+
+    // Form validation
+    document.getElementById('supplierForm').addEventListener('submit', (e) => e.preventDefault());
+
+    async function loadSuppliers() {
+        try {
+            showLoading();
+
+            // Ensure CONFIG is available
+            if (!CONFIG || !CONFIG.INVENTORY) {
+                console.error('CONFIG not available for suppliers page');
+                showError('Configuration not loaded');
+                return;
+            }
+
+            console.log('Loading suppliers from:', CONFIG.INVENTORY.suppliers);
+            const response = await makeAuthenticatedRequest(CONFIG.INVENTORY.suppliers);
+            suppliers = response.data || response.suppliers || [];
+
+            renderSuppliers(suppliers);
+        } catch (error) {
+            console.error('Failed to load suppliers:', error);
+            showError('Failed to load suppliers');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function renderSuppliers(suppliersList) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        if (suppliersList.length === 0) {
+            showEmpty();
+            return;
+        }
+
+        hideEmpty();
+
+        suppliersList.forEach(supplier => {
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>
+                    <div class="supplier-info">
+                        <div class="supplier-name">${supplier.name}</div>
+                        ${supplier.address ? `<div class="supplier-contact">${supplier.address}</div>` : ''}
+                    </div>
+                </td>
+                <td>${supplier.contact_name || '-'}</td>
+                <td>${supplier.phone || '-'}</td>
+                <td>${supplier.email || '-'}</td>
+                <td>
+                    <div class="action-btns">
+                        <button class="btn btn-sm btn-outline-primary btn-action" onclick="editSupplier('${supplier.id}')" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteSupplier('${supplier.id}', '${supplier.name}')" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+        showTable();
+    }
+
+    function filterSuppliers(searchTerm) {
+        const filtered = suppliers.filter(supplier =>
+            supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (supplier.contact_name && supplier.contact_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (supplier.email && supplier.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+        renderSuppliers(filtered);
+    }
+
+    function openModal(supplier = null) {
+        currentSupplierId = supplier ? supplier.id : null;
+        document.getElementById('modalTitle').textContent = supplier ? 'Edit Supplier' : 'Add Supplier';
+
+        // Populate form
+        document.getElementById('name').value = supplier ? supplier.name : '';
+        document.getElementById('contactName').value = supplier ? supplier.contact_name || '' : '';
+        document.getElementById('phone').value = supplier ? supplier.phone || '' : '';
+        document.getElementById('email').value = supplier ? supplier.email || '' : '';
+        document.getElementById('address').value = supplier ? supplier.address || '' : '';
+
+        const modal = new bootstrap.Modal(document.getElementById('supplierModal'));
+        modal.show();
+    }
+
+    async function saveSupplier() {
+        const supplierData = {
+            name: document.getElementById('name').value.trim(),
+            contact_name: document.getElementById('contactName').value.trim() || null,
+            phone: document.getElementById('phone').value.trim() || null,
+            email: document.getElementById('email').value.trim() || null,
+            address: document.getElementById('address').value.trim() || null
+        };
+
+        if (!supplierData.name) {
+            alert('Supplier name is required');
+            return;
+        }
+
+        try {
+            let response;
+            if (currentSupplierId) {
+                // Update
+                response = await makeAuthenticatedRequest(
+                    CONFIG.INVENTORY.supplier(currentSupplierId),
+                    'PUT',
+                    supplierData
+                );
+            } else {
+                // Create
+                response = await makeAuthenticatedRequest(
+                    CONFIG.INVENTORY.suppliers,
+                    'POST',
+                    supplierData
+                );
+            }
+
+            // Close modal and refresh
+            bootstrap.Modal.getInstance(document.getElementById('supplierModal')).hide();
+            loadSuppliers();
+
+        } catch (error) {
+            console.error('Failed to save supplier:', error);
+            alert('Failed to save supplier. Please try again.');
+        }
+    }
+
+    // Global functions for onclick handlers
+    window.editSupplier = function(id) {
+        const supplier = suppliers.find(s => s.id === id);
+        if (supplier) {
+            openModal(supplier);
+        }
+    };
+
+    window.deleteSupplier = async function(id, name) {
+        if (!confirm(`Are you sure you want to delete supplier "${name}"?`)) {
+            return;
+        }
+
+        try {
+            await makeAuthenticatedRequest(
+                CONFIG.INVENTORY.supplier(id),
+                'DELETE'
+            );
+
+            loadSuppliers();
+        } catch (error) {
+            console.error('Failed to delete supplier:', error);
+            alert('Failed to delete supplier. It may be referenced by invoices.');
+        }
+    };
+
+    // UI state management
+    function showLoading() {
+        document.getElementById('loadingState').classList.remove('d-none');
+        document.getElementById('emptyState').classList.add('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingState').classList.add('d-none');
+    }
+
+    function showEmpty() {
+        document.getElementById('emptyState').classList.remove('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
+
+    function hideEmpty() {
+        document.getElementById('emptyState').classList.add('d-none');
+    }
+
+    function showTable() {
+        document.getElementById('dataTable').classList.remove('d-none');
+    }
+
+    function showError(message) {
+        // Could implement a toast notification here
+        console.error(message);
+    }
+});
+</script>

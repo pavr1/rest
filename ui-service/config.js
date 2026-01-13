@@ -66,6 +66,11 @@ const CONFIG = {
         // Stock Items
         stockItems: SERVICE_URLS.gateway + '/api/v1/stock/items'
     },
+    INVENTORY: {
+        // Suppliers
+        suppliers: SERVICE_URLS.gateway + '/api/v1/inventory/suppliers',
+        supplier: (id) => SERVICE_URLS.gateway + `/api/v1/inventory/suppliers/${id}`
+    },
     INVOICE: {
         // Outcome Invoices (supplier purchases)
         outcomeInvoices: SERVICE_URLS.gateway + '/api/v1/invoices/outcome',

@@ -194,6 +194,12 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	stockRouter.HandleFunc("/items", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
 	stockRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
 
+	// Protected - Suppliers
+	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
+	inventoryRouter.Use(sessionMiddleware.ValidateSession)
+	inventoryRouter.HandleFunc("/suppliers", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
+	inventoryRouter.HandleFunc("/suppliers/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
+
 	// Protected - Invoices
 	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
 	invoiceRouter.Use(sessionMiddleware.ValidateSession)

@@ -31,6 +31,7 @@ class AppRouter {
             'stock-items': { title: 'Stock Items', icon: 'fa-boxes', partial: 'pages/inventory/items.html' },
             'stock-categories': { title: 'Stock Categories', icon: 'fa-layer-group', partial: 'pages/inventory/categories.html' },
             'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
+            'suppliers': { title: 'Suppliers', icon: 'fa-truck', partial: 'pages/inventory/suppliers.html' },
             
             // Admin
             'staff': { title: 'Staff', icon: 'fa-users', partial: 'pages/admin/staff.html' },
