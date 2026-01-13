@@ -8,8 +8,8 @@
 services:
   invoice-service:
     build:
-      context: ..
-      dockerfile: docker/Dockerfile
+      context: ../..
+      dockerfile: invoice-service/docker/Dockerfile
     container_name: barrest_invoice_service
     restart: unless-stopped
     environment:

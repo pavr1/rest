@@ -606,6 +606,7 @@ INSERT INTO settings (service, key, value, description) VALUES
 ('Gateway', 'ORDERS_SERVICE_URL', 'http://barrest_orders:8083', 'URL for orders service'),
 ('Gateway', 'MENU_SERVICE_URL', 'http://barrest_menu:8087', 'URL for menu service'),
 ('Gateway', 'INVENTORY_SERVICE_URL', 'http://barrest_inventory:8084', 'URL for inventory service'),
+('Gateway', 'INVOICE_SERVICE_URL', 'http://barrest_invoice_service:8092', 'URL for invoice service'),
 ('Gateway', 'PAYMENT_SERVICE_URL', 'http://barrest_payment:8088', 'URL for payment service'),
 ('Gateway', 'CUSTOMER_SERVICE_URL', 'http://barrest_customer:8089', 'URL for customer service'),
 

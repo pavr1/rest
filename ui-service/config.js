@@ -38,7 +38,8 @@ const CONFIG = {
         session: SERVICE_URLS.gateway + '/api/v1/sessions/p/health',
         menu: SERVICE_URLS.gateway + '/api/v1/menu/p/health',
         data: SERVICE_URLS.gateway + '/api/v1/data/p/health',
-        inventory: SERVICE_URLS.gateway + '/api/v1/inventory/p/health'
+        inventory: SERVICE_URLS.gateway + '/api/v1/inventory/p/health',
+        invoice: SERVICE_URLS.gateway + '/api/v1/invoices/p/health'
     },
     AUTH: {
         login: SERVICE_URLS.gateway + '/api/v1/sessions/p/login',
@@ -64,6 +65,17 @@ const CONFIG = {
         stockCategories: SERVICE_URLS.gateway + '/api/v1/stock/categories',
         // Stock Items
         stockItems: SERVICE_URLS.gateway + '/api/v1/stock/items'
+    },
+    INVOICE: {
+        // Outcome Invoices (supplier purchases)
+        outcomeInvoices: SERVICE_URLS.gateway + '/api/v1/invoices/outcome',
+        outcomeInvoice: (id) => SERVICE_URLS.gateway + `/api/v1/invoices/outcome/${id}`,
+        // Income Invoices (customer billing)
+        incomeInvoices: SERVICE_URLS.gateway + '/api/v1/invoices/income',
+        incomeInvoice: (id) => SERVICE_URLS.gateway + `/api/v1/invoices/income/${id}`,
+        // Invoice Items (line items)
+        invoiceItems: (invoiceId) => SERVICE_URLS.gateway + `/api/v1/invoices/outcome/${invoiceId}/items`,
+        invoiceItem: (invoiceId, itemId) => SERVICE_URLS.gateway + `/api/v1/invoices/outcome/${invoiceId}/items/${itemId}`
     }
 };
 

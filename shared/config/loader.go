@@ -290,6 +290,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("INVENTORY_SERVICE_URL", "http://localhost:8084")
 		config.Set("PAYMENT_SERVICE_URL", "http://localhost:8088")
 		config.Set("CUSTOMER_SERVICE_URL", "http://localhost:8089")
+		config.Set("INVOICE_SERVICE_URL", "http://barrest_invoice_service:8092")
 		config.Set("DATA_SERVICE_URL", "http://barrest_data_service:8086")
 		config.Set("CORS_ALLOWED_ORIGINS", "*")
 		config.Set("CORS_ALLOWED_METHODS", "GET,POST,PUT,DELETE,OPTIONS")

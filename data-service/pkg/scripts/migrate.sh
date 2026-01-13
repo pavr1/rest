@@ -11,37 +11,94 @@ MIGRATIONS_DIR="$(dirname "$0")/../docker/init/migrations"
 # Ensure migrations directory exists
 mkdir -p "$MIGRATIONS_DIR"
 
+# Check if container is running
+if ! docker ps --format "table {{.Names}}" | grep -q "^${CONTAINER}$"; then
+    echo "❌ Container $CONTAINER is not running"
+    exit 1
+fi
+
+# Wait for database to be ready
+echo "⏳ Waiting for database to be ready..."
+max_attempts=30
+attempt=1
+while [ $attempt -le $max_attempts ]; do
+    if docker exec $CONTAINER pg_isready -U $DB_USER -d $DB_NAME >/dev/null 2>&1; then
+        echo "✅ Database is ready"
+        break
+    fi
+    echo "   Attempt $attempt/$max_attempts: Database not ready yet..."
+    sleep 1
+    attempt=$((attempt + 1))
+done
+
+if [ $attempt -gt $max_attempts ]; then
+    echo "❌ Database failed to become ready"
+    exit 1
+fi
+
 # Create schema_migrations table if not exists
-docker exec $CONTAINER psql -U $DB_USER -d $DB_NAME -c "
+if ! docker exec $CONTAINER psql -U $DB_USER -d $DB_NAME -c "
 CREATE TABLE IF NOT EXISTS schema_migrations (
     version VARCHAR(255) PRIMARY KEY,
     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);" 2>/dev/null
+);" 2>/dev/null; then
+    echo "❌ Failed to create schema_migrations table"
+    exit 1
+fi
 
 case "$1" in
     up)
         echo "📈 Applying migrations..."
-        for file in $(ls "$MIGRATIONS_DIR"/*.up.sql 2>/dev/null | sort); do
+        echo "   Current working directory: $(pwd)"
+        echo "   Script location: $0"
+        echo "   dirname \$0: $(dirname "$0")"
+        echo "   Container: $CONTAINER"
+        echo "   Database: $DB_NAME"
+        echo "   User: $DB_USER"
+        echo "   Migrations dir: $MIGRATIONS_DIR"
+        echo "   Resolved migrations dir: $(cd "$(dirname "$0")" && cd "../docker/init/migrations" && pwd)"
+
+        echo "   Listing files in: $MIGRATIONS_DIR"
+        ls -la "$MIGRATIONS_DIR"/*.up.sql 2>/dev/null || echo "   No .up.sql files found"
+        migration_files=$(ls "$MIGRATIONS_DIR"/*.up.sql 2>/dev/null | sort)
+        migration_count=$(echo "$migration_files" | wc -w)
+        echo "   Found migration files: $migration_count"
+        if [ -n "$migration_files" ]; then
+            echo "   Migration files: $(echo "$migration_files" | tr '\n' ' ')"
+        fi
+
+        for file in $migration_files; do
             version=$(basename "$file" .up.sql)
-            
+            filename=$(basename "$file")
+
+            echo "🔄 Processing migration: $filename (version: $version)"
+
             # Check if already applied
+            echo "   Checking if already applied..."
             applied=$(docker exec $CONTAINER psql -U $DB_USER -d $DB_NAME -t -c \
-                "SELECT COUNT(*) FROM schema_migrations WHERE version = '$version';" | tr -d ' ')
-            
-            if [ "$applied" = "0" ]; then
-                echo "  Applying: $version"
-                docker cp "$file" $CONTAINER:/tmp/migration.sql
-                if docker exec $CONTAINER psql -U $DB_USER -d $DB_NAME -f /tmp/migration.sql; then
-                    docker exec $CONTAINER psql -U $DB_USER -d $DB_NAME -c \
-                        "INSERT INTO schema_migrations (version) VALUES ('$version');"
-                    echo "  ✅ Applied: $version"
+                "SELECT COUNT(*) FROM schema_migrations WHERE version = '$version';" 2>/dev/null | tr -d ' \t\n\r')
+
+            if [ "$applied" = "0" ] || [ -z "$applied" ]; then
+                echo "   📄 Applying migration file: $filename"
+                echo "   🔧 Executing SQL..."
+                if docker cp "$file" $CONTAINER:/tmp/migration.sql && \
+                   docker exec $CONTAINER psql -U $DB_USER -d $DB_NAME -f /tmp/migration.sql; then
+                    echo "   💾 Recording migration in schema_migrations table..."
+                    if docker exec $CONTAINER psql -U $DB_USER -d $DB_NAME -c \
+                        "INSERT INTO schema_migrations (version) VALUES ('$version');" 2>/dev/null; then
+                        echo "  ✅ Successfully applied: $version"
+                    else
+                        echo "  ❌ Failed to record migration: $version"
+                        exit 1
+                    fi
                 else
-                    echo "  ❌ Failed: $version"
+                    echo "  ❌ Failed to apply migration SQL: $version"
                     exit 1
                 fi
             else
                 echo "  ⏭️  Skipping (already applied): $version"
             fi
+            echo "   ──────────────────────────────────"
         done
         echo "✅ Migrations complete!"
         ;;

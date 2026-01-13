@@ -3,7 +3,7 @@
 -- Date: 2024
 
 -- Sessions table for storing active user sessions
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
     session_id VARCHAR(255) PRIMARY KEY,
     token TEXT NOT NULL,
     staff_id UUID NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
@@ -31,4 +31,3 @@ INSERT INTO settings (service, key, value, description) VALUES
     ('session', 'DB_NAME', 'barrest_db', 'Database name'),
     ('session', 'DB_SSL_MODE', 'disable', 'Database SSL mode')
 ON CONFLICT (service, key) DO NOTHING;
-

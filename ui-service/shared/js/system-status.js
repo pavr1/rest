@@ -213,6 +213,10 @@ class SystemStatusMonitor {
         // Update inventory service status
         const inventoryStatus = services['inventory-service'] === true ? 'online' : 'offline';
         this.updateStatusIndicator('inventory-status', inventoryStatus);
+
+        // Update invoice service status
+        const invoiceStatus = services['invoice-service'] === true ? 'online' : 'offline';
+        this.updateStatusIndicator('invoice-status', invoiceStatus);
     }
     
     updateTooltip(isHealthy) {

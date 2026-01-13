@@ -26,10 +26,9 @@ status: ## Show invoice-service container status
 	@docker ps --filter "name=barrest_invoice_service" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 clean: ## Remove invoice-service container and images
-	@echo "🧹 Cleaning Invoice Service..."
 	@docker-compose -f docker/docker-compose.yml down -v --remove-orphans
 	@docker rmi barrest_invoice_service 2>/dev/null || true
-	@echo "✅ Cleaned"
+	@echo "✅ Invoice Service cleaned!"
 
 test: ## Run invoice-service tests
 	@echo "🧪 Running Invoice Service tests..."

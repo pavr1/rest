@@ -28,11 +28,13 @@ test: ## Run all tests across all services
 	@echo "─────────────────────"
 	@cd menu-service && go test -v ./...
 	@echo ""
+	@echo "🧾 Invoice Service Tests"
+	@echo "────────────────────────"
+	@cd invoice-service && go test -v ./...
+	@echo ""
 	@# Future services (uncomment when implemented):
 	@# @echo "📦 Inventory Service Tests"
 	@# @cd inventory-service && go test -v ./...
-	@# @echo "🧾 Invoice Service Tests"
-	@# @cd invoice-service && go test -v ./...
 	@# @echo "📋 Orders Service Tests"
 	@# @cd orders-service && go test -v ./...
 	@echo ""
@@ -58,9 +60,9 @@ test-inventory: ## Run inventory-service tests only (future)
 	@echo "📦 Running Inventory Service tests..."
 	@if [ -d "inventory-service" ]; then cd inventory-service && go test -v ./...; else echo "⚠️ inventory-service not yet implemented"; fi
 
-test-invoice: ## Run invoice-service tests only (future)
+test-invoice: ## Run invoice-service tests only
 	@echo "🧾 Running Invoice Service tests..."
-	@if [ -d "invoice-service" ]; then cd invoice-service && go test -v ./...; else echo "⚠️ invoice-service not yet implemented"; fi
+	@cd invoice-service && go test -v ./...
 
 test-orders: ## Run orders-service tests only (future)
 	@echo "📋 Running Orders Service tests..."
@@ -72,9 +74,9 @@ test-coverage: ## Run all tests with coverage
 	@cd session-service && go test -cover ./...
 	@cd gateway-service && go test -cover ./...
 	@cd menu-service && go test -cover ./...
+	@cd invoice-service && go test -cover ./...
 	@# Future services (uncomment when implemented):
 	@# @cd inventory-service && go test -cover ./...
-	@# @cd invoice-service && go test -cover ./...
 	@# @cd orders-service && go test -cover ./...
 
 # =============================================================================
@@ -95,7 +97,7 @@ start: ## Start all services
 	@sleep 2
 	@echo ""
 	@echo "Level 3: Business Services"
-	@# @cd invoice-service && make start  # Future
+	@cd invoice-service && make start
 	@cd menu-service && make start
 	@# @cd customer-service && make start  # Future
 	@# @cd karaoke-service && make start  # Future
@@ -136,7 +138,7 @@ stop: ## Stop all services (reverse order)
 	@# @cd karaoke-service && make stop  # Future
 	@# @cd customer-service && make stop  # Future
 	@cd menu-service && make stop
-	@# @cd invoice-service && make stop  # Future
+	@cd invoice-service && make stop
 	@echo "Level 2: Auth + Inventory"
 	@# @cd inventory-service && make stop  # Future
 	@cd session-service && make stop
@@ -149,8 +151,8 @@ restart: stop start ## Restart all services
 logs: ## View logs for a service (usage: make logs s=gateway)
 	@if [ -z "$(s)" ]; then \
 		echo "Usage: make logs s=<service>"; \
-		echo "  Services: data, session, gateway, menu, ui"; \
-		echo "  Future: inventory, invoice, orders, customer, karaoke, promotion"; \
+		echo "  Services: data, session, gateway, menu, invoice, ui"; \
+		echo "  Future: inventory, orders, customer, karaoke, promotion"; \
 	else \
 		cd $(s)-service && make logs; \
 	fi
@@ -176,8 +178,8 @@ status: ## Show status of all services
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo "Level 3: Business Services"
 	@echo "═══════════════════════════════════════════════════════════════"
-	@echo "🧾 Invoice Service (8092): [NOT IMPLEMENTED]"
-	@# @cd invoice-service && make status  # Future
+	@echo "🧾 Invoice Service (8092):"
+	@cd invoice-service && make status
 	@echo ""
 	@echo "🍽️ Menu Service (8088):"
 	@cd menu-service && make status
@@ -215,7 +217,7 @@ clean: ## Clean all services (reverse order)
 	@# @cd karaoke-service && make clean  # Future
 	@# @cd customer-service && make clean  # Future
 	@cd menu-service && make clean
-	@# @cd invoice-service && make clean  # Future
+	@cd invoice-service && make clean
 	@cd inventory-service && make clean 
 	@cd session-service && make clean
 	@cd data-service && make clean
@@ -234,7 +236,7 @@ fresh: clean ## Fresh install of all services
 	@sleep 2
 	@echo ""
 	@echo "Level 3: Business Services"
-	@# @cd invoice-service && make start  # Future
+	@cd invoice-service && make start
 	@cd menu-service && make start
 	@# @cd customer-service && make start  # Future
 	@# @cd karaoke-service && make start  # Future
@@ -280,7 +282,7 @@ help: ## Show this help
 	@echo "Service Startup Order (by level):"
 	@echo "  Level 0-1: data-service (8086)"
 	@echo "  Level 2:   session-service (8087), inventory-service (8090)*"
-	@echo "  Level 3:   invoice-service (8092)*, menu-service (8088),"
+	@echo "  Level 3:   invoice-service (8092), menu-service (8088),"
 	@echo "             customer-service (8095)*, karaoke-service (8093)*,"
 	@echo "             promotion-service (8094)*"
 	@echo "  Level 4:   orders-service (8089)*"
