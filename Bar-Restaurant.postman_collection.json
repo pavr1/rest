@@ -324,7 +324,13 @@
 							"name": "List Sub Menus",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/submenus?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
@@ -344,7 +350,13 @@
 							"name": "Get Sub Menu",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
 									"host": ["{{gateway_url}}"],
@@ -431,7 +443,13 @@
 							"name": "List Menu Items",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
@@ -451,7 +469,13 @@
 							"name": "Get Menu Item",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
 									"host": ["{{gateway_url}}"],
@@ -906,7 +930,13 @@
 								"header": [
 									{
 										"key": "Content-Type",
-										"value": "application/json"
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
 									}
 								],
 								"body": {
@@ -928,7 +958,13 @@
 								"header": [
 									{
 										"key": "Content-Type",
-										"value": "application/json"
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
 									}
 								],
 								"body": {
@@ -950,7 +986,13 @@
 								"header": [
 									{
 										"key": "Content-Type",
-										"value": "application/json"
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
 									}
 								],
 								"body": {
@@ -972,7 +1014,13 @@
 								"header": [
 									{
 										"key": "Content-Type",
-										"value": "application/json"
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
 									}
 								],
 								"body": {
@@ -994,7 +1042,13 @@
 								"header": [
 									{
 										"key": "Content-Type",
-										"value": "application/json"
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
 									}
 								],
 								"body": {
