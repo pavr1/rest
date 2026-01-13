@@ -142,6 +142,23 @@ All services communicate through the `docker_barrest_network` Docker network.
 
 ## Development
 
+### Go Workspace
+
+This project uses Go workspaces for managing multiple services. The workspace allows you to work on all services simultaneously:
+
+```bash
+# Work on any service from project root
+go test ./invoice-service/...
+go build ./gateway-service/
+
+# Or navigate to service directory
+cd invoice-service && go test ./...
+```
+
+See [Workspace Development Guide](docs/6.%20workspace.md) for detailed instructions.
+
+### Service Development
+
 For service-specific development instructions, see each service's README:
 
 - [Data Service](data-service/README.md) - Database setup, migrations

@@ -38,11 +38,11 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	response, err := h.dbHandler.List(page, limit)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to list menu categories")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to list menu categories", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list menu categories")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu categories retrieved", response)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu categories retrieved", response)
 }
 
 // GetByID handles GET /api/v1/menu/categories/:id
@@ -53,16 +53,16 @@ func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	category, err := h.dbHandler.GetByID(id)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get menu category")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to get menu category", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get menu category")
 		return
 	}
 
 	if category == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Menu category not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu category not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu category retrieved", category)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu category retrieved", category)
 }
 
 // Create handles POST /api/v1/menu/categories
@@ -70,23 +70,23 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.MenuCategoryCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	if req.Name == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Name is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Name is required")
 		return
 	}
 
 	category, err := h.dbHandler.Create(&req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create menu category")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to create menu category", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to create menu category")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusCreated, "Menu category created", category)
+	sharedHttp.SendSuccessResponse(w, http.StatusCreated, "Menu category created", category)
 }
 
 // Update handles PUT /api/v1/menu/categories/:id
@@ -97,23 +97,23 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req models.MenuCategoryUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	category, err := h.dbHandler.Update(id, &req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update menu category")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to update menu category", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update menu category")
 		return
 	}
 
 	if category == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Menu category not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu category not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu category updated", category)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu category updated", category)
 }
 
 // Delete handles DELETE /api/v1/menu/categories/:id
@@ -125,12 +125,12 @@ func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to delete menu category")
 		if err.Error() == "menu category not found" {
-			sharedHttp.SendError(w, http.StatusNotFound, "Menu category not found", nil)
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu category not found")
 			return
 		}
-		sharedHttp.SendError(w, http.StatusBadRequest, err.Error(), nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu category deleted", nil)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu category deleted", nil)
 }

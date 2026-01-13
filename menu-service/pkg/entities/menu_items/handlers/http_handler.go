@@ -56,11 +56,11 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	response, err := h.dbHandler.List(req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to list menu items")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to list menu items", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list menu items")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu items retrieved", response)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu items retrieved", response)
 }
 
 // GetByID handles GET /api/v1/menu/items/:id
@@ -71,16 +71,16 @@ func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	item, err := h.dbHandler.GetByID(id)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get menu item")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to get menu item", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get menu item")
 		return
 	}
 
 	if item == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Menu item not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu item not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu item retrieved", item)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu item retrieved", item)
 }
 
 // Create handles POST /api/v1/menu/items
@@ -88,28 +88,28 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.MenuItemCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	if req.Name == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Name is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Name is required")
 		return
 	}
 
 	if req.SubMenuID == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Sub Menu ID is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Sub Menu ID is required")
 		return
 	}
 
 	item, err := h.dbHandler.Create(&req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create menu item")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to create menu item", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to create menu item")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusCreated, "Menu item created", item)
+	sharedHttp.SendSuccessResponse(w, http.StatusCreated, "Menu item created", item)
 }
 
 // Update handles PUT /api/v1/menu/items/:id
@@ -120,23 +120,23 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req models.MenuItemUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	item, err := h.dbHandler.Update(id, &req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update menu item")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to update menu item", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update menu item")
 		return
 	}
 
 	if item == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Menu item not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu item not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu item updated", item)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu item updated", item)
 }
 
 // Delete handles DELETE /api/v1/menu/items/:id
@@ -148,14 +148,14 @@ func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to delete menu item")
 		if err.Error() == "menu item not found" {
-			sharedHttp.SendError(w, http.StatusNotFound, "Menu item not found", nil)
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu item not found")
 			return
 		}
-		sharedHttp.SendError(w, http.StatusBadRequest, err.Error(), nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu item deleted", nil)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu item deleted", nil)
 }
 
 // UpdateAvailability handles PATCH /api/v1/menu/items/:id/availability
@@ -166,21 +166,21 @@ func (h *HTTPHandler) UpdateAvailability(w http.ResponseWriter, r *http.Request)
 	var req models.MenuItemAvailabilityRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	item, err := h.dbHandler.UpdateAvailability(id, req.IsAvailable)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update menu item availability")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to update availability", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update availability")
 		return
 	}
 
 	if item == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Menu item not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu item not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Menu item availability updated", item)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Menu item availability updated", item)
 }

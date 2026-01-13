@@ -36,11 +36,11 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	response, err := h.dbHandler.List(menuItemID)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to list ingredients")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to list ingredients", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list ingredients")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Ingredients retrieved", response)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Ingredients retrieved", response)
 }
 
 // Create handles POST /api/v1/menu/items/:id/ingredients
@@ -51,28 +51,28 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.IngredientCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	if req.StockItemID == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Stock item ID is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Stock item ID is required")
 		return
 	}
 
 	if req.Quantity <= 0 {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Quantity must be greater than 0", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Quantity must be greater than 0")
 		return
 	}
 
 	ingredient, err := h.dbHandler.Create(menuItemID, &req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to add ingredient")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to add ingredient", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to add ingredient")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusCreated, "Ingredient added", ingredient)
+	sharedHttp.SendSuccessResponse(w, http.StatusCreated, "Ingredient added", ingredient)
 }
 
 // Update handles PUT /api/v1/menu/items/:id/ingredients/:stockItemId
@@ -84,28 +84,28 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req models.IngredientUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	if req.Quantity <= 0 {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Quantity must be greater than 0", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Quantity must be greater than 0")
 		return
 	}
 
 	ingredient, err := h.dbHandler.Update(menuItemID, stockItemID, &req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update ingredient")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to update ingredient", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update ingredient")
 		return
 	}
 
 	if ingredient == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Ingredient not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Ingredient not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Ingredient updated", ingredient)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Ingredient updated", ingredient)
 }
 
 // Delete handles DELETE /api/v1/menu/items/:id/ingredients/:stockItemId
@@ -118,14 +118,14 @@ func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to delete ingredient")
 		if err.Error() == "ingredient not found" {
-			sharedHttp.SendError(w, http.StatusNotFound, "Ingredient not found", nil)
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Ingredient not found")
 			return
 		}
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to delete ingredient", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to delete ingredient")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Ingredient removed", nil)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Ingredient removed", nil)
 }
 
 // GetCost handles GET /api/v1/menu/items/:id/cost
@@ -137,23 +137,23 @@ func (h *HTTPHandler) GetCost(w http.ResponseWriter, r *http.Request) {
 	menuItem, err := h.menuItemHandler.GetByID(menuItemID)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get menu item")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to get menu item", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get menu item")
 		return
 	}
 
 	if menuItem == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Menu item not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu item not found")
 		return
 	}
 
 	cost, err := h.dbHandler.CalculateCost(menuItemID, menuItem.Name)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to calculate cost")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to calculate cost", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to calculate cost")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Cost calculated", cost)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Cost calculated", cost)
 }
 
 // RecalculateCost handles POST /api/v1/menu/items/:id/cost/recalculate
@@ -165,12 +165,12 @@ func (h *HTTPHandler) RecalculateCost(w http.ResponseWriter, r *http.Request) {
 	menuItem, err := h.menuItemHandler.GetByID(menuItemID)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get menu item")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to get menu item", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get menu item")
 		return
 	}
 
 	if menuItem == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Menu item not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Menu item not found")
 		return
 	}
 
@@ -178,7 +178,7 @@ func (h *HTTPHandler) RecalculateCost(w http.ResponseWriter, r *http.Request) {
 	cost, err := h.dbHandler.CalculateCost(menuItemID, menuItem.Name)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to calculate cost")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to calculate cost", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to calculate cost")
 		return
 	}
 
@@ -186,7 +186,7 @@ func (h *HTTPHandler) RecalculateCost(w http.ResponseWriter, r *http.Request) {
 	updatedItem, err := h.menuItemHandler.UpdateCost(menuItemID, cost.TotalCost)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update menu item cost")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to update cost", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update cost")
 		return
 	}
 
@@ -195,7 +195,7 @@ func (h *HTTPHandler) RecalculateCost(w http.ResponseWriter, r *http.Request) {
 		"new_cost":     cost.TotalCost,
 	}).Info("Menu item cost recalculated")
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Cost recalculated and saved", map[string]interface{}{
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Cost recalculated and saved", map[string]interface{}{
 		"menu_item": updatedItem,
 		"cost":      cost,
 	})

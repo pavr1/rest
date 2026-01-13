@@ -47,11 +47,11 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	response, err := h.dbHandler.List(req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to list stock items")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to list stock items", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list stock items")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Stock items retrieved", response)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Stock items retrieved", response)
 }
 
 // GetByID handles GET /api/v1/stock/items/:id
@@ -62,16 +62,16 @@ func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	item, err := h.dbHandler.GetByID(id)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get stock item")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to get stock item", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get stock item")
 		return
 	}
 
 	if item == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Stock item not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Stock item not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Stock item retrieved", item)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Stock item retrieved", item)
 }
 
 // Create handles POST /api/v1/stock/items
@@ -79,28 +79,28 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.StockItemCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	if req.Name == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Name is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Name is required")
 		return
 	}
 
 	if req.Unit == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Unit is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Unit is required")
 		return
 	}
 
 	item, err := h.dbHandler.Create(&req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create stock item")
-		sharedHttp.SendError(w, http.StatusBadRequest, err.Error(), nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusCreated, "Stock item created", item)
+	sharedHttp.SendSuccessResponse(w, http.StatusCreated, "Stock item created", item)
 }
 
 // Update handles PUT /api/v1/stock/items/:id
@@ -111,23 +111,23 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req models.StockItemUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request format", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
 		return
 	}
 
 	item, err := h.dbHandler.Update(id, &req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update stock item")
-		sharedHttp.SendError(w, http.StatusBadRequest, err.Error(), nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if item == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Stock item not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Stock item not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Stock item updated", item)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Stock item updated", item)
 }
 
 // Delete handles DELETE /api/v1/stock/items/:id
@@ -139,12 +139,12 @@ func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to delete stock item")
 		if err.Error() == "stock item not found" {
-			sharedHttp.SendError(w, http.StatusNotFound, "Stock item not found", nil)
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Stock item not found")
 			return
 		}
-		sharedHttp.SendError(w, http.StatusBadRequest, err.Error(), nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Stock item deleted", nil)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Stock item deleted", nil)
 }

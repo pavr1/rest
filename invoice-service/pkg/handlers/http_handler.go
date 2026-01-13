@@ -11,20 +11,22 @@ import (
 	sharedDb "shared/db"
 	sharedHttp "shared/http"
 
-	purchaseInvoiceHandlers "invoice-service/pkg/entities/purchase_invoices/handlers"
-	invoiceDetailHandlers "invoice-service/pkg/entities/invoice_details/handlers"
+	incomeInvoiceHandlers "invoice-service/pkg/entities/income_invoices/handlers"
+	invoiceItemHandlers "invoice-service/pkg/entities/invoice_items/handlers"
+	outcomeInvoiceHandlers "invoice-service/pkg/entities/outcome_invoices/handlers"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type MainHTTPHandler struct {
-	db                     *sharedDb.DbHandler
-	httpHealthMonitor      *sharedHttp.HTTPHealthMonitor
-	cancelHealthMonitor    context.CancelFunc
-	purchaseInvoiceHandler *purchaseInvoiceHandlers.HTTPHandler
-	invoiceDetailHandler   *invoiceDetailHandlers.HTTPHandler
-	logger                 *logrus.Logger
+	db                    *sharedDb.DbHandler
+	httpHealthMonitor     *sharedHttp.HTTPHealthMonitor
+	cancelHealthMonitor   context.CancelFunc
+	outcomeInvoiceHandler *outcomeInvoiceHandlers.HTTPHandler
+	incomeInvoiceHandler  *incomeInvoiceHandlers.HTTPHandler
+	invoiceItemHandler    *invoiceItemHandlers.HTTPHandler
+	logger                *logrus.Logger
 }
 
 func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
@@ -51,22 +53,29 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		return nil, fmt.Errorf("failed to create database handler: %w", err)
 	}
 
-	// Create purchase invoice handlers
-	purchaseInvoiceDBHandler, err := purchaseInvoiceHandlers.NewDBHandler(db, logger)
+	// Create outcome invoice handlers
+	outcomeInvoiceDBHandler, err := outcomeInvoiceHandlers.NewDBHandler(db, logger)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("failed to create purchase invoice handler: %w", err)
+		return nil, fmt.Errorf("failed to create outcome invoice handler: %w", err)
 	}
-	purchaseInvoiceHTTPHandler := purchaseInvoiceHandlers.NewHTTPHandler(purchaseInvoiceDBHandler, logger)
+	outcomeInvoiceHTTPHandler := outcomeInvoiceHandlers.NewHTTPHandler(outcomeInvoiceDBHandler, logger)
 
-	// Create invoice detail handlers
-	invoiceDetailDBHandler, err := invoiceDetailHandlers.NewDBHandler(db, logger)
+	// Create income invoice handlers
+	incomeInvoiceDBHandler, err := incomeInvoiceHandlers.NewDBHandler(db, logger)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("failed to create invoice detail handler: %w", err)
+		return nil, fmt.Errorf("failed to create income invoice handler: %w", err)
 	}
-	invoiceDetailHTTPHandler := invoiceDetailHandlers.NewHTTPHandler(invoiceDetailDBHandler, logger)
+	incomeInvoiceHTTPHandler := incomeInvoiceHandlers.NewHTTPHandler(incomeInvoiceDBHandler, logger)
 
+	// Create invoice item handlers
+	invoiceItemDBHandler, err := invoiceItemHandlers.NewDBHandler(db, logger)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to create invoice item handler: %w", err)
+	}
+	invoiceItemHTTPHandler := invoiceItemHandlers.NewHTTPHandler(invoiceItemDBHandler, logger)
 
 	// Create cancellable context for health monitor
 	ctx, cancel := context.WithCancel(context.Background())
@@ -81,12 +90,13 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	httpHealthMonitor.Start(ctx)
 
 	return &MainHTTPHandler{
-		db:                     db,
-		httpHealthMonitor:      httpHealthMonitor,
-		cancelHealthMonitor:    cancel,
-		purchaseInvoiceHandler: purchaseInvoiceHTTPHandler,
-		invoiceDetailHandler:   invoiceDetailHTTPHandler,
-		logger:                 logger,
+		db:                    db,
+		httpHealthMonitor:     httpHealthMonitor,
+		cancelHealthMonitor:   cancel,
+		outcomeInvoiceHandler: outcomeInvoiceHTTPHandler,
+		incomeInvoiceHandler:  incomeInvoiceHTTPHandler,
+		invoiceItemHandler:    invoiceItemHTTPHandler,
+		logger:                logger,
 	}, nil
 }
 
@@ -108,19 +118,26 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	// Health check
 	router.HandleFunc("/api/v1/invoices/p/health", h.HealthCheck).Methods("GET")
 
-	// Purchase Invoices
-	router.HandleFunc("/api/v1/invoices/purchase", h.purchaseInvoiceHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/purchase", h.purchaseInvoiceHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/invoices/purchase/{id}", h.purchaseInvoiceHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/purchase/{id}", h.purchaseInvoiceHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/invoices/purchase/{id}", h.purchaseInvoiceHandler.Delete).Methods("DELETE")
+	// Outcome Invoices (expenses from suppliers)
+	router.HandleFunc("/api/v1/invoices/outcome", h.outcomeInvoiceHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/outcome", h.outcomeInvoiceHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/invoices/outcome/{id}", h.outcomeInvoiceHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/outcome/{id}", h.outcomeInvoiceHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/invoices/outcome/{id}", h.outcomeInvoiceHandler.Delete).Methods("DELETE")
 
-	// Invoice Details
-	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details", h.invoiceDetailHandler.ListByInvoice).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details", h.invoiceDetailHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details/{id}", h.invoiceDetailHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details/{id}", h.invoiceDetailHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/invoices/purchase/{invoiceId}/details/{id}", h.invoiceDetailHandler.Delete).Methods("DELETE")
+	// Income Invoices (revenue from customers)
+	router.HandleFunc("/api/v1/invoices/income", h.incomeInvoiceHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/income", h.incomeInvoiceHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/invoices/income/{id}", h.incomeInvoiceHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/income/{id}", h.incomeInvoiceHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/invoices/income/{id}", h.incomeInvoiceHandler.Delete).Methods("DELETE")
+
+	// Invoice Items (line items for outcome invoices)
+	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items", h.invoiceItemHandler.ListByInvoice).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items", h.invoiceItemHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items/{id}", h.invoiceItemHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items/{id}", h.invoiceItemHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items/{id}", h.invoiceItemHandler.Delete).Methods("DELETE")
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {

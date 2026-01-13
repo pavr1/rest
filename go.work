@@ -1,0 +1,11 @@
+go 1.25.1
+
+use (
+	./data-service
+	./gateway-service
+	./inventory-service
+	./invoice-service
+	./menu-service
+	./session-service
+	./shared
+)

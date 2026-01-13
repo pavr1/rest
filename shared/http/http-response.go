@@ -20,7 +20,7 @@ type ErrorResponse struct {
 }
 
 // SendSuccess sends a successful JSON response
-func SendSuccess(w http.ResponseWriter, code int, message string, data interface{}) {
+func SendSuccessResponse(w http.ResponseWriter, code int, message string, data interface{}) {
 	response := Response{
 		Code:    code,
 		Message: message,
@@ -33,14 +33,10 @@ func SendSuccess(w http.ResponseWriter, code int, message string, data interface
 }
 
 // SendError sends an error JSON response
-func SendError(w http.ResponseWriter, code int, message string, err error) {
+func SendErrorResponse(w http.ResponseWriter, code int, message string) {
 	response := ErrorResponse{
 		Code:    code,
 		Message: message,
-	}
-
-	if err != nil {
-		response.Error = err.Error()
 	}
 
 	w.Header().Set("Content-Type", "application/json")

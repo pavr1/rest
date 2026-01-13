@@ -58,11 +58,11 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	response, err := h.db.List(req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to list sub menus")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to list sub menus", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list sub menus")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Sub menus retrieved", response)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Sub menus retrieved", response)
 }
 
 // GetByID handles GET /api/v1/menu/submenus/{id}
@@ -73,16 +73,16 @@ func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	subMenu, err := h.db.GetByID(id)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get sub menu")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to get sub menu", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get sub menu")
 		return
 	}
 
 	if subMenu == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Sub menu not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Sub menu not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Sub menu retrieved", subMenu)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Sub menu retrieved", subMenu)
 }
 
 // Create handles POST /api/v1/menu/submenus
@@ -90,36 +90,36 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.SubMenuCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request body", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Validate required fields
 	if req.Name == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Name is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Name is required")
 		return
 	}
 	if req.CategoryID == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Category ID is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Category ID is required")
 		return
 	}
 	if req.ItemType == "" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Item type is required", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Item type is required")
 		return
 	}
 	if req.ItemType != "kitchen" && req.ItemType != "bar" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Item type must be 'kitchen' or 'bar'", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Item type must be 'kitchen' or 'bar'")
 		return
 	}
 
 	subMenu, err := h.db.Create(&req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create sub menu")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to create sub menu", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to create sub menu")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusCreated, "Sub menu created", subMenu)
+	sharedHttp.SendSuccessResponse(w, http.StatusCreated, "Sub menu created", subMenu)
 }
 
 // Update handles PUT /api/v1/menu/submenus/{id}
@@ -130,29 +130,29 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req models.SubMenuUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
-		sharedHttp.SendError(w, http.StatusBadRequest, "Invalid request body", err)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Validate item_type if provided
 	if req.ItemType != nil && *req.ItemType != "kitchen" && *req.ItemType != "bar" {
-		sharedHttp.SendError(w, http.StatusBadRequest, "Item type must be 'kitchen' or 'bar'", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Item type must be 'kitchen' or 'bar'")
 		return
 	}
 
 	subMenu, err := h.db.Update(id, &req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update sub menu")
-		sharedHttp.SendError(w, http.StatusInternalServerError, "Failed to update sub menu", err)
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update sub menu")
 		return
 	}
 
 	if subMenu == nil {
-		sharedHttp.SendError(w, http.StatusNotFound, "Sub menu not found", nil)
+		sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Sub menu not found")
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Sub menu updated", subMenu)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Sub menu updated", subMenu)
 }
 
 // Delete handles DELETE /api/v1/menu/submenus/{id}
@@ -164,12 +164,12 @@ func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to delete sub menu")
 		if err.Error() == "sub menu not found" {
-			sharedHttp.SendError(w, http.StatusNotFound, "Sub menu not found", nil)
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Sub menu not found")
 			return
 		}
-		sharedHttp.SendError(w, http.StatusBadRequest, err.Error(), nil)
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	sharedHttp.SendSuccess(w, http.StatusOK, "Sub menu deleted", nil)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Sub menu deleted", nil)
 }

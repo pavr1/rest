@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"inventory-service/pkg/handlers"
+	"invoice-service/pkg/handlers"
 	"net/http"
 	"os"
 	"os/signal"

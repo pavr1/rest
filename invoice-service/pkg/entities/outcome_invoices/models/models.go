@@ -1,0 +1,52 @@
+package models
+
+import (
+	"time"
+)
+
+// OutcomeInvoice represents an outcome invoice from a supplier (expense)
+type OutcomeInvoice struct {
+	ID              string    `json:"id"`
+	InvoiceNumber   string    `json:"invoice_number"`
+	SupplierID      *string   `json:"supplier_id,omitempty"`
+	TransactionDate time.Time `json:"transaction_date"`
+	TotalAmount     *float64  `json:"total_amount,omitempty"`
+	ImageURL        *string   `json:"image_url,omitempty"`
+	Notes           *string   `json:"notes,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// OutcomeInvoiceCreateRequest represents a request to create an outcome invoice
+type OutcomeInvoiceCreateRequest struct {
+	InvoiceNumber   string    `json:"invoice_number"`
+	SupplierID      *string   `json:"supplier_id,omitempty"`
+	TransactionDate time.Time `json:"transaction_date"`
+	TotalAmount     *float64  `json:"total_amount,omitempty"`
+	ImageURL        *string   `json:"image_url,omitempty"`
+	Notes           *string   `json:"notes,omitempty"`
+}
+
+// OutcomeInvoiceUpdateRequest represents a request to update an outcome invoice
+type OutcomeInvoiceUpdateRequest struct {
+	SupplierID      *string    `json:"supplier_id,omitempty"`
+	TransactionDate *time.Time `json:"transaction_date,omitempty"`
+	TotalAmount     *float64   `json:"total_amount,omitempty"`
+	ImageURL        *string    `json:"image_url,omitempty"`
+	Notes           *string    `json:"notes,omitempty"`
+}
+
+// OutcomeInvoiceListRequest represents filter parameters for listing outcome invoices
+type OutcomeInvoiceListRequest struct {
+	SupplierID *string `json:"supplier_id,omitempty"`
+	Page       int     `json:"page"`
+	Limit      int     `json:"limit"`
+}
+
+// OutcomeInvoiceListResponse represents a paginated list of outcome invoices
+type OutcomeInvoiceListResponse struct {
+	Invoices []OutcomeInvoice `json:"invoices"`
+	Total    int              `json:"total"`
+	Page     int              `json:"page"`
+	Limit    int              `json:"limit"`
+}
