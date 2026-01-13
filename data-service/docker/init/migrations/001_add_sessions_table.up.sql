@@ -3,31 +3,12 @@
 -- Date: 2024
 
 -- Sessions table for storing active user sessions
+-- Keep it minimal - session_id and token only
+-- All user/auth info is stored in the JWT token itself
 CREATE TABLE IF NOT EXISTS sessions (
     session_id VARCHAR(255) PRIMARY KEY,
     token TEXT NOT NULL
 );
-
--- Add additional columns if they don't exist
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS staff_id UUID REFERENCES staff(id) ON DELETE CASCADE;
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-ALTER TABLE sessions ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP;
-
--- Update existing sessions to have default values for new columns
-UPDATE sessions SET
-    staff_id = (SELECT id FROM staff LIMIT 1) WHERE staff_id IS NULL,
-    created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL,
-    expires_at = CURRENT_TIMESTAMP + INTERVAL '24 hours' WHERE expires_at IS NULL;
-
--- Make staff_id NOT NULL after populating
-ALTER TABLE sessions ALTER COLUMN staff_id SET NOT NULL;
-ALTER TABLE sessions ALTER COLUMN expires_at SET NOT NULL;
-
--- Index for quick session lookup by staff
-CREATE INDEX IF NOT EXISTS idx_sessions_staff_id ON sessions(staff_id);
-
--- Index for cleaning up expired sessions
-CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
 
 -- Add session service settings
 INSERT INTO settings (service, key, value, description) VALUES
