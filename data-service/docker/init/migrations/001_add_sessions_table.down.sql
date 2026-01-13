@@ -8,6 +8,7 @@ DELETE FROM settings WHERE service = 'session';
 DROP INDEX IF EXISTS idx_sessions_expires_at;
 DROP INDEX IF EXISTS idx_sessions_staff_id;
 
--- Drop sessions table
-DROP TABLE IF EXISTS sessions;
-
+-- Remove added columns (but keep the table structure minimal)
+ALTER TABLE sessions DROP COLUMN IF EXISTS expires_at;
+ALTER TABLE sessions DROP COLUMN IF EXISTS created_at;
+ALTER TABLE sessions DROP COLUMN IF EXISTS staff_id;

@@ -6,7 +6,9 @@
 CONTAINER="barrest_postgres"
 DB_NAME="barrest_db"
 DB_USER="postgres"
-MIGRATIONS_DIR="$(dirname "$0")/../docker/init/migrations"
+# Get the directory where this script is located, then navigate to migrations directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MIGRATIONS_DIR="$SCRIPT_DIR/../../docker/init/migrations"
 
 # Ensure migrations directory exists
 mkdir -p "$MIGRATIONS_DIR"
@@ -49,23 +51,14 @@ fi
 case "$1" in
     up)
         echo "📈 Applying migrations..."
-        echo "   Current working directory: $(pwd)"
-        echo "   Script location: $0"
-        echo "   dirname \$0: $(dirname "$0")"
         echo "   Container: $CONTAINER"
         echo "   Database: $DB_NAME"
         echo "   User: $DB_USER"
         echo "   Migrations dir: $MIGRATIONS_DIR"
-        echo "   Resolved migrations dir: $(cd "$(dirname "$0")" && cd "../docker/init/migrations" && pwd)"
 
-        echo "   Listing files in: $MIGRATIONS_DIR"
-        ls -la "$MIGRATIONS_DIR"/*.up.sql 2>/dev/null || echo "   No .up.sql files found"
         migration_files=$(ls "$MIGRATIONS_DIR"/*.up.sql 2>/dev/null | sort)
         migration_count=$(echo "$migration_files" | wc -w)
         echo "   Found migration files: $migration_count"
-        if [ -n "$migration_files" ]; then
-            echo "   Migration files: $(echo "$migration_files" | tr '\n' ' ')"
-        fi
 
         for file in $migration_files; do
             version=$(basename "$file" .up.sql)
@@ -98,7 +91,6 @@ case "$1" in
             else
                 echo "  ⏭️  Skipping (already applied): $version"
             fi
-            echo "   ──────────────────────────────────"
         done
         echo "✅ Migrations complete!"
         ;;
