@@ -1014,7 +1014,7 @@
 			]
 		},
 		{
-			"name": "Invoices",
+			"name": "Invoice Service",
 			"description": "Invoice management for supplier purchases (outcome) and customer billing (income)",
 			"item": [
 				{
