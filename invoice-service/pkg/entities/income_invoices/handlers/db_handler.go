@@ -1,43 +1,59 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
 	"invoice-service/pkg/entities/income_invoices/models"
 	incomesql "invoice-service/pkg/entities/income_invoices/sql"
+	invoiceItemSql "invoice-service/pkg/entities/invoice_items/sql"
 	sharedDb "shared/db"
 
 	"github.com/sirupsen/logrus"
 )
 
 type DBHandler struct {
-	db      *sharedDb.DbHandler
-	logger  *logrus.Logger
-	queries *incomesql.Queries
+	db                 *sharedDb.DbHandler
+	logger             *logrus.Logger
+	queries            *incomesql.Queries
+	invoiceItemQueries *invoiceItemSql.Queries
 }
 
 func NewDBHandler(db *sharedDb.DbHandler, logger *logrus.Logger) (*DBHandler, error) {
 	queries, err := incomesql.LoadQueries()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load SQL queries: %w", err)
+		return nil, fmt.Errorf("failed to load income invoice SQL queries: %w", err)
+	}
+
+	invoiceItemQueries, err := invoiceItemSql.LoadQueries()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load invoice item SQL queries: %w", err)
 	}
 
 	return &DBHandler{
-		db:      db,
-		logger:  logger,
-		queries: queries,
+		db:                 db,
+		logger:             logger,
+		queries:            queries,
+		invoiceItemQueries: invoiceItemQueries,
 	}, nil
 }
 
 func (h *DBHandler) Create(req *models.IncomeInvoiceCreateRequest) (*models.IncomeInvoice, error) {
+	// Start transaction
+	tx, err := h.db.BeginTx(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	query, err := h.queries.Get(incomesql.CreateIncomeInvoice)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get create query: %w", err)
 	}
 
 	var invoice models.IncomeInvoice
-	err = h.db.QueryRow(query,
+	err = tx.QueryRow(query,
 		req.OrderID,
 		req.PaymentID,
 		req.CustomerID,
@@ -81,8 +97,103 @@ func (h *DBHandler) Create(req *models.IncomeInvoiceCreateRequest) (*models.Inco
 	invoice.Status = req.Status
 	invoice.GeneratedAt = req.GeneratedAt
 
-	h.logger.WithField("id", invoice.ID).Info("Income invoice created")
+	// Create invoice items if provided
+	if len(req.InvoiceItems) > 0 {
+		for _, itemReq := range req.InvoiceItems {
+			item, err := h.createInvoiceItem(tx, invoice.ID, "income", &itemReq)
+			if err != nil {
+				h.logger.WithError(err).Error("Failed to create invoice item")
+				return nil, fmt.Errorf("failed to create invoice item: %w", err)
+			}
+			invoice.InvoiceItems = append(invoice.InvoiceItems, *item)
+		}
+	}
+
+	// Commit transaction
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	h.logger.WithField("id", invoice.ID).Info("Income invoice created with items")
 	return &invoice, nil
+}
+
+// createInvoiceItem creates an invoice item within a transaction
+func (h *DBHandler) createInvoiceItem(tx *sql.Tx, invoiceID, invoiceType string, req *models.InvoiceItemCreateRequest) (*models.InvoiceItem, error) {
+	// Get the create query from invoice items SQL
+	query, err := h.invoiceItemQueries.Get(invoiceItemSql.CreateInvoiceItem)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get invoice item create query: %w", err)
+	}
+
+	var item models.InvoiceItem
+	err = tx.QueryRow(query,
+		invoiceID, invoiceType, req.Detail, req.Count, req.UnitType,
+		req.Price, req.ItemsPerUnit, req.ExpirationDate,
+	).Scan(
+		&item.ID, &item.Total, &item.CreatedAt, &item.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create invoice item: %w", err)
+	}
+
+	// Fill in the rest of the fields
+	item.InvoiceID = invoiceID
+	item.InvoiceType = invoiceType
+	item.Detail = req.Detail
+	item.Count = req.Count
+	item.UnitType = req.UnitType
+	item.Price = req.Price
+	item.ItemsPerUnit = req.ItemsPerUnit
+	item.ExpirationDate = req.ExpirationDate
+
+	return &item, nil
+}
+
+// getInvoiceItems retrieves all invoice items for a given invoice ID
+func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, error) {
+	query, err := h.invoiceItemQueries.Get(invoiceItemSql.ListInvoiceItems)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list query: %w", err)
+	}
+
+	rows, err := h.db.Query(query, invoiceID)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to query invoice items")
+		return nil, fmt.Errorf("failed to query invoice items: %w", err)
+	}
+	defer rows.Close()
+
+	var items []models.InvoiceItem
+	for rows.Next() {
+		var item models.InvoiceItem
+		err := rows.Scan(
+			&item.ID,
+			&item.InvoiceID,
+			&item.InvoiceType,
+			&item.Detail,
+			&item.Count,
+			&item.UnitType,
+			&item.Price,
+			&item.ItemsPerUnit,
+			&item.Total,
+			&item.ExpirationDate,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		)
+		if err != nil {
+			h.logger.WithError(err).Error("Failed to scan invoice item")
+			return nil, fmt.Errorf("failed to scan invoice item: %w", err)
+		}
+		items = append(items, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating invoice items: %w", err)
+	}
+
+	return items, nil
 }
 
 func (h *DBHandler) GetByID(id string) (*models.IncomeInvoice, error) {
@@ -121,6 +232,13 @@ func (h *DBHandler) GetByID(id string) (*models.IncomeInvoice, error) {
 		h.logger.WithError(err).Error("Failed to get income invoice")
 		return nil, fmt.Errorf("failed to get income invoice: %w", err)
 	}
+
+	// Fetch invoice items for this invoice
+	invoiceItems, err := h.getInvoiceItems(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get invoice items: %w", err)
+	}
+	invoice.InvoiceItems = invoiceItems
 
 	return &invoice, nil
 }

@@ -2,6 +2,7 @@
 SELECT
     id,
     invoice_id,
+    invoice_type,
     detail,
     count,
     unit_type,

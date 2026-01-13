@@ -59,6 +59,11 @@ func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Purchase invoice retrieved successfully", invoice)
 }
 
+// GetByIDOnly gets an outcome invoice without sending HTTP response (for internal use)
+func (h *HTTPHandler) GetByIDOnly(id string) (*models.OutcomeInvoice, error) {
+	return h.dbHandler.GetByID(id)
+}
+
 func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]

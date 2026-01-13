@@ -1,0 +1,443 @@
+<!-- Outcome Invoices (Purchases) Page Partial -->
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
+    .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; }
+    .data-card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+    .data-table { width: 100%; margin: 0; }
+    .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
+    .data-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
+    .data-table tbody tr:hover { background: #f8f9fa; }
+    .action-btns { display: flex; gap: 0.5rem; }
+    .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
+    .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+    .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .invoice-info { display: flex; flex-direction: column; }
+    .invoice-number { font-weight: 600; color: var(--text-primary); }
+    .invoice-supplier { font-size: 0.85rem; color: var(--text-secondary); }
+    .status-badge { padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 500; }
+    .status-badge.pending { background: #fff3cd; color: #856404; }
+    .status-badge.completed { background: #d4edda; color: #155724; }
+    .status-badge.cancelled { background: #f8d7da; color: #721c24; }
+    .amount-cell { font-weight: 600; color: var(--success); }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Purchase Invoices</h1>
+    <button class="btn btn-primary" id="addInvoiceBtn">
+        <i class="fas fa-plus me-2"></i>Add Purchase
+    </button>
+</div>
+
+<div class="data-card">
+    <div class="data-card-header">
+        <h5 class="mb-0">All Purchase Invoices</h5>
+        <button class="btn btn-outline-secondary btn-sm" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+    </div>
+
+    <div id="tableContainer">
+        <div class="loading-state" id="loadingState">
+            <div class="spinner-border text-primary mb-3"></div>
+            <p>Loading purchase invoices...</p>
+        </div>
+
+        <div class="empty-state d-none" id="emptyState">
+            <i class="fas fa-shopping-cart"></i>
+            <h5>No purchase invoices yet</h5>
+            <p>Create your first purchase invoice to get started.</p>
+        </div>
+
+        <table class="data-table d-none" id="dataTable">
+            <thead>
+                <tr>
+                    <th>Invoice</th>
+                    <th>Supplier</th>
+                    <th>Date</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th width="120">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="invoiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Add Purchase Invoice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="invoiceForm">
+                <div class="modal-body">
+                    <input type="hidden" id="invoiceId">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Invoice Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="invoiceNumber" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Supplier <span class="text-danger">*</span></label>
+                            <select class="form-select" id="supplierId" required>
+                                <option value="">Select Supplier...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Invoice Date</label>
+                            <input type="date" class="form-control" id="invoiceDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Subtotal</label>
+                            <input type="number" class="form-control" id="subtotal" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tax Amount</label>
+                            <input type="number" class="form-control" id="taxAmount" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Discount</label>
+                            <input type="number" class="form-control" id="discountAmount" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Total Amount <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="totalAmount" step="0.01" min="0" required>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Items Section -->
+                    <div class="mb-3">
+                        <label class="form-label">Invoice Items</label>
+                        <div id="invoiceItemsContainer">
+                            <div class="invoice-item mb-3 p-3 border rounded">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Detail <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control item-detail" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Count <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control item-count" step="0.01" min="0" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Unit Type <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control item-unit-type" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Price <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control item-price" step="0.01" min="0" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Actions</label>
+                                        <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="addItemBtn">Add Item</button>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="isPaid">
+                        <label class="form-check-label" for="isPaid">Paid</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    let invoices = [];
+    let suppliers = [];
+    let modal = null;
+    let editingId = null;
+
+    function init() {
+        modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
+        setupEventListeners();
+        loadSuppliers();
+        loadInvoices();
+    }
+
+    function setupEventListeners() {
+        document.getElementById('addInvoiceBtn')?.addEventListener('click', () => openModal());
+        document.getElementById('refreshBtn')?.addEventListener('click', () => loadInvoices());
+        document.getElementById('invoiceForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveInvoice(); });
+        document.getElementById('addItemBtn')?.addEventListener('click', () => addInvoiceItem());
+    }
+
+    async function loadSuppliers() {
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.INVENTORY.suppliers, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (resp.ok) {
+                const result = await resp.json();
+                suppliers = result.data?.suppliers || result.suppliers || [];
+                populateSupplierDropdown();
+            }
+        } catch (e) {
+            console.error('Error loading suppliers:', e);
+        }
+    }
+
+    function populateSupplierDropdown() {
+        const select = document.getElementById('supplierId');
+        select.innerHTML = '<option value="">Select Supplier...</option>';
+        suppliers.forEach(supplier => {
+            const option = document.createElement('option');
+            option.value = supplier.id;
+            option.textContent = supplier.name;
+            select.appendChild(option);
+        });
+    }
+
+    async function loadInvoices() {
+        showLoading();
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.INVOICE.outcomeInvoices, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed to load');
+            const result = await resp.json();
+            invoices = result.data?.invoices || result.invoices || [];
+            renderTable();
+        } catch (e) {
+            console.error('Error:', e);
+            Swal.fire('Error', 'Failed to load purchase invoices', 'error');
+            showEmpty();
+        }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const table = document.getElementById('dataTable');
+        const empty = document.getElementById('emptyState');
+        document.getElementById('loadingState').classList.add('d-none');
+
+        if (!invoices.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+
+        empty.classList.add('d-none');
+        table.classList.remove('d-none');
+        tbody.innerHTML = invoices.map(invoice => {
+            const supplier = suppliers.find(s => s.id === invoice.supplier_id);
+            const statusClass = invoice.status === 'completed' ? 'completed' : invoice.status === 'cancelled' ? 'cancelled' : 'pending';
+            return `
+                <tr>
+                    <td>
+                        <div class="invoice-info">
+                            <div class="invoice-number">${escapeHtml(invoice.invoice_number)}</div>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(supplier?.name || 'Unknown Supplier')}</td>
+                    <td>${new Date(invoice.created_at).toLocaleDateString()}</td>
+                    <td class="amount-cell">$${invoice.total_amount?.toFixed(2) || '0.00'}</td>
+                    <td><span class="status-badge ${statusClass}">${escapeHtml(invoice.status || 'pending')}</span></td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-outline-primary btn-action" onclick="window.outcomeInvoicePage.edit('${invoice.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-outline-danger btn-action" onclick="window.outcomeInvoicePage.delete('${invoice.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function showLoading() {
+        document.getElementById('loadingState').classList.remove('d-none');
+        document.getElementById('emptyState').classList.add('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
+
+    function showEmpty() {
+        document.getElementById('loadingState').classList.add('d-none');
+        document.getElementById('emptyState').classList.remove('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
+
+    function openModal(invoice = null) {
+        editingId = invoice?.id || null;
+        document.getElementById('modalTitle').textContent = invoice ? 'Edit Purchase Invoice' : 'Add Purchase Invoice';
+
+        // Populate form
+        document.getElementById('invoiceId').value = invoice?.id || '';
+        document.getElementById('invoiceNumber').value = invoice?.invoice_number || '';
+        document.getElementById('supplierId').value = invoice?.supplier_id || '';
+        document.getElementById('invoiceDate').value = invoice?.invoice_date ? new Date(invoice.invoice_date).toISOString().split('T')[0] : '';
+        document.getElementById('dueDate').value = invoice?.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '';
+        document.getElementById('subtotal').value = invoice?.subtotal || '';
+        document.getElementById('taxAmount').value = invoice?.tax_amount || '';
+        document.getElementById('discountAmount').value = invoice?.discount_amount || '';
+        document.getElementById('totalAmount').value = invoice?.total_amount || '';
+        document.getElementById('notes').value = invoice?.notes || '';
+        document.getElementById('isPaid').checked = invoice?.is_paid || false;
+
+        // Populate invoice items
+        populateInvoiceItems(invoice?.invoice_items || []);
+
+        modal.show();
+    }
+
+    function populateInvoiceItems(items) {
+        const container = document.getElementById('invoiceItemsContainer');
+        container.innerHTML = '';
+
+        if (items.length === 0) {
+            addInvoiceItem(); // Add one empty item
+        } else {
+            items.forEach(item => addInvoiceItem(item));
+        }
+    }
+
+    function addInvoiceItem(item = null) {
+        const container = document.getElementById('invoiceItemsContainer');
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'invoice-item mb-3 p-3 border rounded';
+
+        itemDiv.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Detail <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control item-detail" value="${item?.detail || ''}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Count <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control item-count" step="0.01" min="0" value="${item?.count || ''}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Unit Type <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control item-unit-type" value="${item?.unit_type || ''}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Price <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control item-price" step="0.01" min="0" value="${item?.price || ''}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Actions</label>
+                    <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(itemDiv);
+
+        // Add event listener for remove button
+        itemDiv.querySelector('.remove-item').addEventListener('click', () => {
+            itemDiv.remove();
+        });
+    }
+
+    async function saveInvoice() {
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        try {
+            const token = window.authService.getToken();
+
+            // Collect invoice items
+            const invoiceItems = [];
+            const itemElements = document.querySelectorAll('.invoice-item');
+            itemElements.forEach(itemEl => {
+                const detail = itemEl.querySelector('.item-detail').value.trim();
+                const count = parseFloat(itemEl.querySelector('.item-count').value) || 0;
+                const unitType = itemEl.querySelector('.item-unit-type').value.trim();
+                const price = parseFloat(itemEl.querySelector('.item-price').value) || 0;
+
+                if (detail && count > 0 && unitType && price > 0) {
+                    invoiceItems.push({
+                        detail: detail,
+                        count: count,
+                        unit_type: unitType,
+                        price: price,
+                        items_per_unit: 1 // Default value
+                    });
+                }
+            });
+
+            const data = {
+                invoice_number: document.getElementById('invoiceNumber').value,
+                supplier_id: document.getElementById('supplierId').value,
+                invoice_date: document.getElementById('invoiceDate').value || null,
+                due_date: document.getElementById('dueDate').value || null,
+                subtotal: parseFloat(document.getElementById('subtotal').value) || 0,
+                tax_amount: parseFloat(document.getElementById('taxAmount').value) || 0,
+                discount_amount: parseFloat(document.getElementById('discountAmount').value) || 0,
+                total_amount: parseFloat(document.getElementById('totalAmount').value) || 0,
+                notes: document.getElementById('notes').value,
+                is_paid: document.getElementById('isPaid').checked,
+                status: document.getElementById('isPaid').checked ? 'completed' : 'pending',
+                invoice_items: invoiceItems
+            };
+
+            const url = editingId ? `${CONFIG.INVOICE.outcomeInvoices}/${editingId}` : CONFIG.INVOICE.outcomeInvoices;
+            const resp = await fetch(url, {
+                method: editingId ? 'PUT' : 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
+            modal.hide();
+            Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false });
+            await loadInvoices();
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Save';
+        }
+    }
+
+    async function deleteInvoice(id) {
+        const invoice = invoices.find(i => i.id === id);
+        const result = await Swal.fire({
+            title: 'Delete?', text: `Delete invoice "${invoice?.invoice_number}"?`, icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete'
+        });
+        if (!result.isConfirmed) return;
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.INVOICE.outcomeInvoices}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed');
+            Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
+            await loadInvoices();
+        } catch (e) { Swal.fire('Error', e.message, 'error'); }
+    }
+
+    function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+    // Expose functions globally for onclick handlers
+    window.outcomeInvoicePage = {
+        edit: (id) => { const invoice = invoices.find(i => i.id === id); if (invoice) openModal(invoice); },
+        delete: deleteInvoice
+    };
+
+    init();
+})();
+</script>

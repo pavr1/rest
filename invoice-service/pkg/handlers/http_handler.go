@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	sharedConfig "shared/config"
@@ -12,7 +13,7 @@ import (
 	sharedHttp "shared/http"
 
 	incomeInvoiceHandlers "invoice-service/pkg/entities/income_invoices/handlers"
-	invoiceItemHandlers "invoice-service/pkg/entities/invoice_items/handlers"
+	"invoice-service/pkg/entities/income_invoices/models"
 	outcomeInvoiceHandlers "invoice-service/pkg/entities/outcome_invoices/handlers"
 
 	"github.com/gorilla/mux"
@@ -25,7 +26,6 @@ type MainHTTPHandler struct {
 	cancelHealthMonitor   context.CancelFunc
 	outcomeInvoiceHandler *outcomeInvoiceHandlers.HTTPHandler
 	incomeInvoiceHandler  *incomeInvoiceHandlers.HTTPHandler
-	invoiceItemHandler    *invoiceItemHandlers.HTTPHandler
 	logger                *logrus.Logger
 }
 
@@ -69,14 +69,6 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 	incomeInvoiceHTTPHandler := incomeInvoiceHandlers.NewHTTPHandler(incomeInvoiceDBHandler, logger)
 
-	// Create invoice item handlers
-	invoiceItemDBHandler, err := invoiceItemHandlers.NewDBHandler(db, logger)
-	if err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to create invoice item handler: %w", err)
-	}
-	invoiceItemHTTPHandler := invoiceItemHandlers.NewHTTPHandler(invoiceItemDBHandler, logger)
-
 	// Create cancellable context for health monitor
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -95,7 +87,6 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		cancelHealthMonitor:   cancel,
 		outcomeInvoiceHandler: outcomeInvoiceHTTPHandler,
 		incomeInvoiceHandler:  incomeInvoiceHTTPHandler,
-		invoiceItemHandler:    invoiceItemHTTPHandler,
 		logger:                logger,
 	}, nil
 }
@@ -121,23 +112,19 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	// Outcome Invoices (expenses from suppliers)
 	router.HandleFunc("/api/v1/invoices/outcome", h.outcomeInvoiceHandler.List).Methods("GET")
 	router.HandleFunc("/api/v1/invoices/outcome", h.outcomeInvoiceHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/invoices/outcome/{id}", h.outcomeInvoiceHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/outcome/{id}", h.GetOutcomeInvoiceByID).Methods("GET")
 	router.HandleFunc("/api/v1/invoices/outcome/{id}", h.outcomeInvoiceHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/invoices/outcome/{id}", h.outcomeInvoiceHandler.Delete).Methods("DELETE")
 
 	// Income Invoices (revenue from customers)
 	router.HandleFunc("/api/v1/invoices/income", h.incomeInvoiceHandler.List).Methods("GET")
 	router.HandleFunc("/api/v1/invoices/income", h.incomeInvoiceHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/invoices/income/{id}", h.incomeInvoiceHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/invoices/income/{id}", h.GetIncomeInvoiceByID).Methods("GET")
 	router.HandleFunc("/api/v1/invoices/income/{id}", h.incomeInvoiceHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/invoices/income/{id}", h.incomeInvoiceHandler.Delete).Methods("DELETE")
 
-	// Invoice Items (line items for outcome invoices)
-	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items", h.invoiceItemHandler.ListByInvoice).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items", h.invoiceItemHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items/{id}", h.invoiceItemHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items/{id}", h.invoiceItemHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/invoices/outcome/{invoiceId}/items/{id}", h.invoiceItemHandler.Delete).Methods("DELETE")
+	// Invoice Items are now handled within invoice CRUD operations
+	// No separate endpoints for invoice items
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
@@ -166,4 +153,64 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+// GetOutcomeInvoiceByID gets an outcome invoice with its invoice items
+func (h *MainHTTPHandler) GetOutcomeInvoiceByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	// Get the invoice
+	invoice, err := h.outcomeInvoiceHandler.GetByIDOnly(id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Outcome invoice not found")
+			return
+		}
+		h.logger.WithError(err).Error("Failed to get outcome invoice")
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get outcome invoice")
+		return
+	}
+
+	// Get invoice items for this invoice
+	itemsResponse, err := h.outcomeInvoiceHandler.GetByIDOnly(id)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get invoice items")
+		// Don't fail the request, just return empty items
+		invoice.InvoiceItems = []models.InvoiceItem{}
+	} else {
+		invoice.InvoiceItems = itemsResponse.InvoiceItems
+	}
+
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Outcome invoice retrieved successfully", invoice)
+}
+
+// GetIncomeInvoiceByID gets an income invoice with its invoice items
+func (h *MainHTTPHandler) GetIncomeInvoiceByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	// Get the invoice
+	invoice, err := h.incomeInvoiceHandler.GetByIDOnly(id)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Income invoice not found")
+			return
+		}
+		h.logger.WithError(err).Error("Failed to get income invoice")
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get income invoice")
+		return
+	}
+
+	// Get invoice items for this invoice
+	itemsResponse, err := h.incomeInvoiceHandler.GetByIDOnly(id)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get invoice items")
+		// Don't fail the request, just return empty items
+		invoice.InvoiceItems = []models.InvoiceItem{}
+	} else {
+		invoice.InvoiceItems = itemsResponse.InvoiceItems
+	}
+
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Income invoice retrieved successfully", invoice)
 }

@@ -30,7 +30,7 @@ func NewDBHandler(db *sharedDb.DbHandler, logger *logrus.Logger) (*DBHandler, er
 	}, nil
 }
 
-func (h *DBHandler) Create(invoiceID string, req *models.InvoiceItemCreateRequest) (*models.InvoiceItem, error) {
+func (h *DBHandler) Create(invoiceID string, invoiceType string, req *models.InvoiceItemCreateRequest) (*models.InvoiceItem, error) {
 	// Calculate total
 	total := req.Count * req.Price
 
@@ -41,10 +41,10 @@ func (h *DBHandler) Create(invoiceID string, req *models.InvoiceItemCreateReques
 
 	var item models.InvoiceItem
 	err = h.db.QueryRow(query,
-		invoiceID, req.Detail, req.Count, req.UnitType,
-		req.Price, req.ItemsPerUnit, total, req.ExpirationDate,
+		invoiceID, invoiceType, req.Detail, req.Count, req.UnitType,
+		req.Price, req.ItemsPerUnit, req.ExpirationDate,
 	).Scan(
-		&item.ID, &item.CreatedAt, &item.UpdatedAt,
+		&item.ID, &item.Total, &item.CreatedAt, &item.UpdatedAt,
 	)
 
 	if err != nil {
@@ -76,6 +76,7 @@ func (h *DBHandler) GetByID(id string) (*models.InvoiceItem, error) {
 	err = h.db.QueryRow(query, id).Scan(
 		&item.ID,
 		&item.InvoiceID,
+		&item.InvoiceType,
 		&item.Detail,
 		&item.Count,
 		&item.UnitType,
@@ -189,6 +190,7 @@ func (h *DBHandler) ListByInvoice(invoiceID string) (*models.InvoiceItemListResp
 		err := rows.Scan(
 			&item.ID,
 			&item.InvoiceID,
+			&item.InvoiceType,
 			&item.Detail,
 			&item.Count,
 			&item.UnitType,

@@ -4,10 +4,11 @@ import (
 	"time"
 )
 
-// InvoiceItem represents a line item in an outcome invoice
+// InvoiceItem represents a line item in an invoice (can be for outcome or income invoices)
 type InvoiceItem struct {
 	ID             string     `json:"id"`
 	InvoiceID      string     `json:"invoice_id"`
+	InvoiceType    string     `json:"invoice_type"` // 'outcome' or 'income'
 	Detail         string     `json:"detail"`
 	Count          float64    `json:"count"`
 	UnitType       string     `json:"unit_type"`

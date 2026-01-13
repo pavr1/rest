@@ -32,7 +32,11 @@ class AppRouter {
             'stock-categories': { title: 'Stock Categories', icon: 'fa-layer-group', partial: 'pages/inventory/categories.html' },
             'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
             'suppliers': { title: 'Suppliers', icon: 'fa-truck', partial: 'pages/inventory/suppliers.html' },
-            
+
+            // Invoices
+            'outcome-invoices': { title: 'Purchases', icon: 'fa-shopping-cart', partial: 'pages/invoices/outcome.html' },
+            'income-invoices': { title: 'Sells', icon: 'fa-cash-register', partial: 'pages/invoices/income.html' },
+
             // Admin
             'staff': { title: 'Staff', icon: 'fa-users', partial: 'pages/admin/staff.html' },
             'reports': { title: 'Reports', icon: 'fa-chart-bar', partial: 'pages/admin/reports.html' },

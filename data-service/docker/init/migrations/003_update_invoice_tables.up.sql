@@ -14,11 +14,11 @@ ALTER TABLE customer_invoices RENAME TO income_invoices;
 -- Add customer_id column to income_invoices
 ALTER TABLE income_invoices ADD COLUMN customer_id UUID REFERENCES customers(id) ON DELETE SET NULL;
 
--- Update the foreign key constraint for invoice_items to reference outcome_invoices instead of purchase_invoices
--- First, we need to drop and recreate the foreign key constraint
-ALTER TABLE invoice_items DROP CONSTRAINT IF EXISTS invoice_details_invoice_id_fkey;
-ALTER TABLE invoice_items ADD CONSTRAINT invoice_items_invoice_id_fkey
-    FOREIGN KEY (invoice_id) REFERENCES outcome_invoices(id) ON DELETE CASCADE;
+-- Add invoice_type to invoice_items to distinguish between outcome and income invoices
+ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS invoice_type VARCHAR(20) NOT NULL DEFAULT 'outcome' CHECK (invoice_type IN ('outcome', 'income'));
+
+-- Update existing records to have the correct invoice_type (assuming they are all outcome for now)
+UPDATE invoice_items SET invoice_type = 'outcome' WHERE invoice_type IS NULL OR invoice_type = '';
 
 -- Update comments to reflect new naming
 COMMENT ON TABLE outcome_invoices IS 'Expense invoices from suppliers (formerly purchase_invoices)';

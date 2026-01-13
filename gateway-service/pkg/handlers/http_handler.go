@@ -212,9 +212,8 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	invoiceRouter.HandleFunc("/income", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
 	invoiceRouter.HandleFunc("/income/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
 
-	// Invoice Items (line items - formerly invoice_details)
-	invoiceRouter.HandleFunc("/outcome/{invoiceId}/items", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "POST")
-	invoiceRouter.HandleFunc("/outcome/{invoiceId}/items/{id}", h.CreateProxyHandler(h.invoiceServiceUrl)).Methods("GET", "PUT", "DELETE")
+	// Invoice Items are now handled within invoice CRUD operations
+	// No separate endpoints for invoice items
 
 	// OPTIONS handling for CORS preflight
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
