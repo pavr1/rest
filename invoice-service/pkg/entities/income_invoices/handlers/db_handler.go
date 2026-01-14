@@ -185,10 +185,10 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 			&item.UpdatedAt,
 		)
 		if stockItemID.Valid {
-		item.StockItemID = &stockItemID.String
-	} else {
-		item.StockItemID = nil
-	}
+			item.StockItemID = &stockItemID.String
+		} else {
+			item.StockItemID = nil
+		}
 		if err != nil {
 			h.logger.WithError(err).Error("Failed to scan invoice item")
 			return nil, fmt.Errorf("failed to scan invoice item: %w", err)
