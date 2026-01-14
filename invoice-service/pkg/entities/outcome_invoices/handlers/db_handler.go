@@ -119,7 +119,7 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, invoiceID, invoiceType string,
 
 	var item models.InvoiceItem
 	err = tx.QueryRow(query,
-		invoiceID, invoiceType, req.Detail, req.Count, req.UnitType,
+		invoiceID, req.StockItemID, invoiceType, req.Detail, req.Count, req.UnitType,
 		req.Price, req.ItemsPerUnit, req.ExpirationDate,
 	).Scan(
 		&item.ID, &item.Total, &item.CreatedAt, &item.UpdatedAt,
@@ -159,9 +159,11 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 	var items []models.InvoiceItem
 	for rows.Next() {
 		var item models.InvoiceItem
+		var stockItemID sql.NullString
 		err := rows.Scan(
 			&item.ID,
 			&item.InvoiceID,
+			&stockItemID,
 			&item.InvoiceType,
 			&item.Detail,
 			&item.Count,
@@ -173,6 +175,11 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 			&item.CreatedAt,
 			&item.UpdatedAt,
 		)
+		if stockItemID.Valid {
+			item.StockItemID = &stockItemID.String
+		} else {
+			item.StockItemID = nil
+		}
 		if err != nil {
 			h.logger.WithError(err).Error("Failed to scan invoice item")
 			return nil, fmt.Errorf("failed to scan invoice item: %w", err)

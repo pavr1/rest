@@ -8,6 +8,7 @@ import (
 type InvoiceItem struct {
 	ID             string     `json:"id"`
 	InvoiceID      string     `json:"invoice_id"`
+	StockItemID    *string    `json:"stock_item_id,omitempty"`
 	InvoiceType    string     `json:"invoice_type"` // 'outcome' or 'income'
 	Detail         string     `json:"detail"`
 	Count          float64    `json:"count"`
@@ -23,6 +24,7 @@ type InvoiceItem struct {
 // InvoiceItemCreateRequest represents a request to create an invoice item
 type InvoiceItemCreateRequest struct {
 	InvoiceID      string     `json:"invoice_id"`
+	StockItemID    *string    `json:"stock_item_id,omitempty"`
 	Detail         string     `json:"detail"`
 	Count          float64    `json:"count"`
 	UnitType       string     `json:"unit_type"`
@@ -33,6 +35,7 @@ type InvoiceItemCreateRequest struct {
 
 // InvoiceItemUpdateRequest represents a request to update an invoice item
 type InvoiceItemUpdateRequest struct {
+	StockItemID    *string    `json:"stock_item_id,omitempty"`
 	Detail         *string    `json:"detail,omitempty"`
 	Count          *float64   `json:"count,omitempty"`
 	UnitType       *string    `json:"unit_type,omitempty"`

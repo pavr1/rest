@@ -2,6 +2,7 @@
 SELECT
     id,
     invoice_id,
+    stock_item_id,
     invoice_type,
     detail,
     count,

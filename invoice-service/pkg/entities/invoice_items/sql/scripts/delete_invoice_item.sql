@@ -1,1 +1,3 @@
-DELETE FROM invoice_items WHERE id = $1 AND invoice_id = $2
+-- Delete an invoice item
+DELETE FROM invoice_items
+WHERE id = $1
