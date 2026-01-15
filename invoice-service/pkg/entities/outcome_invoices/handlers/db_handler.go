@@ -204,16 +204,18 @@ func (h *DBHandler) List(req *models.OutcomeInvoiceListRequest) (*models.Outcome
 	}
 
 	// Get total count
+	// pvillalobos -> revisit later about adding NULL suppliers for filtering
 	var total int
-	err = h.db.QueryRow(countQuery, req.SupplierID).Scan(&total)
+	err = h.db.QueryRow(countQuery).Scan(&total)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to count outcome invoices")
 		return nil, fmt.Errorf("failed to count outcome invoices: %w", err)
 	}
 
 	// Get paginated results
+	// pvillalobos -> revisit later about adding NULL suppliers for filtering
 	offset := (req.Page - 1) * req.Limit
-	rows, err := h.db.Query(listQuery, req.SupplierID, req.Limit, offset)
+	rows, err := h.db.Query(listQuery, req.Limit, offset)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to list outcome invoices")
 		return nil, fmt.Errorf("failed to list outcome invoices: %w", err)

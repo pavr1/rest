@@ -1,4 +1,4 @@
--- Count outcome invoices with optional filters
+-- Count outcome invoices
+-- pvillalobos -> revisit later about adding NULL suppliers for filtering
 SELECT COUNT(*)
-FROM outcome_invoices
-WHERE ($1 IS NULL OR supplier_id = $1);
+FROM outcome_invoices;

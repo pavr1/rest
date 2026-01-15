@@ -1,4 +1,5 @@
--- List outcome invoices with optional filters
+-- List outcome invoices
+-- pvillalobos -> revisit later about adding NULL suppliers for filtering
 SELECT
     id,
     invoice_number,
@@ -10,6 +11,5 @@ SELECT
     created_at,
     updated_at
 FROM outcome_invoices
-WHERE ($1 IS NULL OR supplier_id = $1)
 ORDER BY transaction_date DESC
-LIMIT $2 OFFSET $3;
+LIMIT $1 OFFSET $2;
