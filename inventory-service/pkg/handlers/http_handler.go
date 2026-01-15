@@ -11,8 +11,9 @@ import (
 	sharedDb "shared/db"
 	sharedHttp "shared/http"
 
-	stockCategoryHandlers "inventory-service/pkg/entities/stock_item_categories/handlers"
-	stockItemHandlers "inventory-service/pkg/entities/stock_items/handlers"
+	stockCategoryHandlers "inventory-service/pkg/entities/stock_categories/handlers"
+	stockSubCategoryHandlers "inventory-service/pkg/entities/stock_sub_categories/handlers"
+	stockVariantHandlers "inventory-service/pkg/entities/stock_variants/handlers"
 	supplierHandlers "inventory-service/pkg/entities/suppliers/handlers"
 
 	"github.com/gorilla/mux"
@@ -20,13 +21,14 @@ import (
 )
 
 type MainHTTPHandler struct {
-	db                   *sharedDb.DbHandler
-	httpHealthMonitor    *sharedHttp.HTTPHealthMonitor
-	cancelHealthMonitor  context.CancelFunc
-	stockCategoryHandler *stockCategoryHandlers.HTTPHandler
-	stockItemHandler     *stockItemHandlers.HTTPHandler
-	supplierHandler      *supplierHandlers.HTTPHandler
-	logger               *logrus.Logger
+	db                      *sharedDb.DbHandler
+	httpHealthMonitor       *sharedHttp.HTTPHealthMonitor
+	cancelHealthMonitor     context.CancelFunc
+	stockCategoryHandler    *stockCategoryHandlers.HTTPHandler
+	stockSubCategoryHandler *stockSubCategoryHandlers.HTTPHandler
+	stockVariantHandler     *stockVariantHandlers.HTTPHandler
+	supplierHandler         *supplierHandlers.HTTPHandler
+	logger                  *logrus.Logger
 }
 
 func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
@@ -61,13 +63,21 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 	stockCategoryHTTPHandler := stockCategoryHandlers.NewHTTPHandler(stockCategoryDBHandler, logger)
 
-	// Create stock item handlers
-	stockItemDBHandler, err := stockItemHandlers.NewDBHandler(db, logger)
+	// Create stock sub-category handlers
+	stockSubCategoryDBHandler, err := stockSubCategoryHandlers.NewDBHandler(db, logger)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("failed to create stock item handler: %w", err)
+		return nil, fmt.Errorf("failed to create stock sub-category handler: %w", err)
 	}
-	stockItemHTTPHandler := stockItemHandlers.NewHTTPHandler(stockItemDBHandler, logger)
+	stockSubCategoryHTTPHandler := stockSubCategoryHandlers.NewHTTPHandler(stockSubCategoryDBHandler, logger)
+
+	// Create stock variant handlers
+	stockVariantDBHandler, err := stockVariantHandlers.NewDBHandler(db, logger)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to create stock variant handler: %w", err)
+	}
+	stockVariantHTTPHandler := stockVariantHandlers.NewHTTPHandler(stockVariantDBHandler, logger)
 
 	// Create supplier handlers
 	supplierDBHandler, err := supplierHandlers.NewDBHandler(db, logger)
@@ -91,13 +101,14 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	httpHealthMonitor.Start(ctx)
 
 	return &MainHTTPHandler{
-		db:                   db,
-		httpHealthMonitor:    httpHealthMonitor,
-		cancelHealthMonitor:  cancel,
-		stockCategoryHandler: stockCategoryHTTPHandler,
-		stockItemHandler:     stockItemHTTPHandler,
-		supplierHandler:      supplierHTTPHandler,
-		logger:               logger,
+		db:                      db,
+		httpHealthMonitor:       httpHealthMonitor,
+		cancelHealthMonitor:     cancel,
+		stockCategoryHandler:    stockCategoryHTTPHandler,
+		stockSubCategoryHandler: stockSubCategoryHTTPHandler,
+		stockVariantHandler:     stockVariantHTTPHandler,
+		supplierHandler:         supplierHTTPHandler,
+		logger:                  logger,
 	}, nil
 }
 
@@ -119,19 +130,26 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	// Health check
 	router.HandleFunc("/api/v1/inventory/p/health", h.HealthCheck).Methods("GET")
 
-	// Stock Item Categories
+	// Stock Categories
 	router.HandleFunc("/api/v1/stock/categories", h.stockCategoryHandler.List).Methods("GET")
 	router.HandleFunc("/api/v1/stock/categories/{id}", h.stockCategoryHandler.GetByID).Methods("GET")
 	router.HandleFunc("/api/v1/stock/categories", h.stockCategoryHandler.Create).Methods("POST")
 	router.HandleFunc("/api/v1/stock/categories/{id}", h.stockCategoryHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/stock/categories/{id}", h.stockCategoryHandler.Delete).Methods("DELETE")
 
-	// Stock Items
-	router.HandleFunc("/api/v1/stock/items", h.stockItemHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/stock/items/{id}", h.stockItemHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/stock/items", h.stockItemHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/stock/items/{id}", h.stockItemHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/stock/items/{id}", h.stockItemHandler.Delete).Methods("DELETE")
+	// Stock Sub-Categories
+	router.HandleFunc("/api/v1/stock/sub-categories", h.stockSubCategoryHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/stock/sub-categories/{id}", h.stockSubCategoryHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/stock/sub-categories", h.stockSubCategoryHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/stock/sub-categories/{id}", h.stockSubCategoryHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/stock/sub-categories/{id}", h.stockSubCategoryHandler.Delete).Methods("DELETE")
+
+	// Stock Variants
+	router.HandleFunc("/api/v1/stock/variants", h.stockVariantHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/stock/variants/{id}", h.stockVariantHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/stock/variants", h.stockVariantHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/stock/variants/{id}", h.stockVariantHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/stock/variants/{id}", h.stockVariantHandler.Delete).Methods("DELETE")
 
 	// Suppliers
 	router.HandleFunc("/api/v1/inventory/suppliers", h.supplierHandler.List).Methods("GET")

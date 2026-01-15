@@ -85,10 +85,12 @@ CREATE TABLE menu_items (
 );
 
 -- 9. Stock Item Categories
-CREATE TABLE stock_item_categories (
+CREATE TABLE stock_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -654,16 +656,40 @@ INSERT INTO menu_categories (name, display_order, description) VALUES
 ('Bocadillos', 5, 'Snacks de bar');
 
 -- Insertar categorías de inventario por defecto
-INSERT INTO stock_item_categories (name, description) VALUES
-('Carnes', 'Res, pollo, cerdo, pescado'),
-('Frutas y Verduras', 'Productos frescos'),
-('Bebidas', 'Café, té, refrescos, lácteos y licores'),
-('Salsas', 'Salsas y aderezos'),
-('Congelados', 'Productos congelados'),
-('Alacena', 'Productos de alacena'),
-('Repostería', 'Pasteles, postres, galletas'),
-('Limpieza', 'Productos de limpieza'),
-('Envases', 'Platos, vasos, servilletas');
+INSERT INTO stock_categories (name, description, display_order) VALUES
+('Carnes', 'Res, pollo, cerdo, pescado', 1),
+('Frutas y Verduras', 'Productos frescos', 2),
+('Bebidas', 'Café, té, refrescos, lácteos y licores', 3),
+('Salsas', 'Salsas y aderezos', 4),
+('Congelados', 'Productos congelados', 5),
+('Alacena', 'Productos de alacena', 6),
+('Repostería', 'Pasteles, postres, galletas', 7),
+('Limpieza', 'Productos de limpieza', 8),
+('Envases', 'Platos, vasos, servilletas', 9);
+
+-- 9. Stock Sub-Categories
+CREATE TABLE stock_sub_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    stock_category_id UUID NOT NULL REFERENCES stock_categories(id) ON DELETE CASCADE,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. Stock Variants
+CREATE TABLE stock_variants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE CASCADE,
+    unit VARCHAR(50) NOT NULL,
+    number_of_units DECIMAL(10,2) NOT NULL CHECK (number_of_units > 0),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Insertar mesas de ejemplo
 INSERT INTO tables (table_number, capacity, status) VALUES
