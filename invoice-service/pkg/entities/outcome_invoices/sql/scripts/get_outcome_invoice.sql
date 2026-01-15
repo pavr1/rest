@@ -10,4 +10,4 @@ SELECT
     created_at,
     updated_at
 FROM outcome_invoices
-WHERE id = $1
+WHERE id = $1;

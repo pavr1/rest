@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 
+	invoiceItemModels "invoice-service/pkg/entities/invoice_items/models"
 	invoiceItemSql "invoice-service/pkg/entities/invoice_items/sql"
 	"invoice-service/pkg/entities/outcome_invoices/models"
 	outcomesql "invoice-service/pkg/entities/outcome_invoices/sql"
 	sharedDb "shared/db"
 
-	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,6 +40,7 @@ func NewDBHandler(db *sharedDb.DbHandler, logger *logrus.Logger) (*DBHandler, er
 	}, nil
 }
 
+// Create creates a new outcome invoice with its items in a transaction
 func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.OutcomeInvoice, error) {
 	// Start transaction
 	tx, err := h.db.BeginTx(context.Background())
@@ -47,16 +48,6 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback()
-
-	// Calculate total from items if not provided
-	total := req.TotalAmount
-	if total == nil && req.InvoiceItems != nil {
-		calculatedTotal := 0.0
-		for _, item := range req.InvoiceItems {
-			calculatedTotal += item.Count * item.Price
-		}
-		total = &calculatedTotal
-	}
 
 	query, err := h.queries.Get(outcomesql.CreateOutcomeInvoice)
 	if err != nil {
@@ -68,7 +59,7 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 		req.InvoiceNumber,
 		req.SupplierID,
 		req.TransactionDate,
-		total,
+		req.TotalAmount,
 		req.ImageURL,
 		req.Notes,
 	).Scan(
@@ -84,16 +75,18 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 	invoice.InvoiceNumber = req.InvoiceNumber
 	invoice.SupplierID = req.SupplierID
 	invoice.TransactionDate = req.TransactionDate
-	invoice.TotalAmount = total
+	invoice.TotalAmount = req.TotalAmount
 	invoice.ImageURL = req.ImageURL
 	invoice.Notes = req.Notes
 
 	// Create invoice items if provided
 	if req.InvoiceItems != nil && len(req.InvoiceItems) > 0 {
 		for _, itemReq := range req.InvoiceItems {
-			item, err := h.createInvoiceItem(tx, invoice.ID, "outcome", &itemReq)
+			itemReq.InvoiceID = invoice.ID
+			itemReq.InvoiceType = "outcome" // Set invoice type for outcome invoices
+
+			item, err := h.createInvoiceItem(tx, &itemReq)
 			if err != nil {
-				h.logger.WithError(err).Error("Failed to create invoice item")
 				return nil, fmt.Errorf("failed to create invoice item: %w", err)
 			}
 			invoice.InvoiceItems = append(invoice.InvoiceItems, *item)
@@ -105,95 +98,10 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	h.logger.WithField("id", invoice.ID).Info("Outcome invoice created with items")
 	return &invoice, nil
 }
 
-// createInvoiceItem creates an invoice item within a transaction
-func (h *DBHandler) createInvoiceItem(tx *sql.Tx, invoiceID, invoiceType string, req *models.InvoiceItemCreateRequest) (*models.InvoiceItem, error) {
-	// Get the create query from invoice items SQL
-	query, err := h.invoiceItemQueries.Get(invoiceItemSql.CreateInvoiceItem)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get invoice item create query: %w", err)
-	}
-
-	var item models.InvoiceItem
-	err = tx.QueryRow(query,
-		invoiceID, req.StockItemID, invoiceType, req.Detail, req.Count, req.UnitType,
-		req.Price, req.ItemsPerUnit, req.ExpirationDate,
-	).Scan(
-		&item.ID, &item.Total, &item.CreatedAt, &item.UpdatedAt,
-	)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to create invoice item: %w", err)
-	}
-
-	// Fill in the rest of the fields
-	item.InvoiceID = invoiceID
-	item.InvoiceType = invoiceType
-	item.Detail = req.Detail
-	item.Count = req.Count
-	item.UnitType = req.UnitType
-	item.Price = req.Price
-	item.ItemsPerUnit = req.ItemsPerUnit
-	item.ExpirationDate = req.ExpirationDate
-
-	return &item, nil
-}
-
-// getInvoiceItems retrieves all invoice items for a given invoice ID
-func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, error) {
-	query, err := h.invoiceItemQueries.Get(invoiceItemSql.ListInvoiceItems)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get list query: %w", err)
-	}
-
-	rows, err := h.db.Query(query, invoiceID)
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to query invoice items")
-		return nil, fmt.Errorf("failed to query invoice items: %w", err)
-	}
-	defer rows.Close()
-
-	var items []models.InvoiceItem
-	for rows.Next() {
-		var item models.InvoiceItem
-		var stockItemID sql.NullString
-		err := rows.Scan(
-			&item.ID,
-			&item.InvoiceID,
-			&stockItemID,
-			&item.InvoiceType,
-			&item.Detail,
-			&item.Count,
-			&item.UnitType,
-			&item.Price,
-			&item.ItemsPerUnit,
-			&item.Total,
-			&item.ExpirationDate,
-			&item.CreatedAt,
-			&item.UpdatedAt,
-		)
-		if stockItemID.Valid {
-			item.StockItemID = &stockItemID.String
-		} else {
-			item.StockItemID = nil
-		}
-		if err != nil {
-			h.logger.WithError(err).Error("Failed to scan invoice item")
-			return nil, fmt.Errorf("failed to scan invoice item: %w", err)
-		}
-		items = append(items, item)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating invoice items: %w", err)
-	}
-
-	return items, nil
-}
-
+// GetByID retrieves an outcome invoice by ID with its items
 func (h *DBHandler) GetByID(id string) (*models.OutcomeInvoice, error) {
 	query, err := h.queries.Get(outcomesql.GetOutcomeInvoice)
 	if err != nil {
@@ -221,9 +129,10 @@ func (h *DBHandler) GetByID(id string) (*models.OutcomeInvoice, error) {
 		return nil, fmt.Errorf("failed to get outcome invoice: %w", err)
 	}
 
-	// Fetch invoice items for this invoice
-	invoiceItems, err := h.getInvoiceItems(id)
+	// Get invoice items
+	invoiceItems, err := h.getInvoiceItems(invoice.ID)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to get invoice items")
 		return nil, fmt.Errorf("failed to get invoice items: %w", err)
 	}
 	invoice.InvoiceItems = invoiceItems
@@ -231,6 +140,7 @@ func (h *DBHandler) GetByID(id string) (*models.OutcomeInvoice, error) {
 	return &invoice, nil
 }
 
+// Update updates an outcome invoice (transaction support can be added if items need updating)
 func (h *DBHandler) Update(id string, req *models.OutcomeInvoiceUpdateRequest) (*models.OutcomeInvoice, error) {
 	query, err := h.queries.Get(outcomesql.UpdateOutcomeInvoice)
 	if err != nil {
@@ -238,22 +148,24 @@ func (h *DBHandler) Update(id string, req *models.OutcomeInvoiceUpdateRequest) (
 	}
 
 	_, err = h.db.Exec(query,
+		id,
 		req.SupplierID,
 		req.TransactionDate,
 		req.TotalAmount,
 		req.ImageURL,
 		req.Notes,
-		id,
 	)
+
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update outcome invoice")
 		return nil, fmt.Errorf("failed to update outcome invoice: %w", err)
 	}
 
-	h.logger.WithField("id", id).Info("Outcome invoice updated")
+	// Return updated invoice
 	return h.GetByID(id)
 }
 
+// Delete deletes an outcome invoice (transaction support can be added if cascading deletes are needed)
 func (h *DBHandler) Delete(id string) error {
 	query, err := h.queries.Get(outcomesql.DeleteOutcomeInvoice)
 	if err != nil {
@@ -275,10 +187,10 @@ func (h *DBHandler) Delete(id string) error {
 		return fmt.Errorf("outcome invoice not found")
 	}
 
-	h.logger.WithField("id", id).Info("Outcome invoice deleted")
 	return nil
 }
 
+// List retrieves outcome invoices with pagination and filtering
 func (h *DBHandler) List(req *models.OutcomeInvoiceListRequest) (*models.OutcomeInvoiceListResponse, error) {
 	// Get the list and count queries
 	listQuery, err := h.queries.Get(outcomesql.ListOutcomeInvoices)
@@ -326,7 +238,20 @@ func (h *DBHandler) List(req *models.OutcomeInvoiceListRequest) (*models.Outcome
 			h.logger.WithError(err).Error("Failed to scan outcome invoice")
 			return nil, fmt.Errorf("failed to scan outcome invoice: %w", err)
 		}
+
+		// Get invoice items for this invoice
+		invoiceItems, err := h.getInvoiceItems(invoice.ID)
+		if err != nil {
+			h.logger.WithError(err).Error("Failed to get invoice items")
+			return nil, fmt.Errorf("failed to get invoice items: %w", err)
+		}
+		invoice.InvoiceItems = invoiceItems
+
 		invoices = append(invoices, invoice)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
 	return &models.OutcomeInvoiceListResponse{
@@ -335,4 +260,95 @@ func (h *DBHandler) List(req *models.OutcomeInvoiceListRequest) (*models.Outcome
 		Page:     req.Page,
 		Limit:    req.Limit,
 	}, nil
+}
+
+// createInvoiceItem creates a single invoice item within a transaction
+func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.InvoiceItemCreateRequest) (*invoiceItemModels.InvoiceItem, error) {
+	query, err := h.invoiceItemQueries.Get(invoiceItemSql.CreateInvoiceItem)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get create item query: %w", err)
+	}
+
+	var item invoiceItemModels.InvoiceItem
+	err = tx.QueryRow(query,
+		req.InvoiceID,
+		req.StockItemID,
+		req.InvoiceType,
+		req.Detail,
+		req.Count,
+		req.UnitType,
+		req.Price,
+		req.ItemsPerUnit,
+		req.ExpirationDate,
+	).Scan(
+		&item.ID, &item.Total, &item.CreatedAt, &item.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create invoice item: %w", err)
+	}
+
+	// Fill in the rest of the fields
+	item.InvoiceID = req.InvoiceID
+	item.StockItemID = req.StockItemID
+	item.InvoiceType = req.InvoiceType
+	item.Detail = req.Detail
+	item.Count = req.Count
+	item.UnitType = req.UnitType
+	item.Price = req.Price
+	item.ItemsPerUnit = req.ItemsPerUnit
+	item.ExpirationDate = req.ExpirationDate
+
+	return &item, nil
+}
+
+// getInvoiceItems retrieves all invoice items for a given invoice ID
+func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, error) {
+	query, err := h.invoiceItemQueries.Get(invoiceItemSql.ListInvoiceItems)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list items query: %w", err)
+	}
+
+	rows, err := h.db.Query(query, invoiceID)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to query invoice items")
+		return nil, fmt.Errorf("failed to query invoice items: %w", err)
+	}
+	defer rows.Close()
+
+	var items []models.InvoiceItem
+	for rows.Next() {
+		var item models.InvoiceItem
+		var stockItemID sql.NullString
+		err := rows.Scan(
+			&item.ID,
+			&item.InvoiceID,
+			&stockItemID,
+			&item.InvoiceType,
+			&item.Detail,
+			&item.Count,
+			&item.UnitType,
+			&item.Price,
+			&item.ItemsPerUnit,
+			&item.Total,
+			&item.ExpirationDate,
+			&item.CreatedAt,
+			&item.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan invoice item: %w", err)
+		}
+
+		if stockItemID.Valid {
+			item.StockItemID = &stockItemID.String
+		}
+
+		items = append(items, item)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating item rows: %w", err)
+	}
+
+	return items, nil
 }

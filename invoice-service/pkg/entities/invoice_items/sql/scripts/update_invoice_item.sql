@@ -9,4 +9,4 @@ UPDATE invoice_items SET
     expiration_date = COALESCE($8, expiration_date),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, total, updated_at
+RETURNING id, total, updated_at;

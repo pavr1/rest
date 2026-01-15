@@ -59,11 +59,6 @@ func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Income invoice retrieved successfully", invoice)
 }
 
-// GetByIDOnly gets an income invoice without sending HTTP response (for internal use)
-func (h *HTTPHandler) GetByIDOnly(id string) (*models.IncomeInvoice, error) {
-	return h.dbHandler.GetByID(id)
-}
-
 func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -110,11 +105,10 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters
 	page := 1
 	limit := 10
-	customerName := r.URL.Query().Get("customer_name")
+	customerID := r.URL.Query().Get("customer_id")
 	invoiceType := r.URL.Query().Get("invoice_type")
 	status := r.URL.Query().Get("status")
 	orderID := r.URL.Query().Get("order_id")
-	customerID := r.URL.Query().Get("customer_id")
 
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -132,8 +126,8 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 		Limit: limit,
 	}
 
-	if customerName != "" {
-		req.CustomerName = &customerName
+	if customerID != "" {
+		req.CustomerID = &customerID
 	}
 	if invoiceType != "" {
 		req.InvoiceType = &invoiceType
@@ -143,9 +137,6 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 	if orderID != "" {
 		req.OrderID = &orderID
-	}
-	if customerID != "" {
-		req.CustomerID = &customerID
 	}
 
 	response, err := h.dbHandler.List(req)

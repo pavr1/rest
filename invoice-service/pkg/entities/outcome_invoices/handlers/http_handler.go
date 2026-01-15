@@ -33,12 +33,12 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	invoice, err := h.dbHandler.Create(&req)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to create purchase invoice")
-		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to create purchase invoice")
+		h.logger.WithError(err).Error("Failed to create outcome invoice")
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to create outcome invoice")
 		return
 	}
 
-	sharedHttp.SendSuccessResponse(w, http.StatusCreated, "Purchase invoice created successfully", invoice)
+	sharedHttp.SendSuccessResponse(w, http.StatusCreated, "Outcome invoice created successfully", invoice)
 }
 
 func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -47,21 +47,16 @@ func (h *HTTPHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	invoice, err := h.dbHandler.GetByID(id)
 	if err != nil {
-		if err.Error() == "purchase invoice not found" {
-			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Purchase invoice not found")
+		if err.Error() == "outcome invoice not found" {
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Outcome invoice not found")
 			return
 		}
-		h.logger.WithError(err).Error("Failed to get purchase invoice")
-		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get purchase invoice")
+		h.logger.WithError(err).Error("Failed to get outcome invoice")
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get outcome invoice")
 		return
 	}
 
-	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Purchase invoice retrieved successfully", invoice)
-}
-
-// GetByIDOnly gets an outcome invoice without sending HTTP response (for internal use)
-func (h *HTTPHandler) GetByIDOnly(id string) (*models.OutcomeInvoice, error) {
-	return h.dbHandler.GetByID(id)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Outcome invoice retrieved successfully", invoice)
 }
 
 func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -76,16 +71,16 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	invoice, err := h.dbHandler.Update(id, &req)
 	if err != nil {
-		if err.Error() == "purchase invoice not found" {
-			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Purchase invoice not found")
+		if err.Error() == "outcome invoice not found" {
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Outcome invoice not found")
 			return
 		}
-		h.logger.WithError(err).Error("Failed to update purchase invoice")
-		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update purchase invoice")
+		h.logger.WithError(err).Error("Failed to update outcome invoice")
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to update outcome invoice")
 		return
 	}
 
-	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Purchase invoice updated successfully", invoice)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Outcome invoice updated successfully", invoice)
 }
 
 func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -94,16 +89,16 @@ func (h *HTTPHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.dbHandler.Delete(id)
 	if err != nil {
-		if err.Error() == "purchase invoice not found" {
-			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Purchase invoice not found")
+		if err.Error() == "outcome invoice not found" {
+			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Outcome invoice not found")
 			return
 		}
-		h.logger.WithError(err).Error("Failed to delete purchase invoice")
-		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to delete purchase invoice")
+		h.logger.WithError(err).Error("Failed to delete outcome invoice")
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to delete outcome invoice")
 		return
 	}
 
-	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Purchase invoice deleted successfully", nil)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Outcome invoice deleted successfully", nil)
 }
 
 func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -134,10 +129,10 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	response, err := h.dbHandler.List(req)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to list purchase invoices")
-		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list purchase invoices")
+		h.logger.WithError(err).Error("Failed to list outcome invoices")
+		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list outcome invoices")
 		return
 	}
 
-	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Purchase invoices retrieved successfully", response)
+	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Outcome invoices retrieved successfully", response)
 }

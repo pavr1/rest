@@ -14,4 +14,4 @@ SELECT
     created_at,
     updated_at
 FROM invoice_items
-WHERE id = $1
+WHERE id = $1;

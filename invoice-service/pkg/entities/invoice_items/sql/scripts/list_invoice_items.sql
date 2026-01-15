@@ -1,4 +1,4 @@
--- List invoice items by invoice ID
+-- List invoice items with optional filters
 SELECT
     id,
     invoice_id,
@@ -14,5 +14,6 @@ SELECT
     created_at,
     updated_at
 FROM invoice_items
-WHERE invoice_id = $1
-ORDER BY created_at
+WHERE ($1 IS NULL OR invoice_id = $1)
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;

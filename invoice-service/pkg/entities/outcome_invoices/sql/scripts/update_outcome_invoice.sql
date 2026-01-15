@@ -7,4 +7,4 @@ UPDATE outcome_invoices SET
     notes = COALESCE($6, notes),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, updated_at
+RETURNING id, updated_at;

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	sharedConfig "shared/config"
@@ -13,7 +12,6 @@ import (
 	sharedHttp "shared/http"
 
 	incomeInvoiceHandlers "invoice-service/pkg/entities/income_invoices/handlers"
-	"invoice-service/pkg/entities/income_invoices/models"
 	outcomeInvoiceHandlers "invoice-service/pkg/entities/outcome_invoices/handlers"
 
 	"github.com/gorilla/mux"
@@ -157,60 +155,12 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 // GetOutcomeInvoiceByID gets an outcome invoice with its invoice items
 func (h *MainHTTPHandler) GetOutcomeInvoiceByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	// Get the invoice
-	invoice, err := h.outcomeInvoiceHandler.GetByIDOnly(id)
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Outcome invoice not found")
-			return
-		}
-		h.logger.WithError(err).Error("Failed to get outcome invoice")
-		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get outcome invoice")
-		return
-	}
-
-	// Get invoice items for this invoice
-	itemsResponse, err := h.outcomeInvoiceHandler.GetByIDOnly(id)
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to get invoice items")
-		// Don't fail the request, just return empty items
-		invoice.InvoiceItems = []models.InvoiceItem{}
-	} else {
-		invoice.InvoiceItems = itemsResponse.InvoiceItems
-	}
-
-	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Outcome invoice retrieved successfully", invoice)
+	// Use the outcome invoice handler directly (it already includes invoice items)
+	h.outcomeInvoiceHandler.GetByID(w, r)
 }
 
 // GetIncomeInvoiceByID gets an income invoice with its invoice items
 func (h *MainHTTPHandler) GetIncomeInvoiceByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	// Get the invoice
-	invoice, err := h.incomeInvoiceHandler.GetByIDOnly(id)
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			sharedHttp.SendErrorResponse(w, http.StatusNotFound, "Income invoice not found")
-			return
-		}
-		h.logger.WithError(err).Error("Failed to get income invoice")
-		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to get income invoice")
-		return
-	}
-
-	// Get invoice items for this invoice
-	itemsResponse, err := h.incomeInvoiceHandler.GetByIDOnly(id)
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to get invoice items")
-		// Don't fail the request, just return empty items
-		invoice.InvoiceItems = []models.InvoiceItem{}
-	} else {
-		invoice.InvoiceItems = itemsResponse.InvoiceItems
-	}
-
-	sharedHttp.SendSuccessResponse(w, http.StatusOK, "Income invoice retrieved successfully", invoice)
+	// Use the income invoice handler directly (it already includes invoice items)
+	h.incomeInvoiceHandler.GetByID(w, r)
 }

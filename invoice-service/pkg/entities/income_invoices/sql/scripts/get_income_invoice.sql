@@ -4,8 +4,6 @@ SELECT
     order_id,
     payment_id,
     customer_id,
-    customer_name,
-    customer_tax_id,
     invoice_number,
     invoice_type,
     subtotal,

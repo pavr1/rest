@@ -55,4 +55,5 @@ const (
 	UpdateInvoiceItem = "update_invoice_item"
 	DeleteInvoiceItem = "delete_invoice_item"
 	ListInvoiceItems  = "list_invoice_items"
+	CountInvoiceItems = "count_invoice_items"
 )

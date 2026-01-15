@@ -25,6 +25,7 @@ type InvoiceItem struct {
 type InvoiceItemCreateRequest struct {
 	InvoiceID      string     `json:"invoice_id"`
 	StockItemID    *string    `json:"stock_item_id,omitempty"`
+	InvoiceType    string     `json:"invoice_type"` // 'outcome' or 'income'
 	Detail         string     `json:"detail"`
 	Count          float64    `json:"count"`
 	UnitType       string     `json:"unit_type"`

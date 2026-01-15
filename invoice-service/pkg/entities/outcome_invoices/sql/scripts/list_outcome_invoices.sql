@@ -12,4 +12,4 @@ SELECT
 FROM outcome_invoices
 WHERE ($1 IS NULL OR supplier_id = $1)
 ORDER BY transaction_date DESC
-LIMIT $2 OFFSET $3
+LIMIT $2 OFFSET $3;
