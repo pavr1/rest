@@ -655,6 +655,7 @@ INSERT INTO menu_categories (name, display_order, description) VALUES
 
 -- Insertar categorías de inventario por defecto
 INSERT INTO stock_item_categories (name, description) VALUES
+('Carnes', 'Res, pollo, cerdo, pescado'),
 ('Frutas y Verduras', 'Productos frescos'),
 ('Bebidas', 'Café, té, refrescos, lácteos y licores'),
 ('Salsas', 'Salsas y aderezos'),
@@ -662,7 +663,7 @@ INSERT INTO stock_item_categories (name, description) VALUES
 ('Alacena', 'Productos de alacena'),
 ('Repostería', 'Pasteles, postres, galletas'),
 ('Limpieza', 'Productos de limpieza'),
-('Envases', 'Platos, vasos, servilletas'),
+('Envases', 'Platos, vasos, servilletas');
 
 -- Insertar mesas de ejemplo
 INSERT INTO tables (table_number, capacity, status) VALUES
