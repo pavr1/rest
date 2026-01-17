@@ -14,11 +14,15 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d barrest_db"]
-      interval: 1s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
+      test: ["CMD-SHELL", "
+        pg_isready -U postgres -d barrest_db && \
+        psql -U postgres -d barrest_db -t -c \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('staff', 'stock_categories', 'outcome_invoices', 'income_invoices');\" | grep -q '4' && \
+        psql -U postgres -d barrest_db -t -c \"SELECT COUNT(*) FROM staff WHERE username = 'admin';\" | grep -q '1'
+      "]
+      interval: 2s
+      timeout: 10s
+      retries: 15
+      start_period: 10s
     networks:
       - docker_barrest_network
 

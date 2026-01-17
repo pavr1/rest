@@ -107,8 +107,8 @@ CREATE TABLE suppliers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 11. Invoices (Purchase Invoices)
-CREATE TABLE purchase_invoices (
+-- 11. Outcome Invoices (Supplier Purchase Invoices)
+CREATE TABLE outcome_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number VARCHAR(100) UNIQUE NOT NULL,
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
@@ -120,7 +120,28 @@ CREATE TABLE purchase_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 11. Invoice Items
+-- 12. Income Invoices (Customer Sales Invoices)
+CREATE TABLE income_invoices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    payment_id UUID REFERENCES payments(id) ON DELETE SET NULL,
+    customer_id VARCHAR(50),
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    invoice_type VARCHAR(20) NOT NULL DEFAULT 'sales' CHECK (invoice_type IN ('sales', 'credit_note')),
+    subtotal DECIMAL(10,2) NOT NULL,
+    tax_amount DECIMAL(10,2) NOT NULL,
+    service_charge DECIMAL(10,2) DEFAULT 0.00,
+    total_amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    xml_data TEXT,
+    digital_signature TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'generated', 'sent', 'cancelled')),
+    generated_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. Invoice Items
 CREATE TABLE invoice_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_id UUID NOT NULL,
@@ -400,18 +421,6 @@ CREATE INDEX idx_sub_menus_item_type ON sub_menus(item_type);
 CREATE INDEX idx_menu_items_sub_menu ON menu_items(sub_menu_id);
 CREATE INDEX idx_menu_items_available ON menu_items(is_available);
 
--- Stock Items indexes
-CREATE INDEX idx_stock_items_category ON stock_items(stock_item_category_id);
-
--- Menu Item Stock Items indexes
-CREATE INDEX idx_ingredients_menu ON ingredients(menu_item_id);
-CREATE INDEX idx_ingredients_stock ON ingredients(stock_item_id);
-
--- Existences indexes
-CREATE INDEX idx_existences_stock_item ON existences(stock_item_id);
-CREATE INDEX idx_existences_reference_code ON existences(existence_reference_code);
-CREATE INDEX idx_existences_available ON existences(units_available);
-CREATE INDEX idx_existences_expiration ON existences(expiration_date);
 
 -- Orders indexes
 CREATE INDEX idx_orders_table ON orders(table_id);
@@ -480,25 +489,19 @@ CREATE TRIGGER update_sub_menus_updated_at BEFORE UPDATE ON sub_menus
 CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_stock_item_categories_updated_at BEFORE UPDATE ON stock_item_categories 
+CREATE TRIGGER update_stock_categories_updated_at BEFORE UPDATE ON stock_categories
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_stock_items_updated_at BEFORE UPDATE ON stock_items 
+CREATE TRIGGER update_stock_sub_categories_updated_at BEFORE UPDATE ON stock_sub_categories
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_ingredients_updated_at BEFORE UPDATE ON ingredients 
+CREATE TRIGGER update_stock_variants_updated_at BEFORE UPDATE ON stock_variants
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_purchase_invoices_updated_at BEFORE UPDATE ON purchase_invoices 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_invoice_details_updated_at BEFORE UPDATE ON invoice_details 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_existences_updated_at BEFORE UPDATE ON existences 
+CREATE TRIGGER update_invoice_items_updated_at BEFORE UPDATE ON invoice_items
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_staff_updated_at BEFORE UPDATE ON staff 
@@ -516,7 +519,7 @@ CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_customer_invoices_updated_at BEFORE UPDATE ON customer_invoices 
+CREATE TRIGGER update_income_invoices_updated_at BEFORE UPDATE ON income_invoices 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_request_notifications_updated_at BEFORE UPDATE ON request_notifications 
