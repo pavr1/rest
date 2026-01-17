@@ -68,7 +68,12 @@
 			"type": "string"
 		},
 		{
-			"key": "stock_item_id",
+			"key": "stock_sub_category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "stock_variant_id",
 			"value": "",
 			"type": "string"
 		}
@@ -793,26 +798,25 @@
 					]
 				},
 				{
-					"name": "Stock Items",
+					"name": "Stock Sub-Categories",
 					"item": [
 						{
-							"name": "List Stock Items",
+							"name": "List Stock Sub-Categories",
 							"request": {
 								"method": "GET",
 								"header": [
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/items?page=1&limit=20",
+									"raw": "{{gateway_url}}/api/v1/stock/sub-categories?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "items"],
+									"path": ["api", "v1", "stock", "sub-categories"],
 									"query": [
 										{"key": "page", "value": "1"},
-										{"key": "limit", "value": "20"},
-										{"key": "category_id", "value": "", "disabled": true}
+										{"key": "limit", "value": "20"}
 									]
 								},
-								"description": "List stock items (requires authentication)"
+								"description": "List stock sub-categories (requires authentication)"
 							}
 						},
 						{
