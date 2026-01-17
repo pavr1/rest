@@ -34,13 +34,20 @@ status: ## Show container status
 	@cd docker && docker-compose ps
 
 fresh: clean start ## Clean everything and start fresh
-	@echo "⏳ Waiting for database to be ready..."
-	@sleep 2
-	@make migrate
+	@echo "⏳ Waiting for database initialization..."
+	@sleep 5
+	@echo "🔍 Checking database health..."
+	@timeout 60 bash -c 'until docker exec barrest_postgres pg_isready -U postgres -d barrest_db >/dev/null 2>&1 && docker exec barrest_postgres psql -U postgres -d barrest_db -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '\''public'\'' AND table_name IN ('\''staff'\'', '\''stock_categories'\'', '\''outcome_invoices'\'', '\''income_invoices'\'');" | grep -q "4"; do sleep 2; echo "Waiting for database..."; done'
+	@echo "✅ Database initialized successfully!"
 	@echo "🎉 Fresh install complete!"
 
 clean: ## Remove containers and volumes
+	@echo "🧹 Cleaning data service..."
 	@cd docker && docker-compose down -v --remove-orphans 2>/dev/null || true
+	@docker stop barrest_postgres 2>/dev/null || true
+	@docker rm barrest_postgres 2>/dev/null || true
+	@docker volume rm barrest_postgres_data 2>/dev/null || true
+	@docker volume rm barrest_pgadmin_data 2>/dev/null || true
 	@echo "✅ Data Service cleaned!"
 
 migrate: ## Apply pending migrations

@@ -83,7 +83,7 @@ CREATE TABLE menu_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Stock Item Categories
+-- 8. Stock Categories
 CREATE TABLE stock_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
@@ -120,28 +120,7 @@ CREATE TABLE outcome_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 12. Income Invoices (Customer Sales Invoices)
-CREATE TABLE income_invoices (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
-    payment_id UUID REFERENCES payments(id) ON DELETE SET NULL,
-    customer_id VARCHAR(50),
-    invoice_number VARCHAR(50) UNIQUE NOT NULL,
-    invoice_type VARCHAR(20) NOT NULL DEFAULT 'sales' CHECK (invoice_type IN ('sales', 'credit_note')),
-    subtotal DECIMAL(10,2) NOT NULL,
-    tax_amount DECIMAL(10,2) NOT NULL,
-    service_charge DECIMAL(10,2) DEFAULT 0.00,
-    total_amount DECIMAL(10,2) NOT NULL,
-    payment_method VARCHAR(50) NOT NULL,
-    xml_data TEXT,
-    digital_signature TEXT,
-    status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'generated', 'sent', 'cancelled')),
-    generated_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 13. Invoice Items
+-- 7. Invoice Items
 CREATE TABLE invoice_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_id UUID NOT NULL,
@@ -159,7 +138,7 @@ CREATE TABLE invoice_items (
 );
 
 
--- 14. Customer Favorites
+-- 8. Customer Favorites
 CREATE TABLE customer_favorites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -172,7 +151,7 @@ CREATE TABLE customer_favorites (
 -- BUSINESS LOGIC ENTITIES
 -- =============================================================================
 
--- 17. Staff
+-- 9. Staff
 CREATE TABLE staff (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -189,12 +168,8 @@ CREATE TABLE staff (
 
 -- 18. Sessions (User authentication sessions)
 -- Simplified: only session_id and token stored (other info in JWT token)
-CREATE TABLE sessions (
-    session_id VARCHAR(255) PRIMARY KEY,
-    token TEXT NOT NULL
-);
 
--- 24. Promotions
+-- 10. Promotions
 CREATE TABLE promotions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
@@ -275,15 +250,14 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 16. Customer Invoices (Receipts)
-CREATE TABLE customer_invoices (
+-- 6. Income Invoices (Customer Sales Invoices)
+CREATE TABLE income_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE RESTRICT,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
     payment_id UUID REFERENCES payments(id) ON DELETE SET NULL,
-    invoice_number VARCHAR(50) UNIQUE NOT NULL DEFAULT 'INV-' || nextval('invoice_number_seq'),
-    invoice_type VARCHAR(20) NOT NULL CHECK (invoice_type IN ('sales', 'credit_note')),
-    customer_name VARCHAR(255) NOT NULL,
-    customer_tax_id VARCHAR(50),
+    customer_id VARCHAR(50),
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    invoice_type VARCHAR(20) NOT NULL DEFAULT 'sales' CHECK (invoice_type IN ('sales', 'credit_note')),
     subtotal DECIMAL(10,2) NOT NULL,
     tax_amount DECIMAL(10,2) NOT NULL,
     service_charge DECIMAL(10,2) DEFAULT 0.00,
@@ -297,7 +271,17 @@ CREATE TABLE customer_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 18. Request Notifications
+-- 15. Table Sessions
+CREATE TABLE table_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ended_at TIMESTAMP,
+    cleared_by_staff_id UUID REFERENCES staff(id) ON DELETE SET NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'closed'))
+);
+
+-- 11. Request Notifications
 CREATE TABLE request_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     request_type VARCHAR(30) NOT NULL CHECK (request_type IN ('payment', 'assistance', 'refill', 'issue_report', 'special_request')),
@@ -312,7 +296,7 @@ CREATE TABLE request_notifications (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 19. Karaoke Song Requests
+-- 12. Karaoke Song Requests
 CREATE TABLE karaoke_song_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -329,7 +313,7 @@ CREATE TABLE karaoke_song_requests (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 20. Karaoke Song Library
+-- 13. Karaoke Song Library
 CREATE TABLE karaoke_song_library (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     song_title VARCHAR(255) NOT NULL,
@@ -341,7 +325,7 @@ CREATE TABLE karaoke_song_library (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 21. Loyalty Points Transactions
+-- 14. Loyalty Points Transactions
 CREATE TABLE loyalty_points_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -356,7 +340,7 @@ CREATE TABLE loyalty_points_transactions (
 -- ADVANCED FEATURES ENTITIES (FUTURE)
 -- =============================================================================
 
--- 23. Reservations
+-- 16. Reservations
 CREATE TABLE reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -372,7 +356,7 @@ CREATE TABLE reservations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 25. Reviews
+-- 17. Reviews
 CREATE TABLE reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
