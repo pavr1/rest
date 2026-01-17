@@ -7,7 +7,6 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Create sequences
-CREATE SEQUENCE IF NOT EXISTS existence_reference_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS order_number_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1;
 
@@ -95,28 +94,6 @@ CREATE TABLE stock_categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 10. Stock Items
-CREATE TABLE stock_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) UNIQUE NOT NULL,
-    unit VARCHAR(50) NOT NULL,
-    description TEXT,
-    stock_item_category_id UUID REFERENCES stock_item_categories(id) ON DELETE SET NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 11. Ingredients (links menu items to stock items with quantities)
-CREATE TABLE ingredients (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
-    stock_item_id UUID NOT NULL REFERENCES stock_items(id) ON DELETE CASCADE,
-    quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(menu_item_id, stock_item_id)
-);
-
 -- 10. Suppliers
 CREATE TABLE suppliers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -143,11 +120,12 @@ CREATE TABLE purchase_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 12. Invoice Details
-CREATE TABLE invoice_details (
+-- 11. Invoice Items
+CREATE TABLE invoice_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    invoice_id UUID NOT NULL REFERENCES purchase_invoices(id) ON DELETE CASCADE,
-    stock_item_id UUID REFERENCES stock_items(id) ON DELETE SET NULL,
+    invoice_id UUID NOT NULL,
+    invoice_type VARCHAR(20) NOT NULL DEFAULT 'outcome' CHECK (invoice_type IN ('income', 'outcome')),
+    stock_variant_id UUID,
     detail TEXT NOT NULL,
     count DECIMAL(10,2) NOT NULL CHECK (count > 0),
     unit_type VARCHAR(50) NOT NULL,
@@ -159,30 +137,6 @@ CREATE TABLE invoice_details (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 13. Existences
-CREATE TABLE existences (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    existence_reference_code INTEGER UNIQUE NOT NULL DEFAULT nextval('existence_reference_seq'),
-    stock_item_id UUID NOT NULL REFERENCES stock_items(id) ON DELETE CASCADE,
-    invoice_detail_id UUID NOT NULL REFERENCES invoice_details(id) ON DELETE CASCADE,
-    units_purchased DECIMAL(10,2) NOT NULL,
-    units_available DECIMAL(10,2) NOT NULL,
-    unit_type VARCHAR(50) NOT NULL,
-    items_per_unit INTEGER NOT NULL CHECK (items_per_unit > 0),
-    cost_per_item DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_unit / items_per_unit) STORED,
-    cost_per_unit DECIMAL(10,2) NOT NULL,
-    total_purchase_cost DECIMAL(12,2) GENERATED ALWAYS AS (units_purchased * cost_per_unit) STORED,
-    remaining_value DECIMAL(12,2) GENERATED ALWAYS AS (units_available * cost_per_unit) STORED,
-    expiration_date DATE,
-    income_margin_percentage DECIMAL(5,2) DEFAULT 30.00,
-    income_margin_amount DECIMAL(10,2) DEFAULT 0.00,
-    minimum_price DECIMAL(10,2) DEFAULT 0.00,
-    maximum_price DECIMAL(10,2),
-    final_price DECIMAL(10,2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_final_price_range CHECK (final_price IS NULL OR (final_price >= minimum_price AND (maximum_price IS NULL OR final_price <= maximum_price)))
-);
 
 -- 14. Customer Favorites
 CREATE TABLE customer_favorites (
@@ -705,6 +659,9 @@ INSERT INTO tables (table_number, capacity, status) VALUES
 ('BARRA2', 1, 'available'),
 ('BARRA3', 1, 'available'),
 ('BARRA4', 1, 'available');
+
+-- Note: invoice_items.invoice_id can reference either income_invoices or outcome_invoices
+-- based on the invoice_type field. Foreign key constraints are handled in application code.
 
 -- =============================================================================
 -- END OF SCHEMA

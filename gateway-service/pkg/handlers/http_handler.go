@@ -114,6 +114,12 @@ func (h *HTTPHandler) CreateProxyHandler(targetURL string) http.HandlerFunc {
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
 
+		h.logger.WithFields(logrus.Fields{
+			"service": targetURL,
+			"path":    req.URL.Path,
+			"method":  req.Method,
+		}).Info("Proxy Information, routing to service")
+
 		requestID := req.Header.Get("X-Request-ID")
 		if requestID == "" {
 			requestID = generateRequestID()
@@ -184,23 +190,23 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	menuRouter.HandleFunc("/items/{id}/cost", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET")
 	menuRouter.HandleFunc("/items/{id}/cost/recalculate", h.CreateProxyHandler(h.menuServiceUrl)).Methods("POST")
 
-	// Protected - Stock Categories
-	stockRouter := api.PathPrefix("/v1/inventory").Subrouter()
-	stockRouter.Use(sessionMiddleware.ValidateSession)
-	stockRouter.HandleFunc("/categories", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
-	stockRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
-
-	// Protected - Stock Sub-Categories
-	stockRouter.HandleFunc("/sub-categories", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
-	stockRouter.HandleFunc("/sub-categories/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
-
-	// Protected - Stock Variants
-	stockRouter.HandleFunc("/variants", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
-	stockRouter.HandleFunc("/variants/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
-
-	// Protected - Suppliers
+	// Protected - Inventory Service (Categories, Sub-Categories, Variants, Suppliers)
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
 	inventoryRouter.Use(sessionMiddleware.ValidateSession)
+
+	// Stock Categories
+	inventoryRouter.HandleFunc("/categories", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
+	inventoryRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Stock Sub-Categories
+	inventoryRouter.HandleFunc("/sub-categories", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
+	inventoryRouter.HandleFunc("/sub-categories/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Stock Variants
+	inventoryRouter.HandleFunc("/variants", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
+	inventoryRouter.HandleFunc("/variants/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
+
+	// Suppliers
 	inventoryRouter.HandleFunc("/suppliers", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
 	inventoryRouter.HandleFunc("/suppliers/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
 

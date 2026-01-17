@@ -131,25 +131,25 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/v1/inventory/p/health", h.HealthCheck).Methods("GET")
 
 	// Stock Categories
-	router.HandleFunc("/api/v1/stock/categories", h.stockCategoryHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/stock/categories/{id}", h.stockCategoryHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/stock/categories", h.stockCategoryHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/stock/categories/{id}", h.stockCategoryHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/stock/categories/{id}", h.stockCategoryHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/api/v1/inventory/categories", h.stockCategoryHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/categories/{id}", h.stockCategoryHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/categories", h.stockCategoryHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/inventory/categories/{id}", h.stockCategoryHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/inventory/categories/{id}", h.stockCategoryHandler.Delete).Methods("DELETE")
 
 	// Stock Sub-Categories
-	router.HandleFunc("/api/v1/stock/sub-categories", h.stockSubCategoryHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/stock/sub-categories/{id}", h.stockSubCategoryHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/stock/sub-categories", h.stockSubCategoryHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/stock/sub-categories/{id}", h.stockSubCategoryHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/stock/sub-categories/{id}", h.stockSubCategoryHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/api/v1/inventory/sub-categories", h.stockSubCategoryHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/sub-categories/{id}", h.stockSubCategoryHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/sub-categories", h.stockSubCategoryHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/inventory/sub-categories/{id}", h.stockSubCategoryHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/inventory/sub-categories/{id}", h.stockSubCategoryHandler.Delete).Methods("DELETE")
 
 	// Stock Variants
-	router.HandleFunc("/api/v1/stock/variants", h.stockVariantHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/stock/variants/{id}", h.stockVariantHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/stock/variants", h.stockVariantHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/stock/variants/{id}", h.stockVariantHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/stock/variants/{id}", h.stockVariantHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/api/v1/inventory/variants", h.stockVariantHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/variants/{id}", h.stockVariantHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/variants", h.stockVariantHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/inventory/variants/{id}", h.stockVariantHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/inventory/variants/{id}", h.stockVariantHandler.Delete).Methods("DELETE")
 
 	// Suppliers
 	router.HandleFunc("/api/v1/inventory/suppliers", h.supplierHandler.List).Methods("GET")
