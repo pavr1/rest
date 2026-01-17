@@ -690,7 +690,7 @@
 					]
 				},
 				{
-					"name": "Stock Item Categories",
+					"name": "Stock Categories",
 					"item": [
 						{
 							"name": "List Stock Categories",
@@ -700,9 +700,9 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/categories?page=1&limit=20",
+									"raw": "{{gateway_url}}/api/v1/inventory/categories?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "categories"],
+									"path": ["api", "v1", "inventory", "categories"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"}
@@ -719,7 +719,7 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"raw": "{{gateway_url}}/api/v1/inventory/categories/{{stock_category_id}}",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
 								},
@@ -753,9 +753,9 @@
 									"raw": "{\n    \"name\": \"Vegetables\",\n    \"description\": \"Fresh vegetables\"\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/categories",
+									"raw": "{{gateway_url}}/api/v1/inventory/categories",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "categories"]
+									"path": ["api", "v1", "inventory", "categories"]
 								},
 								"description": "Create a new stock category (requires authentication)"
 							}
@@ -773,7 +773,7 @@
 									"raw": "{\n    \"name\": \"Fresh Vegetables\"\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"raw": "{{gateway_url}}/api/v1/inventory/categories/{{stock_category_id}}",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
 								},
@@ -788,7 +788,7 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/categories/{{stock_category_id}}",
+									"raw": "{{gateway_url}}/api/v1/inventory/categories/{{stock_category_id}}",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "stock", "categories", "{{stock_category_id}}"]
 								},
@@ -808,9 +808,9 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/sub-categories?page=1&limit=20",
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "sub-categories"],
+									"path": ["api", "v1", "inventory", "sub-categories"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"}
@@ -820,22 +820,22 @@
 							}
 						},
 						{
-							"name": "Get Stock Item",
+							"name": "Get Stock Sub-Category",
 							"request": {
 								"method": "GET",
 								"header": [
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories/{{stock_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
+									"path": ["api", "v1", "inventory", "sub-categories", "{{stock_sub_category_id}}"]
 								},
-								"description": "Get a specific stock item (requires authentication)"
+								"description": "Get a specific stock sub-category (requires authentication)"
 							}
 						},
 						{
-							"name": "Create Stock Item",
+							"name": "Create Stock Sub-Category",
 							"event": [
 								{
 									"listen": "test",
@@ -843,7 +843,7 @@
 										"exec": [
 											"var jsonData = pm.response.json();",
 											"if (jsonData.data && jsonData.data.id) {",
-											"    pm.collectionVariables.set('stock_item_id', jsonData.data.id);",
+											"    pm.collectionVariables.set('stock_sub_category_id', jsonData.data.id);",
 											"}"
 										],
 										"type": "text/javascript"
@@ -858,18 +858,18 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Tomatoes\",\n    \"unit\": \"kg\",\n    \"description\": \"Fresh tomatoes\",\n    \"category_id\": \"{{stock_category_id}}\"\n}"
+									"raw": "{\n    \"name\": \"Beers\",\n    \"description\": \"Various beer types\",\n    \"stock_category_id\": \"{{stock_category_id}}\"\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/items",
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "items"]
+									"path": ["api", "v1", "inventory", "sub-categories"]
 								},
-								"description": "Create a new stock item (requires authentication)"
+								"description": "Create a new stock sub-category (requires authentication)"
 							}
 						},
 						{
-							"name": "Update Stock Item",
+							"name": "Update Stock Sub-Category",
 							"request": {
 								"method": "PUT",
 								"header": [
@@ -878,29 +878,29 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Cherry Tomatoes\",\n    \"unit\": \"kg\"\n}"
+									"raw": "{\n    \"name\": \"Craft Beers\",\n    \"description\": \"Craft and local beer varieties\"\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories/{{stock_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
+									"path": ["api", "v1", "inventory", "sub-categories", "{{stock_sub_category_id}}"]
 								},
-								"description": "Update a stock item (requires authentication)"
+								"description": "Update a stock sub-category (requires authentication)"
 							}
 						},
 						{
-							"name": "Delete Stock Item",
+							"name": "Delete Stock Sub-Category",
 							"request": {
 								"method": "DELETE",
 								"header": [
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/stock/items/{{stock_item_id}}",
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories/{{stock_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "stock", "items", "{{stock_item_id}}"]
+									"path": ["api", "v1", "inventory", "sub-categories", "{{stock_sub_category_id}}"]
 								},
-								"description": "Delete a stock item (requires authentication)"
+								"description": "Delete a stock sub-category (requires authentication)"
 							}
 						}
 					]
@@ -1341,6 +1341,100 @@
 							}
 						}
 					]
+				}
+			]
+		},
+		{
+			"name": "Inventory Service",
+			"item": [
+				{
+					"name": "List Stock Variants",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{token}}"}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/variants?page=1&limit=20",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "variants"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "20"}
+							]
+						},
+						"description": "List stock variants (requires authentication)"
+					}
+				},
+				{
+					"name": "Get Stock Variant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{token}}"}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+						},
+						"description": "Get a specific stock variant by ID (requires authentication)"
+					}
+				},
+				{
+					"name": "Create Stock Variant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"6Pack\",\n    \"stock_sub_category_id\": \"{{stock_sub_category_id}}\",\n    \"unit\": \"Bottle\",\n    \"number_of_units\": 6.0\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/variants",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "variants"]
+						},
+						"description": "Create a new stock variant (requires authentication)"
+					}
+				},
+				{
+					"name": "Update Stock Variant",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"12Pack\",\n    \"number_of_units\": 12.0\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+						},
+						"description": "Update an existing stock variant (requires authentication)"
+					}
+				},
+				{
+					"name": "Delete Stock Variant",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{token}}"}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+						},
+						"description": "Delete a stock variant (requires authentication)"
+					}
 				}
 			]
 		},
