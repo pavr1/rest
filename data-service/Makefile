@@ -35,11 +35,23 @@ status: ## Show container status
 
 fresh: clean start ## Clean everything and start fresh
 	@echo "⏳ Waiting for database initialization..."
-	@sleep 5
+	@sleep 10
 	@echo "🔍 Checking database health..."
-	@timeout 60 bash -c 'until docker exec barrest_postgres pg_isready -U postgres -d barrest_db >/dev/null 2>&1 && docker exec barrest_postgres psql -U postgres -d barrest_db -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '\''public'\'' AND table_name IN ('\''staff'\'', '\''stock_categories'\'', '\''outcome_invoices'\'', '\''income_invoices'\'');" | grep -q "4"; do sleep 2; echo "Waiting for database..."; done'
-	@echo "✅ Database initialized successfully!"
-	@echo "🎉 Fresh install complete!"
+	@for i in $$(seq 1 30); do \
+		if docker exec barrest_postgres pg_isready -U postgres -d barrest_db >/dev/null 2>&1 && \
+		   docker exec barrest_postgres psql -U postgres -d barrest_db -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('staff', 'stock_categories', 'outcome_invoices', 'income_invoices');" | grep -q "4" && \
+		   docker exec barrest_postgres psql -U postgres -d barrest_db -t -c "SELECT COUNT(*) FROM staff WHERE username = 'admin';" | grep -q "1"; then \
+			echo "✅ Database initialized successfully!"; \
+			echo "🚀 Applying migrations..."; \
+			make migrate || { echo "❌ Migration failed!"; exit 1; }; \
+			echo "🎉 Fresh install complete!"; \
+			exit 0; \
+		fi; \
+		echo "Waiting for database... ($$i/30)"; \
+		sleep 2; \
+	done; \
+	echo "❌ Database initialization timeout!"; \
+	exit 1
 
 clean: ## Remove containers and volumes
 	@echo "🧹 Cleaning data service..."

@@ -389,6 +389,140 @@ CREATE TABLE settings (
 -- INDEXES FOR PERFORMANCE
 -- =============================================================================
 
+-- Tables indexes
+CREATE INDEX idx_tables_status ON tables(status);
+
+-- Customers indexes
+CREATE INDEX idx_customers_customer_id ON customers(customer_id);
+CREATE INDEX idx_customers_phone ON customers(phone);
+
+-- Sub Menus indexes
+CREATE INDEX idx_sub_menus_category ON sub_menus(category_id);
+CREATE INDEX idx_sub_menus_active ON sub_menus(is_active);
+CREATE INDEX idx_sub_menus_item_type ON sub_menus(item_type);
+
+-- Menu Items indexes
+CREATE INDEX idx_menu_items_sub_menu ON menu_items(sub_menu_id);
+CREATE INDEX idx_menu_items_available ON menu_items(is_available);
+
+
+-- Orders indexes
+CREATE INDEX idx_orders_table ON orders(table_id);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_payment_status ON orders(payment_status);
+CREATE INDEX idx_orders_created_at ON orders(created_at);
+
+-- Order Items indexes
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_menu_item ON order_items(menu_item_id);
+CREATE INDEX idx_order_items_status ON order_items(status);
+
+-- Payments indexes
+CREATE INDEX idx_payments_order ON payments(order_id);
+CREATE INDEX idx_payments_status ON payments(payment_status);
+
+-- Request Notifications indexes
+CREATE INDEX idx_request_notifications_table ON request_notifications(table_id);
+CREATE INDEX idx_request_notifications_status ON request_notifications(status);
+CREATE INDEX idx_request_notifications_type_status ON request_notifications(request_type, status);
+
+-- Karaoke Song Requests indexes
+CREATE INDEX idx_karaoke_requests_table ON karaoke_song_requests(table_id);
+CREATE INDEX idx_karaoke_requests_status ON karaoke_song_requests(status);
+CREATE INDEX idx_karaoke_requests_queue ON karaoke_song_requests(status, position_in_queue);
+
+-- Sessions (auth) indexes
+CREATE INDEX idx_sessions_token ON sessions(token);
+
+-- Promotions indexes
+CREATE INDEX idx_promotions_type ON promotions(promotion_type);
+CREATE INDEX idx_promotions_active ON promotions(is_active);
+CREATE INDEX idx_promotions_dates ON promotions(start_date, end_date);
+
+-- Settings indexes
+CREATE INDEX idx_settings_service ON settings(service);
+CREATE INDEX idx_settings_key ON settings(key);
+
+-- =============================================================================
+-- TRIGGERS FOR AUTOMATIC UPDATES
+-- =============================================================================
+
+-- Update timestamps trigger function
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Apply triggers to all tables with updated_at
+CREATE TRIGGER update_tables_updated_at BEFORE UPDATE ON tables 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_menu_categories_updated_at BEFORE UPDATE ON menu_categories 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_sub_menus_updated_at BEFORE UPDATE ON sub_menus 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_stock_categories_updated_at BEFORE UPDATE ON stock_categories
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_stock_sub_categories_updated_at BEFORE UPDATE ON stock_sub_categories
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_stock_variants_updated_at BEFORE UPDATE ON stock_variants
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_invoice_items_updated_at BEFORE UPDATE ON invoice_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_staff_updated_at BEFORE UPDATE ON staff 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_promotions_updated_at BEFORE UPDATE ON promotions 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_income_invoices_updated_at BEFORE UPDATE ON income_invoices 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_request_notifications_updated_at BEFORE UPDATE ON request_notifications 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_karaoke_song_requests_updated_at BEFORE UPDATE ON karaoke_song_requests 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_karaoke_song_library_updated_at BEFORE UPDATE ON karaoke_song_library 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_reservations_updated_at BEFORE UPDATE ON reservations 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON settings 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =============================================================================
 -- DEFAULT DATA
@@ -512,148 +646,6 @@ INSERT INTO tables (table_number, capacity, status) VALUES
 ('BARRA2', 1, 'available'),
 ('BARRA3', 1, 'available'),
 ('BARRA4', 1, 'available');
-
--- Tables indexes
-CREATE INDEX idx_tables_status ON tables(status);
-
--- Customers indexes
-CREATE INDEX idx_customers_customer_id ON customers(customer_id);
-CREATE INDEX idx_customers_phone ON customers(phone);
-
--- Sub Menus indexes
-CREATE INDEX idx_sub_menus_category ON sub_menus(category_id);
-CREATE INDEX idx_sub_menus_active ON sub_menus(is_active);
-
--- Menu Items indexes
-CREATE INDEX idx_menu_items_sub_menu ON menu_items(sub_menu_id);
-CREATE INDEX idx_menu_items_available ON menu_items(is_available);
-
--- Orders indexes
-CREATE INDEX idx_orders_table ON orders(table_id);
-CREATE INDEX idx_orders_customer ON orders(customer_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_payment_status ON orders(payment_status);
-CREATE INDEX idx_orders_created_at ON orders(created_at);
-
--- Order Items indexes
-CREATE INDEX idx_order_items_order ON order_items(order_id);
-CREATE INDEX idx_order_items_menu_item ON order_items(menu_item_id);
-CREATE INDEX idx_order_items_status ON order_items(status);
-
--- Payments indexes
-CREATE INDEX idx_payments_order ON payments(order_id);
-CREATE INDEX idx_payments_status ON payments(payment_status);
-
--- Request Notifications indexes
-CREATE INDEX idx_request_notifications_table ON request_notifications(table_id);
-CREATE INDEX idx_request_notifications_status ON request_notifications(status);
-CREATE INDEX idx_request_notifications_type_status ON request_notifications(request_type, status);
-
--- Karaoke Song Requests indexes
-CREATE INDEX idx_karaoke_requests_table ON karaoke_song_requests(table_id);
-CREATE INDEX idx_karaoke_requests_status ON karaoke_song_requests(status);
-CREATE INDEX idx_karaoke_requests_requested_at ON karaoke_song_requests(requested_at);
-
--- Sessions indexes
-CREATE INDEX idx_sessions_token ON sessions(token);
-
--- Promotions indexes
-CREATE INDEX idx_promotions_type ON promotions(discount_type);
-CREATE INDEX idx_promotions_active ON promotions(is_active);
-CREATE INDEX idx_promotions_dates ON promotions(valid_from, valid_until);
-
--- Settings indexes
-CREATE INDEX idx_settings_service ON settings(service);
-CREATE INDEX idx_settings_key ON settings(key);
-
--- =============================================================================
--- TRIGGERS FOR AUTOMATIC UPDATED_AT
--- =============================================================================
-
--- Update timestamps trigger function
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Apply triggers to all tables with updated_at
-CREATE TRIGGER update_tables_updated_at BEFORE UPDATE ON tables
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_staff_updated_at BEFORE UPDATE ON staff
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_menu_categories_updated_at BEFORE UPDATE ON menu_categories
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_sub_menus_updated_at BEFORE UPDATE ON sub_menus
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_stock_categories_updated_at BEFORE UPDATE ON stock_categories
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_stock_sub_categories_updated_at BEFORE UPDATE ON stock_sub_categories
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_stock_variants_updated_at BEFORE UPDATE ON stock_variants
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_order_items_updated_at BEFORE UPDATE ON order_items
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_outcome_invoices_updated_at BEFORE UPDATE ON outcome_invoices
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_income_invoices_updated_at BEFORE UPDATE ON income_invoices
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_invoice_items_updated_at BEFORE UPDATE ON invoice_items
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_customer_favorites_updated_at BEFORE UPDATE ON customer_favorites
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_request_notifications_updated_at BEFORE UPDATE ON request_notifications
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_karaoke_song_requests_updated_at BEFORE UPDATE ON karaoke_song_requests
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_karaoke_song_library_updated_at BEFORE UPDATE ON karaoke_song_library
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_loyalty_points_transactions_updated_at BEFORE UPDATE ON loyalty_points_transactions
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_table_sessions_updated_at BEFORE UPDATE ON table_sessions
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_reservations_updated_at BEFORE UPDATE ON reservations
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_promotions_updated_at BEFORE UPDATE ON promotions
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Note: invoice_items.invoice_id can reference either income_invoices or outcome_invoices
 -- based on the invoice_type field. Foreign key constraints are handled in application code.
