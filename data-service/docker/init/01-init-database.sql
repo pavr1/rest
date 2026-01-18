@@ -48,13 +48,12 @@ CREATE TABLE menu_categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Sub Menus (second level: Smoothies, Sodas, etc. - grouped by category)
-CREATE TABLE sub_menus (
+-- 7. Menu Sub-Categories (second level: Smoothies, Sodas, etc. - grouped by category)
+CREATE TABLE menu_sub_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
     category_id UUID NOT NULL REFERENCES menu_categories(id) ON DELETE RESTRICT,
-    image_url VARCHAR(500),
     item_type VARCHAR(20) NOT NULL CHECK (item_type IN ('kitchen', 'bar')),
     display_order INTEGER NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -62,12 +61,12 @@ CREATE TABLE sub_menus (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. Menu Items (third level: Banana Smoothie, Pineapple Smoothie, etc. - with pricing)
-CREATE TABLE menu_items (
+-- 8. Menu Variants (third level: Banana Smoothie, Pineapple Smoothie, etc. - with pricing)
+CREATE TABLE menu_variants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    sub_menu_id UUID NOT NULL REFERENCES sub_menus(id) ON DELETE RESTRICT,
+    sub_category_id UUID NOT NULL REFERENCES menu_sub_categories(id) ON DELETE RESTRICT,
     price DECIMAL(10,2) NOT NULL,
     item_cost DECIMAL(10,2),
     happy_hour_price DECIMAL(10,2),
@@ -83,7 +82,19 @@ CREATE TABLE menu_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. Stock Categories
+-- 9. Menu Ingredients
+CREATE TABLE menu_ingredients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    menu_variant_id UUID NOT NULL REFERENCES menu_variants(id) ON DELETE CASCADE,
+    stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE RESTRICT,
+    quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+    is_optional BOOLEAN NOT NULL DEFAULT false,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. Stock Categories
 CREATE TABLE stock_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
@@ -94,7 +105,7 @@ CREATE TABLE stock_categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 10. Suppliers
+-- 12. Suppliers
 CREATE TABLE suppliers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
@@ -107,7 +118,7 @@ CREATE TABLE suppliers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 11. Outcome Invoices (Supplier Purchase Invoices)
+-- 13. Outcome Invoices (Supplier Purchase Invoices)
 CREATE TABLE outcome_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number VARCHAR(100) UNIQUE NOT NULL,
@@ -120,7 +131,7 @@ CREATE TABLE outcome_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Invoice Items
+-- 14. Invoice Items
 CREATE TABLE invoice_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_id UUID NOT NULL,
@@ -138,20 +149,20 @@ CREATE TABLE invoice_items (
 );
 
 
--- 8. Customer Favorites
+-- 15. Customer Favorites
 CREATE TABLE customer_favorites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+    menu_variant_id UUID NOT NULL REFERENCES menu_variants(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(customer_id, menu_item_id)
+    UNIQUE(customer_id, menu_variant_id)
 );
 
 -- =============================================================================
 -- BUSINESS LOGIC ENTITIES
 -- =============================================================================
 
--- 9. Staff
+-- 16. Staff
 CREATE TABLE staff (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -166,10 +177,10 @@ CREATE TABLE staff (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 18. Sessions (User authentication sessions)
+-- 17. Sessions (User authentication sessions)
 -- Simplified: only session_id and token stored (other info in JWT token)
 
--- 10. Promotions
+-- 18. Promotions
 CREATE TABLE promotions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
@@ -189,7 +200,7 @@ CREATE TABLE promotions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Orders
+-- 19. Orders
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_number VARCHAR(50) UNIQUE NOT NULL DEFAULT 'ORD-' || nextval('order_number_seq'),
@@ -210,11 +221,11 @@ CREATE TABLE orders (
     confirmed_at TIMESTAMP
 );
 
--- 4. Order Items
+-- 20. Order Items
 CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    menu_item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE RESTRICT,
+    menu_variant_id UUID NOT NULL REFERENCES menu_variants(id) ON DELETE RESTRICT,
     quantity INTEGER NOT NULL DEFAULT 1,
     unit_price DECIMAL(10,2) NOT NULL,
     subtotal DECIMAL(10,2) NOT NULL,
@@ -233,7 +244,7 @@ CREATE TABLE order_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 15. Payments
+-- 21. Payments
 CREATE TABLE payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE RESTRICT,
@@ -250,7 +261,7 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Income Invoices (Customer Sales Invoices)
+-- 22. Income Invoices (Customer Sales Invoices)
 CREATE TABLE income_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
@@ -271,7 +282,7 @@ CREATE TABLE income_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 15. Table Sessions
+-- 23. Table Sessions
 CREATE TABLE table_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -281,7 +292,7 @@ CREATE TABLE table_sessions (
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'closed'))
 );
 
--- 11. Request Notifications
+-- 24. Request Notifications
 CREATE TABLE request_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     request_type VARCHAR(30) NOT NULL CHECK (request_type IN ('payment', 'assistance', 'refill', 'issue_report', 'special_request')),
@@ -296,7 +307,7 @@ CREATE TABLE request_notifications (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 12. Karaoke Song Requests
+-- 25. Karaoke Song Requests
 CREATE TABLE karaoke_song_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -313,7 +324,7 @@ CREATE TABLE karaoke_song_requests (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 13. Karaoke Song Library
+-- 26. Karaoke Song Library
 CREATE TABLE karaoke_song_library (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     song_title VARCHAR(255) NOT NULL,
@@ -325,7 +336,7 @@ CREATE TABLE karaoke_song_library (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 14. Loyalty Points Transactions
+-- 27. Loyalty Points Transactions
 CREATE TABLE loyalty_points_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -340,7 +351,7 @@ CREATE TABLE loyalty_points_transactions (
 -- ADVANCED FEATURES ENTITIES (FUTURE)
 -- =============================================================================
 
--- 16. Reservations
+-- 28. Reservations
 CREATE TABLE reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -356,12 +367,12 @@ CREATE TABLE reservations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 17. Reviews
+-- 29. Reviews
 CREATE TABLE reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
     order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
-    menu_item_id UUID REFERENCES menu_items(id) ON DELETE SET NULL,
+    menu_variant_id UUID REFERENCES menu_variants(id) ON DELETE SET NULL,
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
     comment TEXT,
     is_moderated BOOLEAN NOT NULL DEFAULT false,
@@ -521,12 +532,12 @@ CREATE INDEX idx_customers_customer_id ON customers(customer_id);
 CREATE INDEX idx_customers_phone ON customers(phone);
 
 -- Sub Menus indexes
-CREATE INDEX idx_sub_menus_category ON sub_menus(category_id);
-CREATE INDEX idx_sub_menus_active ON sub_menus(is_active);
+CREATE INDEX idx_menu_sub_categories_category ON menu_sub_categories(category_id);
+CREATE INDEX idx_menu_sub_categories_active ON menu_sub_categories(is_active);
 
--- Menu Items indexes
-CREATE INDEX idx_menu_items_sub_menu ON menu_items(sub_menu_id);
-CREATE INDEX idx_menu_items_available ON menu_items(is_available);
+-- Menu Variants indexes
+CREATE INDEX idx_menu_variants_sub_category ON menu_variants(sub_category_id);
+CREATE INDEX idx_menu_variants_available ON menu_variants(is_available);
 
 -- Orders indexes
 CREATE INDEX idx_orders_table ON orders(table_id);
@@ -537,7 +548,7 @@ CREATE INDEX idx_orders_created_at ON orders(created_at);
 
 -- Order Items indexes
 CREATE INDEX idx_order_items_order ON order_items(order_id);
-CREATE INDEX idx_order_items_menu_item ON order_items(menu_item_id);
+CREATE INDEX idx_order_items_menu_variant ON order_items(menu_variant_id);
 CREATE INDEX idx_order_items_status ON order_items(status);
 
 -- Payments indexes
@@ -592,10 +603,13 @@ CREATE TRIGGER update_staff_updated_at BEFORE UPDATE ON staff
 CREATE TRIGGER update_menu_categories_updated_at BEFORE UPDATE ON menu_categories
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_sub_menus_updated_at BEFORE UPDATE ON sub_menus
+CREATE TRIGGER update_menu_sub_categories_updated_at BEFORE UPDATE ON menu_sub_categories
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items
+CREATE TRIGGER update_menu_variants_updated_at BEFORE UPDATE ON menu_variants
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_menu_ingredients_updated_at BEFORE UPDATE ON menu_ingredients
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_stock_categories_updated_at BEFORE UPDATE ON stock_categories
