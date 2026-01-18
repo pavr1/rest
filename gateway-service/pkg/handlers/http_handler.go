@@ -177,18 +177,19 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	menuRouter.HandleFunc("/categories", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
 	menuRouter.HandleFunc("/categories/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
 
-	// Protected - Sub Menus
-	menuRouter.HandleFunc("/submenus", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
-	menuRouter.HandleFunc("/submenus/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+	// Protected - Menu Sub-Categories
+	menuRouter.HandleFunc("/sub-categories", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	menuRouter.HandleFunc("/sub-categories/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
 
-	// Protected - Menu Items
-	menuRouter.HandleFunc("/items", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
-	menuRouter.HandleFunc("/items/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
-	menuRouter.HandleFunc("/items/{id}/availability", h.CreateProxyHandler(h.menuServiceUrl)).Methods("PATCH")
-	menuRouter.HandleFunc("/items/{id}/ingredients", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
-	menuRouter.HandleFunc("/items/{id}/ingredients/{stockItemId}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("PUT", "DELETE")
-	menuRouter.HandleFunc("/items/{id}/cost", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET")
-	menuRouter.HandleFunc("/items/{id}/cost/recalculate", h.CreateProxyHandler(h.menuServiceUrl)).Methods("POST")
+	// Protected - Menu Variants
+	menuRouter.HandleFunc("/variants", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "POST")
+	menuRouter.HandleFunc("/variants/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
+	menuRouter.HandleFunc("/variants/{id}/availability", h.CreateProxyHandler(h.menuServiceUrl)).Methods("PATCH")
+	menuRouter.HandleFunc("/variants/{variantId}/ingredients", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET")
+
+	// Protected - Menu Ingredients
+	menuRouter.HandleFunc("/ingredients", h.CreateProxyHandler(h.menuServiceUrl)).Methods("POST")
+	menuRouter.HandleFunc("/ingredients/{id}", h.CreateProxyHandler(h.menuServiceUrl)).Methods("GET", "PUT", "DELETE")
 
 	// Protected - Inventory Service (Categories, Sub-Categories, Variants, Suppliers)
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()

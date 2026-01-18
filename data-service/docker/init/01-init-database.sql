@@ -82,7 +82,42 @@ CREATE TABLE menu_variants (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Menu Ingredients
+-- 9. Stock Categories
+CREATE TABLE stock_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. Stock Sub-Categories
+CREATE TABLE stock_sub_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    stock_category_id UUID NOT NULL REFERENCES stock_categories(id) ON DELETE CASCADE,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. Stock Variants
+CREATE TABLE stock_variants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE CASCADE,
+    unit VARCHAR(50) NOT NULL,
+    number_of_units DECIMAL(10,2) NOT NULL CHECK (number_of_units > 0),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. Menu Ingredients
 CREATE TABLE menu_ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     menu_variant_id UUID NOT NULL REFERENCES menu_variants(id) ON DELETE CASCADE,
@@ -94,18 +129,7 @@ CREATE TABLE menu_ingredients (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 10. Stock Categories
-CREATE TABLE stock_categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) UNIQUE NOT NULL,
-    description TEXT,
-    display_order INTEGER NOT NULL DEFAULT 0,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 12. Suppliers
+-- 13. Suppliers
 CREATE TABLE suppliers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) UNIQUE NOT NULL,
@@ -118,7 +142,7 @@ CREATE TABLE suppliers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 13. Outcome Invoices (Supplier Purchase Invoices)
+-- 15. Outcome Invoices (Supplier Purchase Invoices)
 CREATE TABLE outcome_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number VARCHAR(100) UNIQUE NOT NULL,
@@ -131,7 +155,7 @@ CREATE TABLE outcome_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 14. Invoice Items
+-- 16. Invoice Items
 CREATE TABLE invoice_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_id UUID NOT NULL,
@@ -149,7 +173,7 @@ CREATE TABLE invoice_items (
 );
 
 
--- 15. Customer Favorites
+-- 17. Customer Favorites
 CREATE TABLE customer_favorites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -162,7 +186,7 @@ CREATE TABLE customer_favorites (
 -- BUSINESS LOGIC ENTITIES
 -- =============================================================================
 
--- 16. Staff
+-- 18. Staff
 CREATE TABLE staff (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -177,10 +201,10 @@ CREATE TABLE staff (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 17. Sessions (User authentication sessions)
+-- 19. Sessions (User authentication sessions)
 -- Simplified: only session_id and token stored (other info in JWT token)
 
--- 18. Promotions
+-- 20. Promotions
 CREATE TABLE promotions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
@@ -200,7 +224,7 @@ CREATE TABLE promotions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 19. Orders
+-- 21. Orders
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_number VARCHAR(50) UNIQUE NOT NULL DEFAULT 'ORD-' || nextval('order_number_seq'),
@@ -221,7 +245,7 @@ CREATE TABLE orders (
     confirmed_at TIMESTAMP
 );
 
--- 20. Order Items
+-- 22. Order Items
 CREATE TABLE order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -244,7 +268,7 @@ CREATE TABLE order_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 21. Payments
+-- 23. Payments
 CREATE TABLE payments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE RESTRICT,
@@ -261,7 +285,7 @@ CREATE TABLE payments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 22. Income Invoices (Customer Sales Invoices)
+-- 24. Income Invoices (Customer Sales Invoices)
 CREATE TABLE income_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
@@ -282,7 +306,7 @@ CREATE TABLE income_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 23. Table Sessions
+-- 25. Table Sessions
 CREATE TABLE table_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -292,7 +316,7 @@ CREATE TABLE table_sessions (
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'closed'))
 );
 
--- 24. Request Notifications
+-- 26. Request Notifications
 CREATE TABLE request_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     request_type VARCHAR(30) NOT NULL CHECK (request_type IN ('payment', 'assistance', 'refill', 'issue_report', 'special_request')),
@@ -307,7 +331,7 @@ CREATE TABLE request_notifications (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 25. Karaoke Song Requests
+-- 27. Karaoke Song Requests
 CREATE TABLE karaoke_song_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -324,7 +348,7 @@ CREATE TABLE karaoke_song_requests (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 26. Karaoke Song Library
+-- 28. Karaoke Song Library
 CREATE TABLE karaoke_song_library (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     song_title VARCHAR(255) NOT NULL,
@@ -336,7 +360,7 @@ CREATE TABLE karaoke_song_library (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 27. Loyalty Points Transactions
+-- 29. Loyalty Points Transactions
 CREATE TABLE loyalty_points_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -351,7 +375,7 @@ CREATE TABLE loyalty_points_transactions (
 -- ADVANCED FEATURES ENTITIES (FUTURE)
 -- =============================================================================
 
--- 28. Reservations
+-- 30. Reservations
 CREATE TABLE reservations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
@@ -367,7 +391,7 @@ CREATE TABLE reservations (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 29. Reviews
+-- 31. Reviews
 CREATE TABLE reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
@@ -485,29 +509,7 @@ INSERT INTO stock_categories (name, description, display_order) VALUES
 ('Limpieza', 'Productos de limpieza', 8),
 ('Envases', 'Platos, vasos, servilletas', 9);
 
--- 9. Stock Sub-Categories
-CREATE TABLE stock_sub_categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    stock_category_id UUID NOT NULL REFERENCES stock_categories(id) ON DELETE CASCADE,
-    display_order INTEGER NOT NULL DEFAULT 0,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
--- 10. Stock Variants
-CREATE TABLE stock_variants (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE CASCADE,
-    unit VARCHAR(50) NOT NULL,
-    number_of_units DECIMAL(10,2) NOT NULL CHECK (number_of_units > 0),
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Insertar mesas de ejemplo
 INSERT INTO tables (table_number, capacity, status) VALUES
@@ -563,7 +565,7 @@ CREATE INDEX idx_request_notifications_type_status ON request_notifications(requ
 -- Karaoke Song Requests indexes
 CREATE INDEX idx_karaoke_requests_table ON karaoke_song_requests(table_id);
 CREATE INDEX idx_karaoke_requests_status ON karaoke_song_requests(status);
-CREATE INDEX idx_karaoke_requests_requested_at ON karaoke_song_requests(requested_at);
+CREATE INDEX idx_karaoke_requests_created_at ON karaoke_song_requests(created_at);
 
 -- Sessions indexes
 CREATE INDEX idx_sessions_token ON sessions(token);

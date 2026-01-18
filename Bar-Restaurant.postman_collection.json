@@ -53,12 +53,17 @@
 			"type": "string"
 		},
 		{
-			"key": "sub_menu_id",
+			"key": "menu_sub_category_id",
 			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "menu_item_id",
+			"key": "menu_variant_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "menu_ingredient_id",
 			"value": "",
 			"type": "string"
 		},
@@ -334,7 +339,7 @@
 					]
 				},
 				{
-					"name": "Sub Menus",
+					"name": "Menu Sub-Categories",
 					"item": [
 						{
 							"name": "List Sub Menus",
@@ -348,7 +353,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/submenus?page=1&limit=20",
+									"raw": "{{gateway_url}}/api/v1/menu/sub-categories?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "submenus"],
 									"query": [
@@ -370,9 +375,9 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
+									"raw": "{{gateway_url}}/api/v1/menu/sub-categories/{{menu_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus", "{{sub_menu_id}}"]
+									"path": ["api", "v1", "menu", "submenus", "{{menu_sub_category_id}}"]
 								},
 								"description": "Get a specific sub menu by ID"
 							}
@@ -404,7 +409,7 @@
 									"raw": "{\n    \"name\": \"Smoothies\",\n    \"description\": \"Fresh fruit smoothies\",\n    \"category_id\": \"{{menu_category_id}}\",\n    \"item_type\": \"bar\",\n    \"display_order\": 1,\n    \"is_active\": true\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/submenus",
+									"raw": "{{gateway_url}}/api/v1/menu/sub-categories",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "submenus"]
 								},
@@ -424,9 +429,9 @@
 									"raw": "{\n    \"name\": \"Updated Smoothies\",\n    \"display_order\": 2\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
+									"raw": "{{gateway_url}}/api/v1/menu/sub-categories/{{menu_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus", "{{sub_menu_id}}"]
+									"path": ["api", "v1", "menu", "submenus", "{{menu_sub_category_id}}"]
 								},
 								"description": "Update an existing sub menu (requires authentication)"
 							}
@@ -439,9 +444,9 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/submenus/{{sub_menu_id}}",
+									"raw": "{{gateway_url}}/api/v1/menu/sub-categories/{{menu_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus", "{{sub_menu_id}}"]
+									"path": ["api", "v1", "menu", "submenus", "{{menu_sub_category_id}}"]
 								},
 								"description": "Delete a sub menu (requires authentication, fails if it has menu items)"
 							}
@@ -449,7 +454,7 @@
 					]
 				},
 				{
-					"name": "Menu Items",
+					"name": "Menu Variants",
 					"item": [
 						{
 							"name": "List Menu Items",
@@ -459,7 +464,7 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items?page=1&limit=20",
+									"raw": "{{gateway_url}}/api/v1/menu/variants?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items"],
 									"query": [
@@ -481,9 +486,9 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
+									"path": ["api", "v1", "menu", "items", "{{menu_variant_id}}"]
 								},
 								"description": "Get a specific menu item by ID"
 							}
@@ -512,10 +517,10 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Banana Smoothie\",\n    \"description\": \"Fresh banana smoothie\",\n    \"sub_menu_id\": \"{{sub_menu_id}}\",\n    \"price\": 5.99,\n    \"preparation_time\": 5,\n    \"display_order\": 1,\n    \"is_available\": true,\n    \"menu_types\": [\"lunch\", \"dinner\"],\n    \"dietary_tags\": [],\n    \"allergens\": [],\n    \"is_alcoholic\": false\n}"
+									"raw": "{\n    \"name\": \"Banana Smoothie\",\n    \"description\": \"Fresh banana smoothie\",\n    \"sub_menu_id\": \"{{menu_sub_category_id}}\",\n    \"price\": 5.99,\n    \"preparation_time\": 5,\n    \"display_order\": 1,\n    \"is_available\": true,\n    \"menu_types\": [\"lunch\", \"dinner\"],\n    \"dietary_tags\": [],\n    \"allergens\": [],\n    \"is_alcoholic\": false\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items",
+									"raw": "{{gateway_url}}/api/v1/menu/variants",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "menu", "items"]
 								},
@@ -535,9 +540,9 @@
 									"raw": "{\n    \"name\": \"Updated Banana Smoothie\",\n    \"price\": 6.49,\n    \"preparation_time\": 6\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
+									"path": ["api", "v1", "menu", "items", "{{menu_variant_id}}"]
 								},
 								"description": "Update an existing menu item (requires authentication)"
 							}
@@ -555,9 +560,9 @@
 									"raw": "{\n    \"is_available\": false\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/availability",
+									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}/availability",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "availability"]
+									"path": ["api", "v1", "menu", "variants", "{{menu_variant_id}}", "availability"]
 								},
 								"description": "Toggle menu item availability (requires authentication)"
 							}
@@ -570,9 +575,9 @@
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}",
+									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}"]
+									"path": ["api", "v1", "menu", "items", "{{menu_variant_id}}"]
 								},
 								"description": "Delete a menu item (requires authentication)"
 							}
@@ -580,111 +585,97 @@
 					]
 				},
 				{
-					"name": "Menu Item Ingredients",
+					"name": "Menu Ingredients",
 					"item": [
 						{
-							"name": "List Ingredients",
+							"name": "List Menu Ingredients by Variant",
 							"request": {
 								"method": "GET",
 								"header": [
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
+									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}/ingredients",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients"]
+									"path": ["api", "v1", "menu", "variants", "{{menu_variant_id}}", "ingredients"]
 								},
-								"description": "List ingredients for a menu item (requires authentication)"
+								"description": "List all ingredients for a specific menu variant (requires authentication)"
 							}
 						},
 						{
-							"name": "Add Ingredient",
+							"name": "Get Menu Ingredient by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/ingredients/{{menu_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "ingredients", "{{menu_ingredient_id}}"]
+								},
+								"description": "Get a specific menu ingredient by ID (requires authentication)"
+							}
+						},
+						{
+							"name": "Add Ingredient to Menu Variant",
 							"request": {
 								"method": "POST",
 								"header": [
-									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{token}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"},
+									{"key": "Content-Type", "value": "application/json"}
 								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/ingredients?menu_variant_id={{menu_variant_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "ingredients"],
+									"query": [
+										{
+											"key": "menu_variant_id",
+											"value": "{{menu_variant_id}}"
+										}
+									]
+								},
+								"description": "Add a new ingredient to a menu variant (requires authentication)",
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"stock_item_id\": \"{{stock_item_id}}\",\n    \"quantity\": 0.5\n}"
-								},
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients"]
-								},
-								"description": "Add an ingredient to a menu item (requires authentication)"
+									"raw": "{\n    \"stock_sub_category_id\": \"{{stock_sub_category_id}}\",\n    \"quantity\": 2.5,\n    \"is_optional\": false,\n    \"notes\": \"Fresh ingredient\"\n}"
+								}
 							}
 						},
 						{
-							"name": "Update Ingredient Quantity",
+							"name": "Update Menu Ingredient",
 							"request": {
 								"method": "PUT",
 								"header": [
-									{"key": "Content-Type", "value": "application/json"},
-									{"key": "Authorization", "value": "Bearer {{token}}"}
+									{"key": "Authorization", "value": "Bearer {{token}}"},
+									{"key": "Content-Type", "value": "application/json"}
 								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/menu/ingredients/{{menu_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "menu", "ingredients", "{{menu_ingredient_id}}"]
+								},
+								"description": "Update an ingredient for a menu variant (requires authentication)",
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"quantity\": 0.75\n}"
-								},
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients", "{{stock_item_id}}"]
-								},
-								"description": "Update ingredient quantity (requires authentication)"
+									"raw": "{\n    \"quantity\": 3.0,\n    \"is_optional\": true,\n    \"notes\": \"Updated ingredient\"\n}"
+								}
 							}
 						},
 						{
-							"name": "Remove Ingredient",
+							"name": "Remove Ingredient from Menu Variant",
 							"request": {
 								"method": "DELETE",
 								"header": [
 									{"key": "Authorization", "value": "Bearer {{token}}"}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/ingredients/{{stock_item_id}}",
+									"raw": "{{gateway_url}}/api/v1/menu/ingredients/{{menu_ingredient_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "ingredients", "{{stock_item_id}}"]
+									"path": ["api", "v1", "menu", "ingredients", "{{menu_ingredient_id}}"]
 								},
-								"description": "Remove an ingredient from a menu item (requires authentication)"
-							}
-						}
-					]
-				},
-				{
-					"name": "Cost Calculation",
-					"item": [
-						{
-							"name": "Get Menu Item Cost",
-							"request": {
-								"method": "GET",
-								"header": [
-									{"key": "Authorization", "value": "Bearer {{token}}"}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/cost",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "cost"]
-								},
-								"description": "Get calculated cost for a menu item (requires authentication)"
-							}
-						},
-						{
-							"name": "Recalculate Cost",
-							"request": {
-								"method": "POST",
-								"header": [
-									{"key": "Authorization", "value": "Bearer {{token}}"}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/menu/items/{{menu_item_id}}/cost/recalculate",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_item_id}}", "cost", "recalculate"]
-								},
-								"description": "Recalculate and save menu item cost based on ingredients (requires authentication)"
+								"description": "Remove an ingredient from a menu variant (requires authentication)"
 							}
 						}
 					]
