@@ -50,8 +50,8 @@
         </div>
         <div class="empty-state d-none" id="emptyState">
             <i class="fas fa-utensils"></i>
-            <h5>No menu items yet</h5>
-            <p>Create your first menu item to get started.</p>
+            <h5>No menu variants yet</h5>
+            <p>Create your first menu variant to get started.</p>
         </div>
         <table class="data-table d-none" id="dataTable">
             <thead>
@@ -126,8 +126,8 @@
                         </div>
                     </div>
                     <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="itemAlcoholic">
-                        <label class="form-check-label" for="itemAlcoholic">Contains Alcohol</label>
+                        <input class="form-check-input" type="checkbox" id="variantAlcoholic">
+                        <label class="form-check-label" for="variantAlcoholic">Contains Alcohol</label>
                     </div>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="itemAvailable" checked>
@@ -148,32 +148,42 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-list-ul me-2"></i>Ingredients for <span id="ingredientItemName">-</span></h5>
+                <h5 class="modal-title"><i class="fas fa-list-ul me-2"></i>Ingredients for <span id="ingredientVariantName">-</span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <input type="hidden" id="ingredientMenuItemId">
+                <input type="hidden" id="ingredientMenuVariantId">
                 
                 <!-- Add Ingredient Form -->
                 <div class="card mb-3">
                     <div class="card-body">
                         <h6 class="card-title"><i class="fas fa-plus me-2"></i>Add Ingredient</h6>
                         <div class="row g-2 align-items-end">
-                            <div class="col-md-6">
-                                <label class="form-label">Stock Item</label>
-                                <select class="form-select" id="newIngredientStockItem">
-                                    <option value="">Select stock item...</option>
+                            <div class="col-md-4">
+                                <label class="form-label">Stock Sub-Category</label>
+                                <select class="form-select" id="newIngredientStockSubCategory">
+                                    <option value="">Select sub-category...</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label">Quantity</label>
                                 <input type="number" class="form-control" id="newIngredientQty" step="0.01" min="0.01" placeholder="0.00">
                             </div>
-                            <div class="col-md-3">
-                                <button type="button" class="btn btn-success w-100" id="addIngredientBtn">
-                                    <i class="fas fa-plus me-1"></i>Add
-                                </button>
+                            <div class="col-md-2">
+                                <label class="form-label">Optional</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="newIngredientOptional">
+                                </div>
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Notes</label>
+                                <input type="text" class="form-control" id="newIngredientNotes" placeholder="Optional notes">
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-success" id="addIngredientBtn">
+                                <i class="fas fa-plus me-1"></i>Add Ingredient
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -192,12 +202,6 @@
                 <!-- Cost Summary -->
                 <div class="card mt-3 bg-light">
                     <div class="card-body d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>Total Cost:</strong> <span id="totalCost" class="text-primary fs-5">$0.00</span>
-                        </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm" id="recalculateCostBtn">
-                            <i class="fas fa-calculator me-1"></i>Recalculate & Save
-                        </button>
                     </div>
                 </div>
             </div>
@@ -223,7 +227,6 @@
         ingredientsModal = new bootstrap.Modal(document.getElementById('ingredientsModal'));
         setupEventListeners();
         loadSubCategories();
-        loadStockVariants();
         loadVariants();
     }
 
@@ -256,7 +259,7 @@
             if (resp.ok) {
                 const result = await resp.json();
                 stockVariants = result.data?.variants || result.data || [];
-                populateStockVariantsDropdown();
+                // Stock variants loaded for ingredient creation
             }
         } catch (e) { console.error('Error loading stock variants:', e); }
     }
@@ -267,9 +270,9 @@
         document.getElementById('variantSubCategory').innerHTML = '<option value="">Select...</option>' + options;
     }
     
-    function populateStockItemsDropdown() {
-        const options = stockItems.map(s => `<option value="${s.id}">${s.name} (${s.unit})</option>`).join('');
-        document.getElementById('newIngredientStockItem').innerHTML = '<option value="">Select stock item...</option>' + options;
+    function populateStockSubCategoriesDropdown() {
+        const options = subCategories.map(sc => `<option value="${sc.id}">${sc.name} (${sc.item_type})</option>`).join('');
+        document.getElementById('newIngredientStockSubCategory').innerHTML = '<option value="">Select sub-category...</option>' + options;
     }
     
     async function loadVariants() {
@@ -305,30 +308,29 @@
         
         empty.classList.add('d-none');
         table.classList.remove('d-none');
-        tbody.innerHTML = items.map(item => {
-            const subMenu = subMenus.find(sm => sm.id === item.sub_menu_id);
-            const itemType = item.item_type || subMenu?.item_type || 'kitchen';
+        tbody.innerHTML = variants.map(variant => {
+            const subCategory = subCategories.find(sc => sc.id === variant.sub_category_id);
+            const itemType = variant.item_type || subCategory?.item_type || 'kitchen';
             const typeIcon = itemType === 'bar' ? 'fa-cocktail' : 'fa-utensils';
             const typeLabel = itemType === 'bar' ? 'Bar' : 'Kitchen';
             return `
                 <tr>
-                    <td>${item.image_url ? `<img src="${item.image_url}" class="item-image">` : `<div class="item-image-placeholder"><i class="fas ${typeIcon}"></i></div>`}</td>
-                    <td><strong>${escapeHtml(item.name)}</strong></td>
+                    <td><div class="item-image-placeholder"><i class="fas ${typeIcon}"></i></div></td>
+                    <td><strong>${escapeHtml(variant.name)}</strong></td>
                     <td><span class="type-badge ${itemType}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
-                    <td>${item.sub_menu_name || subMenu?.name || '-'}</td>
-                    <td class="price">$${(item.price || 0).toFixed(2)}</td>
-                    <td>$${(item.item_cost || 0).toFixed(2)}</td>
-                    <td><span class="status-badge ${item.is_available ? 'available' : 'unavailable'}">${item.is_available ? 'Available' : 'Unavailable'}</span></td>
+                    <td>${variant.sub_category_name || subCategory?.name || '-'}</td>
+                    <td class="price">$${(variant.price || 0).toFixed(2)}</td>
+                    <td><span class="status-badge ${variant.is_available ? 'available' : 'unavailable'}">${variant.is_available ? 'Available' : 'Unavailable'}</span></td>
                     <td>
                         <div class="action-btns">
-                            <button class="btn btn-outline-info btn-action" onclick="window.menuItemsPage.ingredients('${item.id}')" title="Ingredients">
+                            <button class="btn btn-outline-info btn-action" onclick="window.menuVariantsPage.ingredients('${variant.id}')" title="Ingredients">
                                 <i class="fas fa-list-ul"></i>
                             </button>
-                            <button class="btn btn-outline-${item.is_available ? 'warning' : 'success'} btn-action" onclick="window.menuItemsPage.toggle('${item.id}', ${!item.is_available})" title="${item.is_available ? 'Unavailable' : 'Available'}">
-                                <i class="fas fa-${item.is_available ? 'eye-slash' : 'eye'}"></i>
+                            <button class="btn btn-outline-${variant.is_available ? 'warning' : 'success'} btn-action" onclick="window.menuVariantsPage.toggle('${variant.id}', ${!variant.is_available})" title="${variant.is_available ? 'Unavailable' : 'Available'}">
+                                <i class="fas fa-${variant.is_available ? 'eye-slash' : 'eye'}"></i>
                             </button>
-                            <button class="btn btn-outline-primary btn-action" onclick="window.menuItemsPage.edit('${item.id}')" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-outline-danger btn-action" onclick="window.menuItemsPage.delete('${item.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-outline-primary btn-action" onclick="window.menuVariantsPage.edit('${variant.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-outline-danger btn-action" onclick="window.menuVariantsPage.delete('${variant.id}')" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -339,24 +341,24 @@
     function showLoading() { document.getElementById('loadingState').classList.remove('d-none'); document.getElementById('emptyState').classList.add('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
     function showEmpty() { document.getElementById('loadingState').classList.add('d-none'); document.getElementById('emptyState').classList.remove('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
     
-    function openModal(item = null) {
-        editingId = item?.id || null;
-        document.getElementById('modalTitle').textContent = item ? 'Edit Menu Item' : 'Add Menu Item';
-        document.getElementById('itemId').value = item?.id || '';
-        document.getElementById('itemName').value = item?.name || '';
-        document.getElementById('itemSubMenu').value = item?.sub_menu_id || '';
-        document.getElementById('itemDescription').value = item?.description || '';
-        document.getElementById('itemPrice').value = item?.price || '';
-        document.getElementById('itemPrepTime').value = item?.preparation_time || '';
-        document.getElementById('itemDisplayOrder').value = item?.display_order || 0;
-        document.getElementById('itemAvailable').checked = item?.is_available !== false;
-        document.getElementById('itemAlcoholic').checked = item?.is_alcoholic || false;
-        
+    function openModal(variant = null) {
+        editingId = variant?.id || null;
+        document.getElementById('modalTitle').textContent = variant ? 'Edit Menu Variant' : 'Add Menu Variant';
+        document.getElementById('variantId').value = variant?.id || '';
+        document.getElementById('variantName').value = variant?.name || '';
+        document.getElementById('variantSubCategory').value = variant?.sub_category_id || '';
+        document.getElementById('variantDescription').value = variant?.description || '';
+        document.getElementById('variantPrice').value = variant?.price || '';
+        document.getElementById('variantPrepTime').value = variant?.preparation_time || '';
+        document.getElementById('variantDisplayOrder').value = variant?.display_order || 0;
+        document.getElementById('variantAvailable').checked = variant?.is_available !== false;
+        document.getElementById('variantAlcoholic').checked = variant?.is_alcoholic || false;
+
         // Parse menu_types JSON
         let menuTypes = [];
-        if (item?.menu_types) {
+        if (variant?.menu_types) {
             try {
-                menuTypes = JSON.parse(item.menu_types);
+                menuTypes = JSON.parse(variant.menu_types);
             } catch (e) {
                 menuTypes = ['lunch', 'dinner']; // default
             }
@@ -370,7 +372,7 @@
         modal.show();
     }
     
-    async function saveItem() {
+    async function saveVariant() {
         const btn = document.getElementById('saveBtn');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
@@ -390,24 +392,24 @@
             }
             
             const data = {
-                name: document.getElementById('itemName').value,
-                sub_menu_id: document.getElementById('itemSubMenu').value,
-                description: document.getElementById('itemDescription').value || null,
-                price: parseFloat(document.getElementById('itemPrice').value) || 0,
-                preparation_time: parseInt(document.getElementById('itemPrepTime').value) || null,
-                display_order: parseInt(document.getElementById('itemDisplayOrder').value) || 0,
-                is_available: document.getElementById('itemAvailable').checked,
-                is_alcoholic: document.getElementById('itemAlcoholic').checked,
+                name: document.getElementById('variantName').value,
+                sub_category_id: document.getElementById('variantSubCategory').value,
+                description: document.getElementById('variantDescription').value || null,
+                price: parseFloat(document.getElementById('variantPrice').value) || 0,
+                preparation_time: parseInt(document.getElementById('variantPrepTime').value) || null,
+                display_order: parseInt(document.getElementById('variantDisplayOrder').value) || 0,
+                is_available: document.getElementById('variantAvailable').checked,
+                is_alcoholic: document.getElementById('variantAlcoholic').checked,
                 menu_types: JSON.stringify(menuTypes),
                 dietary_tags: JSON.stringify([]),
                 allergens: JSON.stringify([])
             };
-            const url = editingId ? `${CONFIG.MENU.items}/${editingId}` : CONFIG.MENU.items;
+            const url = editingId ? `${CONFIG.MENU.variants}/${editingId}` : CONFIG.MENU.variants;
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
             modal.hide();
             Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false });
-            await loadItems();
+            await loadVariants();
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
         finally { btn.disabled = false; btn.innerHTML = 'Save'; }
     }
@@ -415,40 +417,43 @@
     async function toggleAvailability(id, available) {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.items}/${id}/availability`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_available: available }) });
+            const resp = await fetch(`${CONFIG.MENU.variants}/${id}/availability`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_available: available }) });
             if (!resp.ok) throw new Error('Failed');
-            await loadItems();
+            await loadVariants();
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
-    async function deleteItem(id) {
-        const item = items.find(i => i.id === id);
-        const result = await Swal.fire({ title: 'Delete?', text: `Delete "${item?.name}"?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
+    async function deleteVariant(id) {
+        const variant = variants.find(v => v.id === id);
+        const result = await Swal.fire({ title: 'Delete?', text: `Delete "${variant?.name}"?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
         if (!result.isConfirmed) return;
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.items}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(`${CONFIG.MENU.variants}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
-            await loadItems();
+            await loadVariants();
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
     // === INGREDIENTS MANAGEMENT ===
-    async function openIngredientsModal(menuItemId) {
-        const item = items.find(i => i.id === menuItemId);
-        if (!item) return;
-        
-        document.getElementById('ingredientMenuItemId').value = menuItemId;
-        document.getElementById('ingredientItemName').textContent = item.name;
-        document.getElementById('newIngredientStockItem').value = '';
+    async function openIngredientsModal(menuVariantId) {
+        const variant = variants.find(v => v.id === menuVariantId);
+        if (!variant) return;
+
+        document.getElementById('ingredientMenuVariantId').value = menuVariantId;
+        document.getElementById('ingredientVariantName').textContent = variant.name;
+        document.getElementById('newIngredientStockSubCategory').value = '';
         document.getElementById('newIngredientQty').value = '';
-        
+        document.getElementById('newIngredientOptional').checked = false;
+        document.getElementById('newIngredientNotes').value = '';
+
         ingredientsModal.show();
-        await loadIngredients(menuItemId);
+        populateStockSubCategoriesDropdown();
+        await loadIngredients(menuVariantId);
     }
     
-    async function loadIngredients(menuItemId) {
+    async function loadIngredients(menuVariantId) {
         const listEl = document.getElementById('ingredientsList');
         const loadingEl = document.getElementById('ingredientsLoading');
         const emptyEl = document.getElementById('ingredientsEmpty');
@@ -459,7 +464,7 @@
         
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.ingredients(menuItemId), { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.ingredientsByVariant(menuItemId), { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
             currentIngredients = result.data?.ingredients || [];
@@ -487,23 +492,20 @@
         let totalCost = 0;
         
         listEl.innerHTML = currentIngredients.map(ing => {
-            const stockItem = stockItems.find(s => s.id === ing.stock_item_id);
-            const unitCost = stockItem?.cost_per_unit || 0;
-            const ingCost = unitCost * ing.quantity;
-            totalCost += ingCost;
-            
+            // For now, we'll display basic info without cost calculation
+            // since we're using stock_sub_category_id instead of individual stock items
             return `
                 <div class="ingredient-row">
                     <div class="ingredient-name">
-                        <strong>${escapeHtml(ing.stock_item_name || stockItem?.name || 'Unknown')}</strong>
-                        <small class="text-muted ms-2">(${ing.stock_item_unit || stockItem?.unit || '-'})</small>
+                        <strong>${escapeHtml(ing.stock_sub_category_name || 'Unknown')}</strong>
+                        <small class="text-muted ms-2">(Qty: ${ing.quantity})</small>
                     </div>
-                    <input type="number" class="form-control form-control-sm ingredient-qty" 
+                    <input type="number" class="form-control form-control-sm ingredient-qty"
                            value="${ing.quantity}" step="0.01" min="0.01"
-                           data-stock-id="${ing.stock_item_id}"
-                           onchange="window.menuItemsPage.updateIngredient('${ing.stock_item_id}', this.value)">
-                    <small class="text-muted" style="width: 80px;">$${ingCost.toFixed(2)}</small>
-                    <button class="btn btn-outline-danger btn-sm" onclick="window.menuItemsPage.removeIngredient('${ing.stock_item_id}')">
+                           data-stock-id="${ing.stock_sub_category_id}"
+                           onchange="window.menuVariantsPage.updateIngredient('${ing.id}', '${ing.stock_sub_category_id}', this.value)">
+                    <small class="text-muted" style="width: 80px;">Optional: ${ing.is_optional ? 'Yes' : 'No'}</small>
+                    <button class="btn btn-outline-danger btn-sm" onclick="window.menuVariantsPage.removeIngredient('${ing.id}')">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -514,105 +516,90 @@
     }
     
     async function addIngredient() {
-        const menuItemId = document.getElementById('ingredientMenuItemId').value;
-        const stockItemId = document.getElementById('newIngredientStockItem').value;
+        const menuVariantId = document.getElementById('ingredientMenuVariantId').value;
+        const stockSubCategoryId = document.getElementById('newIngredientStockSubCategory').value;
         const quantity = parseFloat(document.getElementById('newIngredientQty').value);
-        
-        if (!stockItemId || !quantity || quantity <= 0) {
-            Swal.fire('Error', 'Please select a stock item and enter a valid quantity', 'warning');
+        const isOptional = document.getElementById('newIngredientOptional').checked;
+        const notes = document.getElementById('newIngredientNotes').value;
+
+        if (!stockSubCategoryId || !quantity || quantity <= 0) {
+            Swal.fire('Error', 'Please select a stock sub-category and enter a valid quantity', 'warning');
             return;
         }
-        
-        // Check if already added
-        if (currentIngredients.some(i => i.stock_item_id === stockItemId)) {
-            Swal.fire('Error', 'This ingredient is already added', 'warning');
-            return;
-        }
-        
+
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.ingredients(menuItemId), {
+            const url = `${CONFIG.MENU.ingredients}?menu_variant_id=${menuVariantId}`;
+            const resp = await fetch(url, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ stock_item_id: stockItemId, quantity: quantity })
+                body: JSON.stringify({
+                    stock_sub_category_id: stockSubCategoryId,
+                    quantity: quantity,
+                    is_optional: isOptional,
+                    notes: notes || null
+                })
             });
             if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
-            
-            document.getElementById('newIngredientStockItem').value = '';
+
+            document.getElementById('newIngredientStockSubCategory').value = '';
             document.getElementById('newIngredientQty').value = '';
-            await loadIngredients(menuItemId);
+            document.getElementById('newIngredientOptional').checked = false;
+            document.getElementById('newIngredientNotes').value = '';
+            await loadIngredients(menuVariantId);
+            Swal.fire({ icon: 'success', title: 'Added!', timer: 1500, showConfirmButton: false });
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
-    async function updateIngredient(stockItemId, newQuantity) {
-        const menuItemId = document.getElementById('ingredientMenuItemId').value;
+    async function updateIngredient(ingredientId, stockSubCategoryId, newQuantity) {
+        const menuVariantId = document.getElementById('ingredientMenuVariantId').value;
         const quantity = parseFloat(newQuantity);
-        
+
         if (!quantity || quantity <= 0) {
             Swal.fire('Error', 'Quantity must be greater than 0', 'warning');
-            await loadIngredients(menuItemId);
+            await loadIngredients(menuVariantId);
             return;
         }
-        
+
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.ingredients(menuItemId)}/${stockItemId}`, {
+            const resp = await fetch(`${CONFIG.MENU.ingredients}/${ingredientId}`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ quantity: quantity })
             });
-            if (!resp.ok) throw new Error('Failed');
-            await loadIngredients(menuItemId);
+            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
+            await loadIngredients(menuVariantId);
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
-    async function removeIngredient(stockItemId) {
-        const menuItemId = document.getElementById('ingredientMenuItemId').value;
-        
+    async function removeIngredient(ingredientId) {
+        const menuVariantId = document.getElementById('ingredientMenuVariantId').value;
+
         const result = await Swal.fire({
             title: 'Remove?', text: 'Remove this ingredient?', icon: 'warning',
             showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Remove'
         });
         if (!result.isConfirmed) return;
-        
+
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.ingredients(menuItemId)}/${stockItemId}`, {
+            const resp = await fetch(`${CONFIG.MENU.ingredients}/${ingredientId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (!resp.ok) throw new Error('Failed');
-            await loadIngredients(menuItemId);
+            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
+            await loadIngredients(menuVariantId);
+            Swal.fire({ icon: 'success', title: 'Removed!', timer: 1500, showConfirmButton: false });
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
-    async function recalculateCost() {
-        const menuItemId = document.getElementById('ingredientMenuItemId').value;
-        const btn = document.getElementById('recalculateCostBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
-        
-        try {
-            const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.itemCost(menuItemId)}/recalculate`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!resp.ok) throw new Error('Failed');
-            Swal.fire({ icon: 'success', title: 'Cost saved!', timer: 1500, showConfirmButton: false });
-            await loadItems();
-        } catch (e) { Swal.fire('Error', e.message, 'error'); }
-        finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-calculator me-1"></i>Recalculate & Save';
-        }
-    }
     
     function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
     
-    window.menuItemsPage = {
-        edit: (id) => { const item = items.find(i => i.id === id); if (item) openModal(item); },
-        delete: deleteItem,
+    window.menuVariantsPage = {
+        edit: (id) => { const variant = variants.find(v => v.id === id); if (variant) openModal(variant); },
+        delete: deleteVariant,
         toggle: toggleAvailability,
         ingredients: openIngredientsModal,
         updateIngredient: updateIngredient,

@@ -1,4 +1,4 @@
-<!-- Sub Menus Page Partial -->
+<!-- Menu Sub-Categories Page Partial -->
 <style>
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
     .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
@@ -133,6 +133,11 @@
     let editingId = null;
 
     function init() {
+        console.log('🔄 Initializing sub-categories page...');
+        console.log('CONFIG available:', typeof CONFIG);
+        console.log('CONFIG.MENU available:', CONFIG?.MENU);
+        console.log('loadSubCategories function:', typeof loadSubCategories);
+
         modal = new bootstrap.Modal(document.getElementById('subCategoryModal'));
         setupEventListeners();
         loadCategories();
@@ -163,10 +168,16 @@
     function populateCategoryDropdowns() {
         const options = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         document.getElementById('categoryFilter').innerHTML = '<option value="">All Categories</option>' + options;
-        document.getElementById('subMenuCategory').innerHTML = '<option value="">Select...</option>' + options;
+        document.getElementById('subCategoryCategory').innerHTML = '<option value="">Select...</option>' + options;
     }
     
-    async function loadSubMenus() {
+    async function loadSubCategories() {
+        console.log('🔄 loadSubCategories called');
+        if (!CONFIG?.MENU?.subCategories) {
+            console.error('CONFIG.MENU.subCategories not available');
+            return;
+        }
+
         showLoading();
         try {
             const token = window.authService.getToken();
@@ -177,16 +188,20 @@
             if (catId) params.append('category_id', catId);
             if (itemType) params.append('item_type', itemType);
             if (isActive) params.append('is_active', isActive);
-            
+
             const url = CONFIG.MENU.subCategories + (params.toString() ? `?${params}` : '');
+            console.log('📡 Fetching:', url);
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            console.log('📡 Response:', resp.status);
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
+            console.log('📄 Response data:', result);
             // Response is wrapped in { success, message, data: { sub_categories, total, page, limit } }
             subCategories = result.data?.sub_categories || result.sub_categories || [];
+            console.log('📋 Loaded sub-categories:', subCategories.length);
             renderTable();
         } catch (e) {
-            console.error('Error:', e);
+            console.error('❌ Error in loadSubCategories:', e);
             Swal.fire('Error', 'Failed to load menu sub-categories', 'error');
             showEmpty();
         }

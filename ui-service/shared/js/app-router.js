@@ -264,30 +264,42 @@ class AppRouter {
     }
     
     async loadPageContent(pageName) {
-        const config = this.pages[pageName] || this.pages['dashboard'];
-        
+        const config = this.pages[pageName];
+
+        if (!config) {
+            console.error(`Page config not found for: ${pageName}, falling back to dashboard`);
+            return this.loadPageContent('dashboard');
+        }
+
+        console.log(`🔄 Loading page content for: ${pageName} from ${config.partial}`);
+
         try {
             const response = await fetch(config.partial);
+            console.log(`📡 Fetch response for ${config.partial}:`, response.status, response.statusText);
+
             if (!response.ok) {
-                throw new Error(`Failed to load ${config.partial}`);
+                throw new Error(`HTTP ${response.status}: Failed to load ${config.partial}`);
             }
-            
+
             const html = await response.text();
+            console.log(`✅ Loaded ${html.length} characters for ${pageName}`);
+
             this.pageContent.innerHTML = html;
-            
+
             // Execute any inline scripts in the loaded content
             this.executePageScripts();
-            
+
             // Initialize page-specific functionality
             this.initializePage(pageName);
-            
+
         } catch (error) {
-            console.error('Error loading page:', error);
+            console.error('❌ Error loading page:', error);
             this.pageContent.innerHTML = `
                 <div class="text-center py-5">
                     <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-                    <h4>Page Not Found</h4>
-                    <p class="text-muted">The requested page could not be loaded.</p>
+                    <h4>Page Load Error</h4>
+                    <p class="text-muted">Failed to load page: ${pageName}</p>
+                    <p class="text-muted small">Error: ${error.message}</p>
                     <button class="btn btn-primary" onclick="app.navigateTo('dashboard')">
                         <i class="fas fa-home me-2"></i>Go to Dashboard
                     </button>
