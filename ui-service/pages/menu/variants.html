@@ -276,9 +276,16 @@
     }
     
     async function loadVariants() {
+        console.log('Loading variants...');
         showLoading();
         try {
             const token = window.authService.getToken();
+            console.log('Token:', token ? 'Present' : 'Missing');
+
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
             const params = new URLSearchParams();
             const subCategoryId = document.getElementById('subCategoryFilter').value;
             const avail = document.getElementById('availabilityFilter').value;
@@ -286,14 +293,27 @@
             if (avail) params.append('is_available', avail);
 
             const url = CONFIG.MENU.variants + (params.toString() ? `?${params}` : '');
+            console.log('Fetching from URL:', url);
+
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) throw new Error('Failed');
+            console.log('Response status:', resp.status);
+
+            if (!resp.ok) {
+                const errorText = await resp.text();
+                console.error('Response error:', errorText);
+                throw new Error(`HTTP ${resp.status}: ${errorText}`);
+            }
+
             const result = await resp.json();
-            variants = result.data?.variants || result.data || [];
+            console.log('Response data:', result);
+
+            variants = result.data?.items || result.data || [];
+            console.log('Parsed variants:', variants);
+
             renderTable();
         } catch (e) {
-            console.error('Error:', e);
-            Swal.fire('Error', 'Failed to load variants', 'error');
+            console.error('Error loading variants:', e);
+            Swal.fire('Error', `Failed to load variants: ${e.message}`, 'error');
             showEmpty();
         }
     }
