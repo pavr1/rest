@@ -23,8 +23,8 @@ class AppRouter {
             
             // Menu
             'menu-categories': { title: 'Categories', icon: 'fa-tags', partial: 'pages/menu/categories.html' },
-            'menu-submenus': { title: 'Menus', icon: 'fa-layer-group', partial: 'pages/menu/submenus.html' },
-            'menu-items': { title: 'Items', icon: 'fa-hamburger', partial: 'pages/menu/items.html' },
+            'menu-sub-categories': { title: 'Sub-Categories', icon: 'fa-layer-group', partial: 'pages/menu/sub-categories.html' },
+            'menu-variants': { title: 'Variants', icon: 'fa-hamburger', partial: 'pages/menu/variants.html' },
             'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
             
             // Inventory
