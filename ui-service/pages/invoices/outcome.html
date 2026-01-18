@@ -65,7 +65,7 @@
 
 <!-- Modal -->
 <div class="modal fade" id="invoiceModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Add Purchase Invoice</h5>
@@ -96,6 +96,21 @@
                         <div class="col-md-6">
                             <label class="form-label">Due Date</label>
                             <input type="date" class="form-control" id="dueDate">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Inventory Category</label>
+                            <select class="form-select" id="inventoryCategoryId">
+                                <option value="">Select Category (Optional)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Inventory Sub-Category</label>
+                            <select class="form-select" id="inventorySubCategoryId">
+                                <option value="">Select Sub-Category (Optional)</option>
+                            </select>
                         </div>
                     </div>
 
@@ -176,6 +191,8 @@
 (function() {
     let invoices = [];
     let suppliers = [];
+    let inventoryCategories = [];
+    let inventorySubCategories = [];
     let modal = null;
     let editingId = null;
 
@@ -183,6 +200,7 @@
         modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
         setupEventListeners();
         loadSuppliers();
+        loadInventoryCategories();
         loadInvoices();
     }
 
@@ -191,6 +209,7 @@
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadInvoices());
         document.getElementById('invoiceForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveInvoice(); });
         document.getElementById('addItemBtn')?.addEventListener('click', () => addInvoiceItem());
+        document.getElementById('inventoryCategoryId')?.addEventListener('change', () => loadInventorySubCategoriesForCategory());
     }
 
     async function loadSuppliers() {
@@ -216,6 +235,61 @@
             option.textContent = supplier.name;
             select.appendChild(option);
         });
+    }
+
+    async function loadInventoryCategories() {
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (resp.ok) {
+                const result = await resp.json();
+                inventoryCategories = result.data?.categories || result.data?.items || result.data || [];
+                populateInventoryCategoryDropdown();
+            }
+        } catch (e) {
+            console.error('Error loading inventory categories:', e);
+        }
+    }
+
+    function populateInventoryCategoryDropdown() {
+        const select = document.getElementById('inventoryCategoryId');
+        select.innerHTML = '<option value="">Select Category (Optional)</option>';
+        inventoryCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            select.appendChild(option);
+        });
+    }
+
+    async function loadInventorySubCategoriesForCategory() {
+        const categoryId = document.getElementById('inventoryCategoryId').value;
+        const subCategorySelect = document.getElementById('inventorySubCategoryId');
+
+        // Clear sub-category dropdown
+        subCategorySelect.innerHTML = '<option value="">Select Sub-Category (Optional)</option>';
+
+        if (!categoryId) {
+            return;
+        }
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (resp.ok) {
+                const result = await resp.json();
+                const categorySubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
+
+                categorySubCategories.forEach(subCategory => {
+                    const option = document.createElement('option');
+                    option.value = subCategory.id;
+                    option.textContent = subCategory.name;
+                    subCategorySelect.appendChild(option);
+                });
+            }
+        } catch (e) {
+            console.error('Error loading inventory sub-categories:', e);
+        }
     }
 
     async function loadInvoices() {
@@ -291,6 +365,18 @@
         document.getElementById('supplierId').value = invoice?.supplier_id || '';
         document.getElementById('invoiceDate').value = invoice?.invoice_date ? new Date(invoice.invoice_date).toISOString().split('T')[0] : '';
         document.getElementById('dueDate').value = invoice?.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '';
+
+        // Set inventory category and sub-category
+        document.getElementById('inventoryCategoryId').value = invoice?.inventory_category_id || '';
+        if (invoice?.inventory_category_id) {
+            // Load sub-categories for this category, then set the selected one
+            loadInventorySubCategoriesForCategory().then(() => {
+                document.getElementById('inventorySubCategoryId').value = invoice?.inventory_sub_category_id || '';
+            });
+        } else {
+            document.getElementById('inventorySubCategoryId').innerHTML = '<option value="">Select Sub-Category (Optional)</option>';
+        }
+
         document.getElementById('subtotal').value = invoice?.subtotal || '';
         document.getElementById('taxAmount').value = invoice?.tax_amount || '';
         document.getElementById('discountAmount').value = invoice?.discount_amount || '';
@@ -384,6 +470,8 @@
             const data = {
                 invoice_number: document.getElementById('invoiceNumber').value,
                 supplier_id: document.getElementById('supplierId').value,
+                inventory_category_id: document.getElementById('inventoryCategoryId').value || null,
+                inventory_sub_category_id: document.getElementById('inventorySubCategoryId').value || null,
                 invoice_date: document.getElementById('invoiceDate').value || null,
                 due_date: document.getElementById('dueDate').value || null,
                 subtotal: parseFloat(document.getElementById('subtotal').value) || 0,

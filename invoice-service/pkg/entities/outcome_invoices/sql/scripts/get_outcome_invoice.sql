@@ -3,6 +3,8 @@ SELECT
     id,
     invoice_number,
     supplier_id,
+    inventory_category_id,
+    inventory_sub_category_id,
     transaction_date,
     total_amount,
     image_url,

@@ -147,6 +147,8 @@ CREATE TABLE outcome_invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number VARCHAR(100) UNIQUE NOT NULL,
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    inventory_category_id UUID REFERENCES stock_categories(id) ON DELETE SET NULL,
+    inventory_sub_category_id UUID REFERENCES stock_sub_categories(id) ON DELETE SET NULL,
     transaction_date DATE NOT NULL,
     total_amount DECIMAL(12,2),
     image_url VARCHAR(500),

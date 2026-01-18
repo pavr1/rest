@@ -58,6 +58,8 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 	err = tx.QueryRow(query,
 		req.InvoiceNumber,
 		req.SupplierID,
+		req.InventoryCategoryID,
+		req.InventorySubCategoryID,
 		req.TransactionDate,
 		req.TotalAmount,
 		req.ImageURL,
@@ -74,6 +76,8 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 	// Fill in the rest of the fields from the request
 	invoice.InvoiceNumber = req.InvoiceNumber
 	invoice.SupplierID = req.SupplierID
+	invoice.InventoryCategoryID = req.InventoryCategoryID
+	invoice.InventorySubCategoryID = req.InventorySubCategoryID
 	invoice.TransactionDate = req.TransactionDate
 	invoice.TotalAmount = req.TotalAmount
 	invoice.ImageURL = req.ImageURL
@@ -113,6 +117,8 @@ func (h *DBHandler) GetByID(id string) (*models.OutcomeInvoice, error) {
 		&invoice.ID,
 		&invoice.InvoiceNumber,
 		&invoice.SupplierID,
+		&invoice.InventoryCategoryID,
+		&invoice.InventorySubCategoryID,
 		&invoice.TransactionDate,
 		&invoice.TotalAmount,
 		&invoice.ImageURL,
@@ -229,6 +235,8 @@ func (h *DBHandler) List(req *models.OutcomeInvoiceListRequest) (*models.Outcome
 			&invoice.ID,
 			&invoice.InvoiceNumber,
 			&invoice.SupplierID,
+			&invoice.InventoryCategoryID,
+			&invoice.InventorySubCategoryID,
 			&invoice.TransactionDate,
 			&invoice.TotalAmount,
 			&invoice.ImageURL,
