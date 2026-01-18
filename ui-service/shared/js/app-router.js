@@ -292,8 +292,15 @@ class AppRouter {
             // Execute any inline scripts in the loaded content
             this.executePageScripts();
 
-            // Initialize page-specific functionality
-            this.initializePage(pageName);
+        // Initialize page-specific functionality
+        this.initializePage(pageName);
+
+        // Debug logging for inventory pages
+        if (pageName.includes('inventory')) {
+            console.log(`🎯 Inventory page loaded: ${pageName}`);
+            console.log('Page content length:', this.pageContent.innerHTML.length);
+            console.log('Page content preview:', this.pageContent.innerHTML.substring(0, 200) + '...');
+        }
 
         } catch (error) {
             console.error('❌ Error loading page:', error);

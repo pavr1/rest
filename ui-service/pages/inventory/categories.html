@@ -83,6 +83,11 @@
     let editingId = null;
     
     function init() {
+        console.log('Initializing inventory categories page...');
+        console.log('CONFIG available:', !!window.CONFIG);
+        console.log('CONFIG.MENU:', window.CONFIG?.MENU);
+        console.log('inventoryCategories URL:', window.CONFIG?.MENU?.inventoryCategories);
+
         modal = new bootstrap.Modal(document.getElementById('formModal'));
         setupEventListeners();
         loadData();
@@ -95,16 +100,27 @@
     }
     
     async function loadData() {
+        console.log('Loading inventory categories...');
         showLoading();
         try {
             const token = window.authService.getToken();
+            console.log('Token available:', !!token);
+            console.log('API URL:', CONFIG.MENU.inventoryCategories);
+
             const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) throw new Error('Failed');
+            console.log('Response status:', resp.status);
+
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
             const result = await resp.json();
+            console.log('API Response:', result);
+
             items = result.data?.items || result.data || [];
+            console.log('Parsed items:', items);
+
             renderTable();
         } catch (e) {
-            Swal.fire('Error', 'Failed to load inventory categories', 'error');
+            console.error('Error loading categories:', e);
+            Swal.fire('Error', `Failed to load inventory categories: ${e.message}`, 'error');
             showEmpty();
         }
     }
