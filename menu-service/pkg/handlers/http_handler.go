@@ -12,21 +12,23 @@ import (
 	sharedHttp "shared/http"
 
 	menuCategoryHandlers "menu-service/pkg/entities/menu_categories/handlers"
-	menuItemHandlers "menu-service/pkg/entities/menu_items/handlers"
-	subMenuHandlers "menu-service/pkg/entities/sub_menus/handlers"
+	menuIngredientHandlers "menu-service/pkg/entities/menu_ingredients/handlers"
+	menuSubCategoryHandlers "menu-service/pkg/entities/menu_sub_categories/handlers"
+	menuVariantHandlers "menu-service/pkg/entities/menu_variants/handlers"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type MainHTTPHandler struct {
-	db                  *sharedDb.DbHandler
-	httpHealthMonitor   *sharedHttp.HTTPHealthMonitor
-	cancelHealthMonitor context.CancelFunc
-	menuCategoryHandler *menuCategoryHandlers.HTTPHandler
-	subMenuHandler      *subMenuHandlers.HTTPHandler
-	menuItemHandler     *menuItemHandlers.HTTPHandler
-	logger              *logrus.Logger
+	db                     *sharedDb.DbHandler
+	httpHealthMonitor      *sharedHttp.HTTPHealthMonitor
+	cancelHealthMonitor    context.CancelFunc
+	menuCategoryHandler    *menuCategoryHandlers.HTTPHandler
+	menuSubCategoryHandler *menuSubCategoryHandlers.HTTPHandler
+	menuVariantHandler     *menuVariantHandlers.HTTPHandler
+	menuIngredientHandler  *menuIngredientHandlers.HTTPHandler
+	logger                 *logrus.Logger
 }
 
 func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
@@ -61,21 +63,29 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 	menuCategoryHTTPHandler := menuCategoryHandlers.NewHTTPHandler(menuCategoryDBHandler, logger)
 
-	// Create sub menu handlers
-	subMenuDBHandler, err := subMenuHandlers.NewDBHandler(db, logger)
+	// Create menu sub-category handlers
+	menuSubCategoryDBHandler, err := menuSubCategoryHandlers.NewDBHandler(db, logger)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("failed to create sub menu handler: %w", err)
+		return nil, fmt.Errorf("failed to create menu sub-category handler: %w", err)
 	}
-	subMenuHTTPHandler := subMenuHandlers.NewHTTPHandler(subMenuDBHandler, logger)
+	menuSubCategoryHTTPHandler := menuSubCategoryHandlers.NewHTTPHandler(menuSubCategoryDBHandler, logger)
 
-	// Create menu item handlers
-	menuItemDBHandler, err := menuItemHandlers.NewDBHandler(db, logger)
+	// Create menu variant handlers
+	menuVariantDBHandler, err := menuVariantHandlers.NewDBHandler(db, logger)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("failed to create menu item handler: %w", err)
+		return nil, fmt.Errorf("failed to create menu variant handler: %w", err)
 	}
-	menuItemHTTPHandler := menuItemHandlers.NewHTTPHandler(menuItemDBHandler, logger)
+	menuVariantHTTPHandler := menuVariantHandlers.NewHTTPHandler(menuVariantDBHandler, logger)
+
+	// Create menu ingredient handlers
+	menuIngredientDBHandler, err := menuIngredientHandlers.NewDBHandler(db, logger)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to create menu ingredient handler: %w", err)
+	}
+	menuIngredientHTTPHandler := menuIngredientHandlers.NewHTTPHandler(menuIngredientDBHandler, logger)
 
 	// Create cancellable context for health monitor
 	ctx, cancel := context.WithCancel(context.Background())
@@ -91,13 +101,14 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	httpHealthMonitor.Start(ctx)
 
 	return &MainHTTPHandler{
-		db:                  db,
-		httpHealthMonitor:   httpHealthMonitor,
-		cancelHealthMonitor: cancel,
-		menuCategoryHandler: menuCategoryHTTPHandler,
-		subMenuHandler:      subMenuHTTPHandler,
-		menuItemHandler:     menuItemHTTPHandler,
-		logger:              logger,
+		db:                     db,
+		httpHealthMonitor:      httpHealthMonitor,
+		cancelHealthMonitor:    cancel,
+		menuCategoryHandler:    menuCategoryHTTPHandler,
+		menuSubCategoryHandler: menuSubCategoryHTTPHandler,
+		menuVariantHandler:     menuVariantHTTPHandler,
+		menuIngredientHandler:  menuIngredientHTTPHandler,
+		logger:                 logger,
 	}, nil
 }
 
@@ -126,20 +137,28 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/v1/menu/categories/{id}", h.menuCategoryHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/menu/categories/{id}", h.menuCategoryHandler.Delete).Methods("DELETE")
 
-	// Sub Menus
-	router.HandleFunc("/api/v1/menu/submenus", h.subMenuHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/menu/submenus/{id}", h.subMenuHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/menu/submenus", h.subMenuHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/menu/submenus/{id}", h.subMenuHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/menu/submenus/{id}", h.subMenuHandler.Delete).Methods("DELETE")
+	// Menu Sub-Categories
+	router.HandleFunc("/api/v1/menu/sub-categories", h.menuSubCategoryHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/menu/sub-categories/{id}", h.menuSubCategoryHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/menu/sub-categories", h.menuSubCategoryHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/menu/sub-categories/{id}", h.menuSubCategoryHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/menu/sub-categories/{id}", h.menuSubCategoryHandler.Delete).Methods("DELETE")
 
-	// Menu Items
-	router.HandleFunc("/api/v1/menu/items", h.menuItemHandler.List).Methods("GET")
-	router.HandleFunc("/api/v1/menu/items/{id}", h.menuItemHandler.GetByID).Methods("GET")
-	router.HandleFunc("/api/v1/menu/items", h.menuItemHandler.Create).Methods("POST")
-	router.HandleFunc("/api/v1/menu/items/{id}", h.menuItemHandler.Update).Methods("PUT")
-	router.HandleFunc("/api/v1/menu/items/{id}", h.menuItemHandler.Delete).Methods("DELETE")
-	router.HandleFunc("/api/v1/menu/items/{id}/availability", h.menuItemHandler.UpdateAvailability).Methods("PATCH")
+	// Menu Variants
+	router.HandleFunc("/api/v1/menu/variants", h.menuVariantHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/menu/variants/{id}", h.menuVariantHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/menu/variants", h.menuVariantHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/menu/variants/{id}", h.menuVariantHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/menu/variants/{id}", h.menuVariantHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/api/v1/menu/variants/{id}/availability", h.menuVariantHandler.UpdateAvailability).Methods("PATCH")
+
+	// Menu Ingredients
+	router.HandleFunc("/api/v1/menu/ingredients", h.menuIngredientHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/menu/ingredients/{id}", h.menuIngredientHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/menu/ingredients", h.menuIngredientHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/menu/ingredients/{id}", h.menuIngredientHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/menu/ingredients/{id}", h.menuIngredientHandler.Delete).Methods("DELETE")
+	router.HandleFunc("/api/v1/menu/variants/{variantId}/ingredients", h.menuIngredientHandler.GetByMenuVariant).Methods("GET")
 }
 
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
