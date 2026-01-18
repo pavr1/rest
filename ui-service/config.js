@@ -60,12 +60,12 @@ const CONFIG = {
         // Menu Ingredients
         ingredients: SERVICE_URLS.gateway + '/api/v1/menu/ingredients',
         ingredientsByVariant: (variantId) => SERVICE_URLS.gateway + `/api/v1/menu/variants/${variantId}/ingredients`,
-        // Stock Categories
-        stockCategories: SERVICE_URLS.gateway + '/api/v1/inventory/categories',
-        // Stock Sub-Categories
-        stockSubCategories: SERVICE_URLS.gateway + '/api/v1/inventory/sub-categories',
-        // Stock Variants
-        stockVariants: SERVICE_URLS.gateway + '/api/v1/inventory/variants'
+        // Inventory Categories (top level: Drinks, Food, etc.)
+        inventoryCategories: SERVICE_URLS.gateway + '/api/v1/inventory/categories',
+        // Inventory Sub-Categories (second level: Beers, Rice, etc. - grouped by category)
+        inventorySubCategories: SERVICE_URLS.gateway + '/api/v1/inventory/sub-categories',
+        // Inventory Variants (third level: 6Pack, 1kg, etc. - with unit info)
+        inventoryVariants: SERVICE_URLS.gateway + '/api/v1/inventory/variants'
     },
     INVENTORY: {
         // Suppliers

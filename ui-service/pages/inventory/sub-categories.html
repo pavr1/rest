@@ -1,4 +1,4 @@
-<!-- Inventory Categories Page Partial -->
+<!-- Inventory Sub-Categories Page Partial -->
 <style>
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
@@ -12,34 +12,47 @@
     .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
     .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .filter-section { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius); }
 </style>
 
 <div class="page-header">
-    <h1 class="page-title">Inventory Categories</h1>
-    <button class="btn btn-primary" id="addBtn"><i class="fas fa-plus me-2"></i>Add Category</button>
+    <h1 class="page-title">Inventory Sub-Categories</h1>
+    <button class="btn btn-primary" id="addBtn"><i class="fas fa-plus me-2"></i>Add Sub-Category</button>
+</div>
+
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label">Filter by Category</label>
+            <select class="form-select" id="categoryFilter">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+    </div>
 </div>
 
 <div class="data-card">
     <div class="data-card-header">
-        <h5 class="mb-0">All Inventory Categories</h5>
+        <h5 class="mb-0">All Inventory Sub-Categories</h5>
         <button class="btn btn-outline-secondary btn-sm" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
     </div>
     <div id="tableContainer">
         <div class="loading-state" id="loadingState">
             <div class="spinner-border text-primary mb-3"></div>
-            <p>Loading inventory categories...</p>
+            <p>Loading sub-categories...</p>
         </div>
         <div class="empty-state d-none" id="emptyState">
-            <i class="fas fa-layer-group"></i>
-            <h5>No inventory categories yet</h5>
-            <p>Create your first inventory category.</p>
+            <i class="fas fa-list"></i>
+            <h5>No inventory sub-categories yet</h5>
+            <p>Create your first inventory sub-category.</p>
         </div>
         <table class="data-table d-none" id="dataTable">
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Category</th>
                     <th>Description</th>
-                    <th>Items</th>
+                    <th>Variants</th>
                     <th width="120">Actions</th>
                 </tr>
             </thead>
@@ -52,7 +65,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add Inventory Category</h5>
+                <h5 class="modal-title" id="modalTitle">Add Inventory Sub-Category</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="dataForm">
@@ -61,6 +74,12 @@
                     <div class="mb-3">
                         <label class="form-label">Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="itemName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="itemCategory" required>
+                            <option value="">Select Category</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -79,81 +98,121 @@
 <script>
 (function() {
     let items = [];
+    let categories = [];
     let modal = null;
     let editingId = null;
-    
+
     function init() {
         modal = new bootstrap.Modal(document.getElementById('formModal'));
         setupEventListeners();
+        loadCategories();
         loadData();
     }
-    
+
     function setupEventListeners() {
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
+        document.getElementById('categoryFilter')?.addEventListener('change', () => loadData());
         document.getElementById('dataForm')?.addEventListener('submit', (e) => { e.preventDefault(); save(); });
     }
-    
+
+    async function loadCategories() {
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) return;
+            const result = await resp.json();
+            categories = result.data?.items || result.data || [];
+
+            const select = document.getElementById('categoryFilter');
+            const categorySelect = document.getElementById('itemCategory');
+            select.innerHTML = '<option value="">All Categories</option>';
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+
+            categories.forEach(cat => {
+                select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+                categorySelect.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            });
+        } catch (e) {
+            console.error('Failed to load categories:', e);
+        }
+    }
+
     async function loadData() {
         showLoading();
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            const categoryId = document.getElementById('categoryFilter').value;
+            let url = CONFIG.MENU.inventorySubCategories;
+            if (categoryId) {
+                url += `?category_id=${categoryId}`;
+            }
+
+            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
             items = result.data?.items || result.data || [];
             renderTable();
         } catch (e) {
-            Swal.fire('Error', 'Failed to load inventory categories', 'error');
+            Swal.fire('Error', 'Failed to load inventory sub-categories', 'error');
             showEmpty();
         }
     }
-    
+
     function renderTable() {
         const tbody = document.getElementById('tableBody');
         const table = document.getElementById('dataTable');
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
-        
+
         if (!items.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
-        
+
         empty.classList.add('d-none');
         table.classList.remove('d-none');
-        tbody.innerHTML = items.map(item => `
-            <tr>
-                <td><strong>${escapeHtml(item.name)}</strong></td>
-                <td>${escapeHtml(item.description || '-')}</td>
-                <td>${item.item_count || 0}</td>
-                <td>
-                    <div class="action-btns">
-                        <button class="btn btn-outline-primary btn-action" onclick="window.stockCatPage.edit('${item.id}')" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-outline-danger btn-action" onclick="window.stockCatPage.delete('${item.id}')" title="Delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = items.map(item => {
+            const category = categories.find(c => c.id === item.category_id);
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(item.name)}</strong></td>
+                    <td>${category ? escapeHtml(category.name) : '-'}</td>
+                    <td>${escapeHtml(item.description || '-')}</td>
+                    <td>${item.variant_count || 0}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn btn-outline-primary btn-action" onclick="window.inventorySubCatPage.edit('${item.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-outline-danger btn-action" onclick="window.inventorySubCatPage.delete('${item.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
-    
+
     function showLoading() { document.getElementById('loadingState').classList.remove('d-none'); document.getElementById('emptyState').classList.add('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
     function showEmpty() { document.getElementById('loadingState').classList.add('d-none'); document.getElementById('emptyState').classList.remove('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
-    
+
     function openModal(item = null) {
         editingId = item?.id || null;
-        document.getElementById('modalTitle').textContent = item ? 'Edit Inventory Category' : 'Add Inventory Category';
+        document.getElementById('modalTitle').textContent = item ? 'Edit Inventory Sub-Category' : 'Add Inventory Sub-Category';
         document.getElementById('itemId').value = item?.id || '';
         document.getElementById('itemName').value = item?.name || '';
+        document.getElementById('itemCategory').value = item?.category_id || '';
         document.getElementById('itemDescription').value = item?.description || '';
         modal.show();
     }
-    
+
     async function save() {
         const btn = document.getElementById('saveBtn');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
             const token = window.authService.getToken();
-            const data = { name: document.getElementById('itemName').value, description: document.getElementById('itemDescription').value };
-            const url = editingId ? `${CONFIG.MENU.inventoryCategories}/${editingId}` : CONFIG.MENU.inventoryCategories;
+            const data = {
+                name: document.getElementById('itemName').value,
+                category_id: document.getElementById('itemCategory').value,
+                description: document.getElementById('itemDescription').value
+            };
+            const url = editingId ? `${CONFIG.MENU.inventorySubCategories}/${editingId}` : CONFIG.MENU.inventorySubCategories;
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
             modal.hide();
@@ -162,27 +221,27 @@
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
         finally { btn.disabled = false; btn.innerHTML = 'Save'; }
     }
-    
+
     async function deleteItem(id) {
         const item = items.find(i => i.id === id);
         const result = await Swal.fire({ title: 'Delete?', text: `Delete "${item?.name}"?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
         if (!result.isConfirmed) return;
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.inventoryCategories}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(`${CONFIG.MENU.inventorySubCategories}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
             await loadData();
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
-    
+
     function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-    
-    window.inventoryCatPage = {
+
+    window.inventorySubCatPage = {
         edit: (id) => { const item = items.find(i => i.id === id); if (item) openModal(item); },
         delete: deleteItem
     };
-    
+
     init();
 })();
 </script>
