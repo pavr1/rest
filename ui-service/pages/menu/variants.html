@@ -1,4 +1,4 @@
-<!-- Menu Items Page Partial -->
+<!-- Menu Variants Page Partial -->
 <style>
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
     .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
@@ -28,12 +28,12 @@
 </style>
 
 <div class="page-header">
-    <h1 class="page-title">Menu Items</h1>
-    <button class="btn btn-primary" id="addItemBtn"><i class="fas fa-plus me-2"></i>Add Item</button>
+    <h1 class="page-title">Menu Variants</h1>
+    <button class="btn btn-primary" id="addVariantBtn"><i class="fas fa-plus me-2"></i>Add Variant</button>
 </div>
 
 <div class="filters">
-    <select class="form-select" id="subMenuFilter" style="width: auto;"><option value="">All Sub Menus</option></select>
+    <select class="form-select" id="subCategoryFilter" style="width: auto;"><option value="">All Sub-Categories</option></select>
     <select class="form-select" id="availabilityFilter" style="width: auto;">
         <option value="">All Status</option>
         <option value="true">Available</option>
@@ -46,7 +46,7 @@
     <div id="tableContainer">
         <div class="loading-state" id="loadingState">
             <div class="spinner-border text-primary mb-3"></div>
-            <p>Loading menu items...</p>
+            <p>Loading menu variants...</p>
         </div>
         <div class="empty-state d-none" id="emptyState">
             <i class="fas fa-utensils"></i>
@@ -71,43 +71,43 @@
     </div>
 </div>
 
-<!-- Item Modal -->
-<div class="modal fade" id="itemModal" tabindex="-1">
+<!-- Variant Modal -->
+<div class="modal fade" id="variantModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add Menu Item</h5>
+                <h5 class="modal-title" id="modalTitle">Add Menu Variant</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="itemForm">
+            <form id="variantForm">
                 <div class="modal-body">
-                    <input type="hidden" id="itemId">
+                    <input type="hidden" id="variantId">
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label class="form-label">Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="itemName" required>
+                            <input type="text" class="form-control" id="variantName" required>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Sub Menu <span class="text-danger">*</span></label>
-                            <select class="form-select" id="itemSubMenu" required><option value="">Select...</option></select>
+                            <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="variantSubCategory" required><option value="">Select...</option></select>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" id="itemDescription" rows="2"></textarea>
+                        <textarea class="form-control" id="variantDescription" rows="2"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Price <span class="text-danger">*</span></label>
-                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="itemPrice" step="0.01" min="0" required></div>
+                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="variantPrice" step="0.01" min="0" required></div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Prep Time (min)</label>
-                            <input type="number" class="form-control" id="itemPrepTime" min="0">
+                            <input type="number" class="form-control" id="variantPrepTime" min="0">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Display Order</label>
-                            <input type="number" class="form-control" id="itemDisplayOrder" value="0" min="0">
+                            <input type="number" class="form-control" id="variantDisplayOrder" value="0" min="0">
                         </div>
                     </div>
                     <div class="mb-3">
@@ -210,62 +210,61 @@
 
 <script>
 (function() {
-    let items = [];
-    let subMenus = [];
-    let stockItems = [];
+    let variants = [];
+    let subCategories = [];
+    let stockVariants = [];
     let currentIngredients = [];
     let modal = null;
     let ingredientsModal = null;
     let editingId = null;
-    
+
     function init() {
-        modal = new bootstrap.Modal(document.getElementById('itemModal'));
+        modal = new bootstrap.Modal(document.getElementById('variantModal'));
         ingredientsModal = new bootstrap.Modal(document.getElementById('ingredientsModal'));
         setupEventListeners();
-        loadSubMenus();
-        loadStockItems();
-        loadItems();
+        loadSubCategories();
+        loadStockVariants();
+        loadVariants();
     }
-    
+
     function setupEventListeners() {
-        document.getElementById('addItemBtn')?.addEventListener('click', () => openModal());
-        document.getElementById('refreshBtn')?.addEventListener('click', () => loadItems());
-        document.getElementById('itemForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveItem(); });
-        document.getElementById('subMenuFilter')?.addEventListener('change', () => loadItems());
-        document.getElementById('availabilityFilter')?.addEventListener('change', () => loadItems());
+        document.getElementById('addVariantBtn')?.addEventListener('click', () => openModal());
+        document.getElementById('refreshBtn')?.addEventListener('click', () => loadVariants());
+        document.getElementById('variantForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveVariant(); });
+        document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadVariants());
+        document.getElementById('availabilityFilter')?.addEventListener('change', () => loadVariants());
         document.getElementById('addIngredientBtn')?.addEventListener('click', addIngredient);
-        document.getElementById('recalculateCostBtn')?.addEventListener('click', recalculateCost);
     }
     
-    async function loadSubMenus() {
+    async function loadSubCategories() {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.subMenus, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.subCategories, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
-                // Response is wrapped in { success, message, data: { sub_menus, total, page, limit } }
-                subMenus = result.data?.sub_menus || result.sub_menus || [];
-                populateSubMenuDropdowns();
+                // Response is wrapped in { success, message, data: { sub_categories, total, page, limit } }
+                subCategories = result.data?.sub_categories || result.sub_categories || [];
+                populateSubCategoryDropdowns();
             }
-        } catch (e) { console.error('Error loading sub menus:', e); }
+        } catch (e) { console.error('Error loading sub-categories:', e); }
     }
     
-    async function loadStockItems() {
+    async function loadStockVariants() {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.stockItems, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.stockVariants, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
-                stockItems = result.data?.items || result.data || [];
-                populateStockItemsDropdown();
+                stockVariants = result.data?.variants || result.data || [];
+                populateStockVariantsDropdown();
             }
-        } catch (e) { console.error('Error loading stock items:', e); }
+        } catch (e) { console.error('Error loading stock variants:', e); }
     }
     
-    function populateSubMenuDropdowns() {
-        const options = subMenus.map(sm => `<option value="${sm.id}">${sm.name} (${sm.item_type})</option>`).join('');
-        document.getElementById('subMenuFilter').innerHTML = '<option value="">All Sub Menus</option>' + options;
-        document.getElementById('itemSubMenu').innerHTML = '<option value="">Select...</option>' + options;
+    function populateSubCategoryDropdowns() {
+        const options = subCategories.map(sc => `<option value="${sc.id}">${sc.name} (${sc.item_type})</option>`).join('');
+        document.getElementById('subCategoryFilter').innerHTML = '<option value="">All Sub-Categories</option>' + options;
+        document.getElementById('variantSubCategory').innerHTML = '<option value="">Select...</option>' + options;
     }
     
     function populateStockItemsDropdown() {
@@ -273,25 +272,25 @@
         document.getElementById('newIngredientStockItem').innerHTML = '<option value="">Select stock item...</option>' + options;
     }
     
-    async function loadItems() {
+    async function loadVariants() {
         showLoading();
         try {
             const token = window.authService.getToken();
             const params = new URLSearchParams();
-            const subMenuId = document.getElementById('subMenuFilter').value;
+            const subCategoryId = document.getElementById('subCategoryFilter').value;
             const avail = document.getElementById('availabilityFilter').value;
-            if (subMenuId) params.append('sub_menu_id', subMenuId);
+            if (subCategoryId) params.append('sub_category_id', subCategoryId);
             if (avail) params.append('is_available', avail);
-            
-            const url = CONFIG.MENU.items + (params.toString() ? `?${params}` : '');
+
+            const url = CONFIG.MENU.variants + (params.toString() ? `?${params}` : '');
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
-            items = result.data?.items || result.data || [];
+            variants = result.data?.variants || result.data || [];
             renderTable();
         } catch (e) {
             console.error('Error:', e);
-            Swal.fire('Error', 'Failed to load items', 'error');
+            Swal.fire('Error', 'Failed to load variants', 'error');
             showEmpty();
         }
     }

@@ -23,8 +23,8 @@
 </style>
 
 <div class="page-header">
-    <h1 class="page-title">Sub Menus</h1>
-    <button class="btn btn-primary" id="addSubMenuBtn"><i class="fas fa-plus me-2"></i>Add Sub Menu</button>
+    <h1 class="page-title">Menu Sub-Categories</h1>
+    <button class="btn btn-primary" id="addSubCategoryBtn"><i class="fas fa-plus me-2"></i>Add Sub-Category</button>
 </div>
 
 <div class="filters">
@@ -46,12 +46,12 @@
     <div id="tableContainer">
         <div class="loading-state" id="loadingState">
             <div class="spinner-border text-primary mb-3"></div>
-            <p>Loading sub menus...</p>
+            <p>Loading menu sub-categories...</p>
         </div>
         <div class="empty-state d-none" id="emptyState">
             <i class="fas fa-layer-group"></i>
-            <h5>No sub menus yet</h5>
-            <p>Create your first sub menu to group menu items.</p>
+            <h5>No menu sub-categories yet</h5>
+            <p>Create your first sub-category to group menu variants.</p>
         </div>
         <table class="data-table d-none" id="dataTable">
             <thead>
@@ -70,29 +70,29 @@
     </div>
 </div>
 
-<!-- Sub Menu Modal -->
-<div class="modal fade" id="subMenuModal" tabindex="-1">
+<!-- Menu Sub-Category Modal -->
+<div class="modal fade" id="subCategoryModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Add Sub Menu</h5>
+                <h5 class="modal-title" id="modalTitle">Add Menu Sub-Category</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="subMenuForm">
+            <form id="subCategoryForm">
                 <div class="modal-body">
-                    <input type="hidden" id="subMenuId">
+                    <input type="hidden" id="subCategoryId">
                     <div class="mb-3">
                         <label class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="subMenuName" required placeholder="e.g., Smoothies, Sodas, Cocktails">
+                        <input type="text" class="form-control" id="subCategoryName" required placeholder="e.g., Smoothies, Sodas, Cocktails">
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" id="subMenuCategory" required><option value="">Select...</option></select>
+                            <select class="form-select" id="subCategoryCategory" required><option value="">Select...</option></select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Type <span class="text-danger">*</span></label>
-                            <select class="form-select" id="subMenuType" required>
+                            <select class="form-select" id="subCategoryType" required>
                                 <option value="">Select...</option>
                                 <option value="kitchen">Kitchen</option>
                                 <option value="bar">Bar</option>
@@ -101,17 +101,17 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" id="subMenuDescription" rows="2"></textarea>
+                        <textarea class="form-control" id="subCategoryDescription" rows="2"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Display Order</label>
-                            <input type="number" class="form-control" id="subMenuOrder" value="0" min="0">
+                            <input type="number" class="form-control" id="subCategoryOrder" value="0" min="0">
                         </div>
                         <div class="col-md-6 mb-3 d-flex align-items-end">
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="subMenuActive" checked>
-                                <label class="form-check-label" for="subMenuActive">Active</label>
+                                <input class="form-check-input" type="checkbox" id="subCategoryActive" checked>
+                                <label class="form-check-label" for="subCategoryActive">Active</label>
                             </div>
                         </div>
                     </div>
@@ -127,25 +127,25 @@
 
 <script>
 (function() {
-    let subMenus = [];
+    let subCategories = [];
     let categories = [];
     let modal = null;
     let editingId = null;
-    
+
     function init() {
-        modal = new bootstrap.Modal(document.getElementById('subMenuModal'));
+        modal = new bootstrap.Modal(document.getElementById('subCategoryModal'));
         setupEventListeners();
         loadCategories();
-        loadSubMenus();
+        loadSubCategories();
     }
-    
+
     function setupEventListeners() {
-        document.getElementById('addSubMenuBtn')?.addEventListener('click', () => openModal());
-        document.getElementById('refreshBtn')?.addEventListener('click', () => loadSubMenus());
-        document.getElementById('subMenuForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveSubMenu(); });
-        document.getElementById('categoryFilter')?.addEventListener('change', () => loadSubMenus());
-        document.getElementById('typeFilter')?.addEventListener('change', () => loadSubMenus());
-        document.getElementById('activeFilter')?.addEventListener('change', () => loadSubMenus());
+        document.getElementById('addSubCategoryBtn')?.addEventListener('click', () => openModal());
+        document.getElementById('refreshBtn')?.addEventListener('click', () => loadSubCategories());
+        document.getElementById('subCategoryForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveSubCategory(); });
+        document.getElementById('categoryFilter')?.addEventListener('change', () => loadSubCategories());
+        document.getElementById('typeFilter')?.addEventListener('change', () => loadSubCategories());
+        document.getElementById('activeFilter')?.addEventListener('change', () => loadSubCategories());
     }
     
     async function loadCategories() {
@@ -178,16 +178,16 @@
             if (itemType) params.append('item_type', itemType);
             if (isActive) params.append('is_active', isActive);
             
-            const url = CONFIG.MENU.subMenus + (params.toString() ? `?${params}` : '');
+            const url = CONFIG.MENU.subCategories + (params.toString() ? `?${params}` : '');
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
-            // Response is wrapped in { success, message, data: { sub_menus, total, page, limit } }
-            subMenus = result.data?.sub_menus || result.sub_menus || [];
+            // Response is wrapped in { success, message, data: { sub_categories, total, page, limit } }
+            subCategories = result.data?.sub_categories || result.sub_categories || [];
             renderTable();
         } catch (e) {
             console.error('Error:', e);
-            Swal.fire('Error', 'Failed to load sub menus', 'error');
+            Swal.fire('Error', 'Failed to load menu sub-categories', 'error');
             showEmpty();
         }
     }
@@ -197,27 +197,27 @@
         const table = document.getElementById('dataTable');
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
-        
-        if (!subMenus.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
-        
+
+        if (!subCategories.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+
         empty.classList.add('d-none');
         table.classList.remove('d-none');
-        tbody.innerHTML = subMenus.map(sm => {
-            const cat = categories.find(c => c.id === sm.category_id);
-            const typeIcon = sm.item_type === 'bar' ? 'fa-cocktail' : 'fa-utensils';
-            const typeLabel = sm.item_type === 'bar' ? 'Bar' : 'Kitchen';
+        tbody.innerHTML = subCategories.map(sc => {
+            const cat = categories.find(c => c.id === sc.category_id);
+            const typeIcon = sc.item_type === 'bar' ? 'fa-cocktail' : 'fa-utensils';
+            const typeLabel = sc.item_type === 'bar' ? 'Bar' : 'Kitchen';
             return `
                 <tr>
-                    <td>${sm.image_url ? `<img src="${sm.image_url}" class="item-image">` : `<div class="item-image-placeholder"><i class="fas ${typeIcon}"></i></div>`}</td>
-                    <td><strong>${escapeHtml(sm.name)}</strong>${sm.description ? `<br><small class="text-muted">${escapeHtml(sm.description)}</small>` : ''}</td>
-                    <td><span class="type-badge ${sm.item_type}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
-                    <td>${sm.category_name || cat?.name || '-'}</td>
-                    <td>${sm.display_order}</td>
-                    <td><span class="status-badge ${sm.is_active ? 'active' : 'inactive'}">${sm.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td><div class="item-image-placeholder"><i class="fas ${typeIcon}"></i></div></td>
+                    <td><strong>${escapeHtml(sc.name)}</strong>${sc.description ? `<br><small class="text-muted">${escapeHtml(sc.description)}</small>` : ''}</td>
+                    <td><span class="type-badge ${sc.item_type}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
+                    <td>${sc.category_name || cat?.name || '-'}</td>
+                    <td>${sc.display_order}</td>
+                    <td><span class="status-badge ${sc.is_active ? 'active' : 'inactive'}">${sc.is_active ? 'Active' : 'Inactive'}</span></td>
                     <td>
                         <div class="action-btns">
-                            <button class="btn btn-outline-primary btn-action" onclick="window.subMenusPage.edit('${sm.id}')" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-outline-danger btn-action" onclick="window.subMenusPage.delete('${sm.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-outline-primary btn-action" onclick="window.subCategoriesPage.edit('${sc.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-outline-danger btn-action" onclick="window.subCategoriesPage.delete('${sc.id}')" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -228,64 +228,64 @@
     function showLoading() { document.getElementById('loadingState').classList.remove('d-none'); document.getElementById('emptyState').classList.add('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
     function showEmpty() { document.getElementById('loadingState').classList.add('d-none'); document.getElementById('emptyState').classList.remove('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
     
-    function openModal(subMenu = null) {
-        editingId = subMenu?.id || null;
-        document.getElementById('modalTitle').textContent = subMenu ? 'Edit Sub Menu' : 'Add Sub Menu';
-        document.getElementById('subMenuId').value = subMenu?.id || '';
-        document.getElementById('subMenuName').value = subMenu?.name || '';
-        document.getElementById('subMenuCategory').value = subMenu?.category_id || '';
-        document.getElementById('subMenuType').value = subMenu?.item_type || '';
-        document.getElementById('subMenuDescription').value = subMenu?.description || '';
-        document.getElementById('subMenuOrder').value = subMenu?.display_order || 0;
-        document.getElementById('subMenuActive').checked = subMenu?.is_active !== false;
+    function openModal(subCategory = null) {
+        editingId = subCategory?.id || null;
+        document.getElementById('modalTitle').textContent = subCategory ? 'Edit Menu Sub-Category' : 'Add Menu Sub-Category';
+        document.getElementById('subCategoryId').value = subCategory?.id || '';
+        document.getElementById('subCategoryName').value = subCategory?.name || '';
+        document.getElementById('subCategoryCategory').value = subCategory?.category_id || '';
+        document.getElementById('subCategoryType').value = subCategory?.item_type || '';
+        document.getElementById('subCategoryDescription').value = subCategory?.description || '';
+        document.getElementById('subCategoryOrder').value = subCategory?.display_order || 0;
+        document.getElementById('subCategoryActive').checked = subCategory?.is_active !== false;
         modal.show();
     }
     
-    async function saveSubMenu() {
+    async function saveSubCategory() {
         const btn = document.getElementById('saveBtn');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
             const token = window.authService.getToken();
             const data = {
-                name: document.getElementById('subMenuName').value,
-                category_id: document.getElementById('subMenuCategory').value,
-                item_type: document.getElementById('subMenuType').value,
-                description: document.getElementById('subMenuDescription').value || null,
-                display_order: parseInt(document.getElementById('subMenuOrder').value) || 0,
-                is_active: document.getElementById('subMenuActive').checked
+                name: document.getElementById('subCategoryName').value,
+                category_id: document.getElementById('subCategoryCategory').value,
+                item_type: document.getElementById('subCategoryType').value,
+                description: document.getElementById('subCategoryDescription').value || null,
+                display_order: parseInt(document.getElementById('subCategoryOrder').value) || 0,
+                is_active: document.getElementById('subCategoryActive').checked
             };
-            const url = editingId ? `${CONFIG.MENU.subMenus}/${editingId}` : CONFIG.MENU.subMenus;
+            const url = editingId ? `${CONFIG.MENU.subCategories}/${editingId}` : CONFIG.MENU.subCategories;
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
             modal.hide();
             Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false });
-            await loadSubMenus();
+            await loadSubCategories();
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
         finally { btn.disabled = false; btn.innerHTML = 'Save'; }
     }
     
-    async function deleteSubMenu(id) {
-        const sm = subMenus.find(s => s.id === id);
-        const result = await Swal.fire({ title: 'Delete?', text: `Delete "${sm?.name}"? This will fail if it has menu items.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
+    async function deleteSubCategory(id) {
+        const sc = subCategories.find(s => s.id === id);
+        const result = await Swal.fire({ title: 'Delete?', text: `Delete "${sc?.name}"? This will fail if it has menu variants.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Delete' });
         if (!result.isConfirmed) return;
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.subMenus}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(`${CONFIG.MENU.subCategories}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) {
                 const err = await resp.text();
                 throw new Error(err || 'Failed');
             }
             Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
-            await loadSubMenus();
+            await loadSubCategories();
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
     function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
     
-    window.subMenusPage = {
-        edit: (id) => { const sm = subMenus.find(s => s.id === id); if (sm) openModal(sm); },
-        delete: deleteSubMenu
+    window.subCategoriesPage = {
+        edit: (id) => { const sc = subCategories.find(s => s.id === id); if (sc) openModal(sc); },
+        delete: deleteSubCategory
     };
     
     init();

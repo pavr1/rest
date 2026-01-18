@@ -210,7 +210,7 @@
 		},
 		{
 			"name": "Menu Service",
-			"description": "Menu items, categories, stock items, and ingredients management",
+			"description": "Menu management - categories, sub-categories, variants, and ingredients",
 			"item": [
 				{
 					"name": "Health Check",
@@ -355,7 +355,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/sub-categories?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus"],
+									"path": ["api", "v1", "menu", "sub-categories"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"},
@@ -377,7 +377,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/sub-categories/{{menu_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus", "{{menu_sub_category_id}}"]
+									"path": ["api", "v1", "menu", "sub-categories", "{{menu_sub_category_id}}"]
 								},
 								"description": "Get a specific sub menu by ID"
 							}
@@ -411,7 +411,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/sub-categories",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus"]
+									"path": ["api", "v1", "menu", "sub-categories"]
 								},
 								"description": "Create a new sub menu (requires authentication)"
 							}
@@ -431,7 +431,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/sub-categories/{{menu_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus", "{{menu_sub_category_id}}"]
+									"path": ["api", "v1", "menu", "sub-categories", "{{menu_sub_category_id}}"]
 								},
 								"description": "Update an existing sub menu (requires authentication)"
 							}
@@ -446,9 +446,9 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/sub-categories/{{menu_sub_category_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "submenus", "{{menu_sub_category_id}}"]
+									"path": ["api", "v1", "menu", "sub-categories", "{{menu_sub_category_id}}"]
 								},
-								"description": "Delete a sub menu (requires authentication, fails if it has menu items)"
+								"description": "Delete a menu sub-category (requires authentication, fails if it has menu variants)"
 							}
 						}
 					]
@@ -466,7 +466,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/variants?page=1&limit=20",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items"],
+									"path": ["api", "v1", "menu", "variants"],
 									"query": [
 										{"key": "page", "value": "1"},
 										{"key": "limit", "value": "20"},
@@ -475,7 +475,7 @@
 										{"key": "is_available", "value": "true", "disabled": true}
 									]
 								},
-								"description": "List menu items (now uses sub_menu_id instead of category_id)"
+								"description": "List menu variants (requires authentication)"
 							}
 						},
 						{
@@ -488,7 +488,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_variant_id}}"]
+									"path": ["api", "v1", "menu", "variants", "{{menu_variant_id}}"]
 								},
 								"description": "Get a specific menu item by ID"
 							}
@@ -517,12 +517,12 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"Banana Smoothie\",\n    \"description\": \"Fresh banana smoothie\",\n    \"sub_menu_id\": \"{{menu_sub_category_id}}\",\n    \"price\": 5.99,\n    \"preparation_time\": 5,\n    \"display_order\": 1,\n    \"is_available\": true,\n    \"menu_types\": [\"lunch\", \"dinner\"],\n    \"dietary_tags\": [],\n    \"allergens\": [],\n    \"is_alcoholic\": false\n}"
+									"raw": "{\n    \"name\": \"Banana Smoothie\",\n    \"description\": \"Fresh banana smoothie\",\n    \"sub_category_id\": \"{{menu_sub_category_id}}\",\n    \"price\": 5.99,\n    \"preparation_time\": 5,\n    \"display_order\": 1,\n    \"is_available\": true,\n    \"menu_types\": [\"lunch\", \"dinner\"],\n    \"dietary_tags\": [],\n    \"allergens\": [],\n    \"is_alcoholic\": false\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/variants",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items"]
+									"path": ["api", "v1", "menu", "variants"]
 								},
 								"description": "Create a new menu item (requires authentication). Note: item_type is inherited from sub_menu, no longer required here."
 							}
@@ -542,7 +542,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_variant_id}}"]
+									"path": ["api", "v1", "menu", "variants", "{{menu_variant_id}}"]
 								},
 								"description": "Update an existing menu item (requires authentication)"
 							}
@@ -577,7 +577,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/menu/variants/{{menu_variant_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "menu", "items", "{{menu_variant_id}}"]
+									"path": ["api", "v1", "menu", "variants", "{{menu_variant_id}}"]
 								},
 								"description": "Delete a menu item (requires authentication)"
 							}

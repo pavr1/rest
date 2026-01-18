@@ -53,18 +53,19 @@ const CONFIG = {
     MENU: {
         // Menu Categories (top level: Drinks, Desserts, etc.)
         categories: SERVICE_URLS.gateway + '/api/v1/menu/categories',
-        // Sub Menus (second level: Smoothies, Sodas, etc. - grouped by category)
-        subMenus: SERVICE_URLS.gateway + '/api/v1/menu/submenus',
-        // Menu Items (third level: Banana Smoothie, Pineapple Smoothie, etc. - with pricing)
-        items: SERVICE_URLS.gateway + '/api/v1/menu/items',
-        // Menu Item Ingredients (use with item ID: `${CONFIG.MENU.items}/${itemId}/ingredients`)
-        ingredients: (itemId) => SERVICE_URLS.gateway + `/api/v1/menu/items/${itemId}/ingredients`,
-        // Menu Item Cost
-        itemCost: (itemId) => SERVICE_URLS.gateway + `/api/v1/menu/items/${itemId}/cost`,
-        // Stock Item Categories
-        stockCategories: SERVICE_URLS.gateway + '/api/v1/stock/categories',
-        // Stock Items
-        stockItems: SERVICE_URLS.gateway + '/api/v1/stock/items'
+        // Menu Sub-Categories (second level: Smoothies, Sodas, etc. - grouped by category)
+        subCategories: SERVICE_URLS.gateway + '/api/v1/menu/sub-categories',
+        // Menu Variants (third level: Banana Smoothie, Pineapple Smoothie, etc. - with pricing)
+        variants: SERVICE_URLS.gateway + '/api/v1/menu/variants',
+        // Menu Ingredients
+        ingredients: SERVICE_URLS.gateway + '/api/v1/menu/ingredients',
+        ingredientsByVariant: (variantId) => SERVICE_URLS.gateway + `/api/v1/menu/variants/${variantId}/ingredients`,
+        // Stock Categories
+        stockCategories: SERVICE_URLS.gateway + '/api/v1/inventory/categories',
+        // Stock Sub-Categories
+        stockSubCategories: SERVICE_URLS.gateway + '/api/v1/inventory/sub-categories',
+        // Stock Variants
+        stockVariants: SERVICE_URLS.gateway + '/api/v1/inventory/variants'
     },
     INVENTORY: {
         // Suppliers
