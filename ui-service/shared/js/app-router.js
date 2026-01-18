@@ -274,7 +274,9 @@ class AppRouter {
         console.log(`🔄 Loading page content for: ${pageName} from ${config.partial}`);
 
         try {
-            const response = await fetch(config.partial);
+            // Add cache-busting parameter to prevent browser caching
+            const cacheBust = `?v=${Date.now()}`;
+            const response = await fetch(config.partial + cacheBust);
             console.log(`📡 Fetch response for ${config.partial}:`, response.status, response.statusText);
 
             if (!response.ok) {

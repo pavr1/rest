@@ -130,8 +130,8 @@
                         <label class="form-check-label" for="variantAlcoholic">Contains Alcohol</label>
                     </div>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="itemAvailable" checked>
-                        <label class="form-check-label" for="itemAvailable">Available for ordering</label>
+                        <input class="form-check-input" type="checkbox" id="variantAvailable" checked>
+                        <label class="form-check-label" for="variantAvailable">Available for ordering</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -304,7 +304,7 @@
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
         
-        if (!items.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+        if (!variants.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
         
         empty.classList.add('d-none');
         table.classList.remove('d-none');
@@ -342,17 +342,33 @@
     function showEmpty() { document.getElementById('loadingState').classList.add('d-none'); document.getElementById('emptyState').classList.remove('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
     
     function openModal(variant = null) {
+        console.log('Opening modal for variant:', variant?.id);
         editingId = variant?.id || null;
-        document.getElementById('modalTitle').textContent = variant ? 'Edit Menu Variant' : 'Add Menu Variant';
-        document.getElementById('variantId').value = variant?.id || '';
-        document.getElementById('variantName').value = variant?.name || '';
-        document.getElementById('variantSubCategory').value = variant?.sub_category_id || '';
-        document.getElementById('variantDescription').value = variant?.description || '';
-        document.getElementById('variantPrice').value = variant?.price || '';
-        document.getElementById('variantPrepTime').value = variant?.preparation_time || '';
-        document.getElementById('variantDisplayOrder').value = variant?.display_order || 0;
-        document.getElementById('variantAvailable').checked = variant?.is_available !== false;
-        document.getElementById('variantAlcoholic').checked = variant?.is_alcoholic || false;
+
+        // Safely set modal title
+        const titleEl = document.getElementById('modalTitle');
+        if (titleEl) titleEl.textContent = variant ? 'Edit Menu Variant' : 'Add Menu Variant';
+
+        // Safely set form values
+        const setValue = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value || '';
+        };
+
+        const setChecked = (id, checked) => {
+            const el = document.getElementById(id);
+            if (el) el.checked = checked;
+        };
+
+        setValue('variantId', variant?.id);
+        setValue('variantName', variant?.name);
+        setValue('variantSubCategory', variant?.sub_category_id);
+        setValue('variantDescription', variant?.description);
+        setValue('variantPrice', variant?.price);
+        setValue('variantPrepTime', variant?.preparation_time);
+        setValue('variantDisplayOrder', variant?.display_order || 0);
+        setChecked('variantAvailable', variant?.is_available !== false);
+        setChecked('variantAlcoholic', variant?.is_alcoholic || false);
 
         // Parse menu_types JSON
         let menuTypes = [];
@@ -365,11 +381,15 @@
         } else {
             menuTypes = ['lunch', 'dinner']; // default
         }
-        document.getElementById('menuTypeBreakfast').checked = menuTypes.includes('breakfast');
-        document.getElementById('menuTypeLunch').checked = menuTypes.includes('lunch');
-        document.getElementById('menuTypeDinner').checked = menuTypes.includes('dinner');
-        
-        modal.show();
+        setChecked('menuTypeBreakfast', menuTypes.includes('breakfast'));
+        setChecked('menuTypeLunch', menuTypes.includes('lunch'));
+        setChecked('menuTypeDinner', menuTypes.includes('dinner'));
+
+        if (modal) {
+            modal.show();
+        } else {
+            console.error('Modal not initialized');
+        }
     }
     
     async function saveVariant() {

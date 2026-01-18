@@ -1,2 +1,2 @@
--- Check if sub menu has any menu items
-SELECT COUNT(*) as count FROM menu_items WHERE sub_menu_id = $1;
+-- Check if sub-category has any menu variants
+SELECT COUNT(*) as count FROM menu_variants WHERE sub_category_id = $1;

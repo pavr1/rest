@@ -32,7 +32,7 @@ type MenuVariant struct {
 type MenuVariantCreateRequest struct {
 	Name            string          `json:"name"`
 	Description     *string         `json:"description,omitempty"`
-	SubCategoryID       string          `json:"sub_menu_id"`
+	SubCategoryID       string          `json:"sub_category_id"`
 	Price           float64         `json:"price"`
 	HappyHourPrice  *float64        `json:"happy_hour_price,omitempty"`
 	ImageURL        *string         `json:"image_url,omitempty"`
@@ -49,7 +49,7 @@ type MenuVariantCreateRequest struct {
 type MenuVariantUpdateRequest struct {
 	Name            *string          `json:"name,omitempty"`
 	Description     *string          `json:"description,omitempty"`
-	SubCategoryID       *string          `json:"sub_menu_id,omitempty"`
+	SubCategoryID       *string          `json:"sub_category_id,omitempty"`
 	Price           *float64         `json:"price,omitempty"`
 	HappyHourPrice  *float64         `json:"happy_hour_price,omitempty"`
 	ImageURL        *string          `json:"image_url,omitempty"`
@@ -70,7 +70,7 @@ type MenuVariantAvailabilityRequest struct {
 // MenuVariantListRequest represents filter parameters for listing menu items
 type MenuVariantListRequest struct {
 	MenuType    *string `json:"menu_type,omitempty"`
-	SubCategoryID   *string `json:"sub_menu_id,omitempty"`
+	SubCategoryID   *string `json:"sub_category_id,omitempty"`
 	IsAvailable *bool   `json:"is_available,omitempty"`
 	Page        int     `json:"page"`
 	Limit       int     `json:"limit"`

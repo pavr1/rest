@@ -98,7 +98,7 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.SubCategoryID == "" {
-		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Sub Menu ID is required")
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Sub Category ID is required")
 		return
 	}
 
