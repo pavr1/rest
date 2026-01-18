@@ -1121,95 +1121,364 @@
 		},
 		{
 			"name": "Inventory Service",
+			"description": "Inventory management - categories, sub-categories, and variants",
 			"item": [
 				{
-					"name": "List Stock Variants",
+					"name": "Health Check",
 					"request": {
 						"method": "GET",
-						"header": [
-							{"key": "Authorization", "value": "Bearer {{token}}"}
-						],
+						"header": [],
 						"url": {
-							"raw": "{{gateway_url}}/api/v1/inventory/variants?page=1&limit=20",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "inventory", "variants"],
-							"query": [
-								{"key": "page", "value": "1"},
-								{"key": "limit", "value": "20"}
-							]
-						},
-						"description": "List stock variants (requires authentication)"
+							"raw": "{{inventory_url}}/api/v1/inventory/p/health",
+							"host": ["{{inventory_url}}"],
+							"path": ["api", "v1", "inventory", "p", "health"]
+						}
 					}
 				},
 				{
-					"name": "Get Stock Variant",
-					"request": {
-						"method": "GET",
-						"header": [
-							{"key": "Authorization", "value": "Bearer {{token}}"}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+					"name": "Inventory Categories",
+					"item": [
+						{
+							"name": "List Inventory Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/categories?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "categories"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"}
+									]
+								},
+								"description": "List inventory categories (requires authentication)"
+							}
 						},
-						"description": "Get a specific stock variant by ID (requires authentication)"
-					}
+						{
+							"name": "Get Inventory Category",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/categories/{{stock_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "categories", "{{stock_category_id}}"]
+								},
+								"description": "Get a specific inventory category (requires authentication)"
+							}
+						},
+						{
+							"name": "Create Inventory Category",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('stock_category_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Drinks\",\n    \"display_order\": 10,\n    \"description\": \"Beverages and drinks\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "categories"]
+								},
+								"description": "Create a new inventory category (requires authentication)"
+							}
+						},
+						{
+							"name": "Update Inventory Category",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Beverages\",\n    \"display_order\": 5\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/categories/{{stock_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "categories", "{{stock_category_id}}"]
+								},
+								"description": "Update an inventory category (requires authentication)"
+							}
+						},
+						{
+							"name": "Delete Inventory Category",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/categories/{{stock_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "categories", "{{stock_category_id}}"]
+								},
+								"description": "Delete an inventory category (requires authentication)"
+							}
+						}
+					]
 				},
 				{
-					"name": "Create Stock Variant",
-					"request": {
-						"method": "POST",
-						"header": [
-							{"key": "Authorization", "value": "Bearer {{token}}"},
-							{"key": "Content-Type", "value": "application/json"}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"6Pack\",\n    \"stock_sub_category_id\": \"{{stock_sub_category_id}}\",\n    \"unit\": \"Bottle\",\n    \"number_of_units\": 6.0\n}"
+					"name": "Inventory Sub-Categories",
+					"item": [
+						{
+							"name": "List Inventory Sub-Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "sub-categories"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "category_id", "value": "{{stock_category_id}}", "disabled": true}
+									]
+								},
+								"description": "List inventory sub-categories (requires authentication)"
+							}
 						},
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/inventory/variants",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "inventory", "variants"]
+						{
+							"name": "Get Inventory Sub-Category",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories/{{stock_sub_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "sub-categories", "{{stock_sub_category_id}}"]
+								},
+								"description": "Get a specific inventory sub-category (requires authentication)"
+							}
 						},
-						"description": "Create a new stock variant (requires authentication)"
-					}
+						{
+							"name": "Create Inventory Sub-Category",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('stock_sub_category_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Beers\",\n    \"category_id\": \"{{stock_category_id}}\",\n    \"description\": \"Beer products\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "sub-categories"]
+								},
+								"description": "Create a new inventory sub-category (requires authentication)"
+							}
+						},
+						{
+							"name": "Update Inventory Sub-Category",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Craft Beers\",\n    \"description\": \"Craft beer selection\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories/{{stock_sub_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "sub-categories", "{{stock_sub_category_id}}"]
+								},
+								"description": "Update an inventory sub-category (requires authentication)"
+							}
+						},
+						{
+							"name": "Delete Inventory Sub-Category",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/sub-categories/{{stock_sub_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "sub-categories", "{{stock_sub_category_id}}"]
+								},
+								"description": "Delete an inventory sub-category (requires authentication)"
+							}
+						}
+					]
 				},
 				{
-					"name": "Update Stock Variant",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{"key": "Authorization", "value": "Bearer {{token}}"},
-							{"key": "Content-Type", "value": "application/json"}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"name\": \"12Pack\",\n    \"number_of_units\": 12.0\n}"
+					"name": "Inventory Variants",
+					"item": [
+						{
+							"name": "List Inventory Variants",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/variants?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "variants"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "sub_category_id", "value": "{{stock_sub_category_id}}", "disabled": true}
+									]
+								},
+								"description": "List inventory variants (requires authentication)"
+							}
 						},
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+						{
+							"name": "Get Inventory Variant",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+								},
+								"description": "Get a specific inventory variant (requires authentication)"
+							}
 						},
-						"description": "Update an existing stock variant (requires authentication)"
-					}
-				},
-				{
-					"name": "Delete Stock Variant",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{"key": "Authorization", "value": "Bearer {{token}}"}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+						{
+							"name": "Create Inventory Variant",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('stock_variant_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"6Pack\",\n    \"stock_sub_category_id\": \"{{stock_sub_category_id}}\",\n    \"unit\": \"Bottle\",\n    \"number_of_units\": 6.0\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/variants",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "variants"]
+								},
+								"description": "Create a new inventory variant (requires authentication)"
+							}
 						},
-						"description": "Delete a stock variant (requires authentication)"
-					}
+						{
+							"name": "Update Inventory Variant",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"12Pack\",\n    \"unit\": \"Bottle\",\n    \"number_of_units\": 12.0\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+								},
+								"description": "Update an inventory variant (requires authentication)"
+							}
+						},
+						{
+							"name": "Delete Inventory Variant",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
+								},
+								"description": "Delete an inventory variant (requires authentication)"
+							}
+						}
+					]
 				}
 			]
 		},
