@@ -78,8 +78,9 @@
                     <div class="mb-3">
                         <label class="form-label">Category <span class="text-danger">*</span></label>
                         <select class="form-select" id="itemCategory" required>
-                            <option value="">Select Category</option>
+                            <option value="">Loading categories...</option>
                         </select>
+                        <div class="form-text">Categories will load automatically. If no categories appear, refresh the page.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -113,16 +114,42 @@
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
         document.getElementById('categoryFilter')?.addEventListener('change', () => loadData());
-        document.getElementById('dataForm')?.addEventListener('submit', (e) => { e.preventDefault(); save(); });
+        document.getElementById('dataForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const categoryId = document.getElementById('itemCategory').value;
+            const name = document.getElementById('itemName').value.trim();
+
+            if (!categoryId) {
+                Swal.fire('Error', 'Please select a category', 'warning');
+                return;
+            }
+
+            if (!name) {
+                Swal.fire('Error', 'Name is required', 'warning');
+                return;
+            }
+
+            save();
+        });
     }
 
     async function loadCategories() {
+        console.log('Loading categories for sub-categories page...');
         try {
             const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) return;
+            console.log('Categories API response status:', resp.status);
+
+            if (!resp.ok) {
+                console.error('Failed to fetch categories:', resp.statusText);
+                return;
+            }
+
             const result = await resp.json();
-            categories = result.data?.items || result.data || [];
+            console.log('Categories API response:', result);
+
+            categories = result.data?.categories || result.data?.items || result.data || [];
+            console.log('Parsed categories:', categories);
 
             const select = document.getElementById('categoryFilter');
             const categorySelect = document.getElementById('itemCategory');
@@ -133,6 +160,8 @@
                 select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
                 categorySelect.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
             });
+
+            console.log('Categories dropdown populated with', categories.length, 'categories');
         } catch (e) {
             console.error('Failed to load categories:', e);
         }
@@ -151,7 +180,7 @@
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
-            items = result.data?.items || result.data || [];
+            items = result.data?.sub_categories || result.data?.items || result.data || [];
             renderTable();
         } catch (e) {
             Swal.fire('Error', 'Failed to load inventory sub-categories', 'error');
@@ -205,21 +234,59 @@
         const btn = document.getElementById('saveBtn');
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
         try {
             const token = window.authService.getToken();
+            const categoryId = document.getElementById('itemCategory').value;
+            const name = document.getElementById('itemName').value;
+
+            console.log('Saving sub-category...');
+            console.log('Name:', name);
+            console.log('Category ID:', categoryId);
+            console.log('Editing ID:', editingId);
+
+            if (!categoryId) {
+                throw new Error('Please select a category');
+            }
+
+            if (!name.trim()) {
+                throw new Error('Name is required');
+            }
+
             const data = {
-                name: document.getElementById('itemName').value,
-                category_id: document.getElementById('itemCategory').value,
+                name: name.trim(),
+                stock_category_id: categoryId,
                 description: document.getElementById('itemDescription').value
             };
+
+            console.log('Sending data:', data);
+
             const url = editingId ? `${CONFIG.MENU.inventorySubCategories}/${editingId}` : CONFIG.MENU.inventorySubCategories;
+            console.log('API URL:', url);
+
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
+
+            console.log('Response status:', resp.status);
+
+            if (!resp.ok) {
+                const errorData = await resp.json();
+                console.error('API Error:', errorData);
+                throw new Error(errorData.message || 'Failed to save sub-category');
+            }
+
+            const result = await resp.json();
+            console.log('Save successful:', result);
+
             modal.hide();
             Swal.fire({ icon: 'success', title: 'Saved!', timer: 1500, showConfirmButton: false });
             await loadData();
-        } catch (e) { Swal.fire('Error', e.message, 'error'); }
-        finally { btn.disabled = false; btn.innerHTML = 'Save'; }
+        } catch (e) {
+            console.error('Save failed:', e);
+            Swal.fire('Error', e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Save';
+        }
     }
 
     async function deleteItem(id) {

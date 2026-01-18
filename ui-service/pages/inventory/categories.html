@@ -114,7 +114,7 @@
             const result = await resp.json();
             console.log('API Response:', result);
 
-            items = result.data?.items || result.data || [];
+            items = result.data?.categories || result.data?.items || result.data || [];
             console.log('Parsed items:', items);
 
             renderTable();

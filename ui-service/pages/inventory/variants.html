@@ -76,9 +76,15 @@
                         <input type="text" class="form-control" id="itemName" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="itemCategory" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
                         <select class="form-select" id="itemSubCategory" required>
-                            <option value="">Select Sub-Category</option>
+                            <option value="">Select a category first</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -117,9 +123,11 @@
     let editingId = null;
 
     function init() {
+        console.log('Initializing inventory variants page...');
         modal = new bootstrap.Modal(document.getElementById('formModal'));
         setupEventListeners();
-        loadSubCategories();
+        loadCategories();
+        loadSubCategoriesForFilter();
         loadData();
     }
 
@@ -127,28 +135,104 @@
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadData());
+        document.getElementById('itemCategory')?.addEventListener('change', () => {
+            // Clear any previously selected sub-category when category changes
+            document.getElementById('itemSubCategory').value = '';
+            loadSubCategoriesForCategory();
+        });
         document.getElementById('dataForm')?.addEventListener('submit', (e) => { e.preventDefault(); save(); });
     }
 
-    async function loadSubCategories() {
+    async function loadCategories() {
+        console.log('Loading categories for variants page...');
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            console.log('Categories response status:', resp.status);
+
+            if (!resp.ok) {
+                console.error('Failed to fetch categories');
+                return;
+            }
+
+            const result = await resp.json();
+            categories = result.data?.categories || result.data?.items || result.data || [];
+            console.log('Loaded categories:', categories);
+
+            const categorySelect = document.getElementById('itemCategory');
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+
+            categories.forEach(cat => {
+                categorySelect.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            });
+
+            console.log('Categories dropdown populated');
+        } catch (e) {
+            console.error('Failed to load categories:', e);
+        }
+    }
+
+    async function loadSubCategoriesForFilter() {
         try {
             const token = window.authService.getToken();
             const resp = await fetch(CONFIG.MENU.inventorySubCategories, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) return;
             const result = await resp.json();
-            subCategories = result.data?.items || result.data || [];
+            subCategories = result.data?.sub_categories || result.data?.items || result.data || [];
 
             const select = document.getElementById('subCategoryFilter');
-            const subCategorySelect = document.getElementById('itemSubCategory');
             select.innerHTML = '<option value="">All Sub-Categories</option>';
-            subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
 
             subCategories.forEach(subCat => {
                 select.innerHTML += `<option value="${subCat.id}">${escapeHtml(subCat.name)}</option>`;
-                subCategorySelect.innerHTML += `<option value="${subCat.id}">${escapeHtml(subCat.name)}</option>`;
             });
         } catch (e) {
-            console.error('Failed to load sub-categories:', e);
+            console.error('Failed to load sub-categories for filter:', e);
+        }
+    }
+
+    async function loadSubCategoriesForCategory() {
+        const categoryId = document.getElementById('itemCategory').value;
+        const subCategorySelect = document.getElementById('itemSubCategory');
+
+        // Clear sub-category dropdown immediately when category changes
+        subCategorySelect.innerHTML = '<option value="">Loading sub-categories...</option>';
+
+        if (!categoryId) {
+            subCategorySelect.innerHTML = '<option value="">Select a category first</option>';
+            return;
+        }
+
+        console.log('Loading sub-categories for category:', categoryId);
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            console.log('Sub-categories response status:', resp.status);
+
+            if (!resp.ok) {
+                console.error('Failed to fetch sub-categories for category');
+                subCategorySelect.innerHTML = '<option value="">Failed to load sub-categories</option>';
+                return;
+            }
+
+            const result = await resp.json();
+            const categorySubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
+            console.log('Loaded sub-categories for category:', categorySubCategories);
+
+            // Clear and repopulate
+            subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
+
+            if (categorySubCategories.length === 0) {
+                subCategorySelect.innerHTML = '<option value="">No sub-categories available</option>';
+            } else {
+                categorySubCategories.forEach(subCat => {
+                    subCategorySelect.innerHTML += `<option value="${subCat.id}">${escapeHtml(subCat.name)}</option>`;
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load sub-categories for category:', e);
+            subCategorySelect.innerHTML = '<option value="">Error loading sub-categories</option>';
         }
     }
 
@@ -165,7 +249,7 @@
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
-            items = result.data?.items || result.data || [];
+            items = result.data?.variants || result.data?.items || result.data || [];
             renderTable();
         } catch (e) {
             Swal.fire('Error', 'Failed to load inventory variants', 'error');
@@ -210,7 +294,25 @@
         document.getElementById('modalTitle').textContent = item ? 'Edit Inventory Variant' : 'Add Inventory Variant';
         document.getElementById('itemId').value = item?.id || '';
         document.getElementById('itemName').value = item?.name || '';
-        document.getElementById('itemSubCategory').value = item?.stock_sub_category_id || '';
+
+        // Find the sub-category to get the category
+        if (item?.stock_sub_category_id) {
+            const subCategory = subCategories.find(sc => sc.id === item.stock_sub_category_id);
+            if (subCategory) {
+                document.getElementById('itemCategory').value = subCategory.category_id || '';
+                // Load sub-categories for this category, then set the selected one
+                loadSubCategoriesForCategory().then(() => {
+                    document.getElementById('itemSubCategory').value = item.stock_sub_category_id;
+                });
+            } else {
+                document.getElementById('itemCategory').value = '';
+                document.getElementById('itemSubCategory').innerHTML = '<option value="">Select a category first</option>';
+            }
+        } else {
+            document.getElementById('itemCategory').value = '';
+            document.getElementById('itemSubCategory').innerHTML = '<option value="">Select a category first</option>';
+        }
+
         document.getElementById('itemUnit').value = item?.unit || '';
         document.getElementById('itemNumberOfUnits').value = item?.number_of_units || '';
         modal.show();
@@ -222,11 +324,44 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
             const token = window.authService.getToken();
+            const name = document.getElementById('itemName').value.trim();
+            const categoryId = document.getElementById('itemCategory').value;
+            const subCategoryId = document.getElementById('itemSubCategory').value;
+            const unit = document.getElementById('itemUnit').value;
+            const numberOfUnits = parseFloat(document.getElementById('itemNumberOfUnits').value) || 0;
+
+            console.log('Saving variant...');
+            console.log('Name:', name);
+            console.log('Category ID:', categoryId);
+            console.log('Sub-Category ID:', subCategoryId);
+            console.log('Unit:', unit);
+            console.log('Number of Units:', numberOfUnits);
+
+            if (!name) {
+                throw new Error('Name is required');
+            }
+
+            if (!categoryId) {
+                throw new Error('Please select a category');
+            }
+
+            if (!subCategoryId) {
+                throw new Error('Please select a sub-category');
+            }
+
+            if (!unit) {
+                throw new Error('Unit is required');
+            }
+
+            if (numberOfUnits <= 0) {
+                throw new Error('Number of units must be greater than 0');
+            }
+
             const data = {
-                name: document.getElementById('itemName').value,
-                stock_sub_category_id: document.getElementById('itemSubCategory').value,
-                unit: document.getElementById('itemUnit').value,
-                number_of_units: parseFloat(document.getElementById('itemNumberOfUnits').value) || 0
+                name: name,
+                stock_sub_category_id: subCategoryId,
+                unit: unit,
+                number_of_units: numberOfUnits
             };
             const url = editingId ? `${CONFIG.MENU.inventoryVariants}/${editingId}` : CONFIG.MENU.inventoryVariants;
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
