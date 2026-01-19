@@ -141,26 +141,41 @@
                         <label class="form-label">Invoice Items</label>
                         <div id="invoiceItemsContainer">
                             <div class="invoice-item mb-3 p-3 border rounded">
-                                <div class="row">
-                                    <div class="col-md-4">
+                                <div class="row mb-2">
+                                    <div class="col-md-6">
                                         <label class="form-label">Detail <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control item-detail" required>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-3">
                                         <label class="form-label">Count <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control item-count" step="0.01" min="0" required>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn">
+                                            <i class="fas fa-trash"></i> Remove
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-3">
                                         <label class="form-label">Unit Type <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control item-unit-type" required>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-3">
                                         <label class="form-label">Price <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control item-price" step="0.01" min="0" required>
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label">Actions</label>
-                                        <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Inventory Category</label>
+                                        <select class="form-select item-inventory-category">
+                                            <option value="">Select Category (Optional)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Inventory Sub-Category</label>
+                                        <select class="form-select item-inventory-sub-category">
+                                            <option value="">Select Sub-Category (Optional)</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -260,6 +275,56 @@
             option.textContent = category.name;
             select.appendChild(option);
         });
+    }
+
+    function populateItemCategoryDropdown(itemDiv) {
+        const categorySelect = itemDiv.querySelector('.item-inventory-category');
+        categorySelect.innerHTML = '<option value="">Select Category (Optional)</option>';
+
+        inventoryCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        });
+    }
+
+    async function loadItemSubCategoriesForCategory(itemDiv, categoryId) {
+        const subCategorySelect = itemDiv.querySelector('.item-inventory-sub-category');
+
+        // Clear sub-category dropdown
+        subCategorySelect.innerHTML = '<option value="">Select Sub-Category (Optional)</option>';
+
+        if (!categoryId) {
+            return;
+        }
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+
+            if (!resp.ok) {
+                subCategorySelect.innerHTML = '<option value="">Failed to load sub-categories</option>';
+                return;
+            }
+
+            const result = await resp.json();
+            const categorySubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
+
+            if (categorySubCategories.length === 0) {
+                subCategorySelect.innerHTML = '<option value="">No sub-categories available</option>';
+            } else {
+                categorySubCategories.forEach(subCat => {
+                    const option = document.createElement('option');
+                    option.value = subCat.id;
+                    option.textContent = subCat.name;
+                    subCategorySelect.appendChild(option);
+                });
+            }
+        } catch (e) {
+            console.error('Failed to load sub-categories for item:', e);
+            subCategorySelect.innerHTML = '<option value="">Error loading sub-categories</option>';
+        }
     }
 
     async function loadInventorySubCategoriesForCategory() {
@@ -407,36 +472,69 @@
         itemDiv.className = 'invoice-item mb-3 p-3 border rounded';
 
         itemDiv.innerHTML = `
-            <div class="row">
+            <div class="row mb-2">
                 <div class="col-md-4">
-                    <label class="form-label">Detail <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control item-detail" value="${item?.detail || ''}" required>
+                    <label class="form-label">Inventory Category <span class="text-danger">*</span></label>
+                    <select class="form-select item-inventory-category" required>
+                        <option value="">Select Category</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Inventory Sub-Category <span class="text-danger">*</span></label>
+                    <select class="form-select item-inventory-sub-category" required>
+                        <option value="">Select Category First</option>
+                    </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Count <span class="text-danger">*</span></label>
                     <input type="number" class="form-control item-count" step="0.01" min="0" value="${item?.count || ''}" required>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
                     <label class="form-label">Unit Type <span class="text-danger">*</span></label>
                     <input type="text" class="form-control item-unit-type" value="${item?.unit_type || ''}" required>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-6">
                     <label class="form-label">Price <span class="text-danger">*</span></label>
                     <input type="number" class="form-control item-price" step="0.01" min="0" value="${item?.price || ''}" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Actions</label>
-                    <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
                 </div>
             </div>
         `;
 
         container.appendChild(itemDiv);
 
-        // Add event listener for remove button
-        itemDiv.querySelector('.remove-item').addEventListener('click', () => {
+        // Populate category dropdown
+        populateItemCategoryDropdown(itemDiv);
+
+        // Add event listeners
+        itemDiv.querySelector('.remove-item-btn').addEventListener('click', () => {
             itemDiv.remove();
         });
+
+        itemDiv.querySelector('.item-inventory-category').addEventListener('change', (e) => {
+            loadItemSubCategoriesForCategory(itemDiv, e.target.value);
+        });
+
+        // Set initial values if editing
+        if (item) {
+            const categorySelect = itemDiv.querySelector('.item-inventory-category');
+            const subCategorySelect = itemDiv.querySelector('.item-inventory-sub-category');
+
+            if (item.inventory_category_id) {
+                categorySelect.value = item.inventory_category_id;
+                loadItemSubCategoriesForCategory(itemDiv, item.inventory_category_id).then(() => {
+                    if (item.inventory_sub_category_id) {
+                        subCategorySelect.value = item.inventory_sub_category_id;
+                    }
+                });
+            }
+        }
     }
 
     async function saveInvoice() {
@@ -451,19 +549,23 @@
             const invoiceItems = [];
             const itemElements = document.querySelectorAll('.invoice-item');
             itemElements.forEach(itemEl => {
-                const detail = itemEl.querySelector('.item-detail').value.trim();
                 const count = parseFloat(itemEl.querySelector('.item-count').value) || 0;
                 const unitType = itemEl.querySelector('.item-unit-type').value.trim();
                 const price = parseFloat(itemEl.querySelector('.item-price').value) || 0;
+                const inventoryCategoryId = itemEl.querySelector('.item-inventory-category').value;
+                const inventorySubCategoryId = itemEl.querySelector('.item-inventory-sub-category').value;
 
-                if (detail && count > 0 && unitType && price > 0) {
-                    invoiceItems.push({
-                        detail: detail,
+                if (inventoryCategoryId && inventorySubCategoryId && count > 0 && unitType && price > 0) {
+                    const itemData = {
                         count: count,
                         unit_type: unitType,
                         price: price,
-                        items_per_unit: 1 // Default value
-                    });
+                        items_per_unit: 1, // Default value
+                        inventory_category_id: inventoryCategoryId,
+                        inventory_sub_category_id: inventorySubCategoryId
+                    };
+
+                    invoiceItems.push(itemData);
                 }
             });
 

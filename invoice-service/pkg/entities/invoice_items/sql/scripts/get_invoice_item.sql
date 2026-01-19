@@ -3,6 +3,8 @@ SELECT
     id,
     invoice_id,
     stock_item_id,
+    inventory_category_id,
+    inventory_sub_category_id,
     invoice_type,
     detail,
     count,

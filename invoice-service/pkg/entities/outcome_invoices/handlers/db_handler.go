@@ -283,6 +283,8 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 	err = tx.QueryRow(query,
 		req.InvoiceID,
 		req.StockItemID,
+		req.InventoryCategoryID,
+		req.InventorySubCategoryID,
 		req.InvoiceType,
 		req.Detail,
 		req.Count,
@@ -301,6 +303,8 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 	// Fill in the rest of the fields
 	item.InvoiceID = req.InvoiceID
 	item.StockItemID = req.StockItemID
+	item.InventoryCategoryID = req.InventoryCategoryID
+	item.InventorySubCategoryID = req.InventorySubCategoryID
 	item.InvoiceType = req.InvoiceType
 	item.Detail = req.Detail
 	item.Count = req.Count
@@ -330,12 +334,17 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 	for rows.Next() {
 		var item models.InvoiceItem
 		var stockItemID sql.NullString
+		var inventoryCategoryID sql.NullString
+		var inventorySubCategoryID sql.NullString
+		var detail sql.NullString
 		err := rows.Scan(
 			&item.ID,
 			&item.InvoiceID,
 			&stockItemID,
+			&inventoryCategoryID,
+			&inventorySubCategoryID,
 			&item.InvoiceType,
-			&item.Detail,
+			&detail,
 			&item.Count,
 			&item.UnitType,
 			&item.Price,
@@ -351,6 +360,18 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 
 		if stockItemID.Valid {
 			item.StockItemID = &stockItemID.String
+		}
+
+		if inventoryCategoryID.Valid {
+			item.InventoryCategoryID = &inventoryCategoryID.String
+		}
+
+		if inventorySubCategoryID.Valid {
+			item.InventorySubCategoryID = &inventorySubCategoryID.String
+		}
+
+		if detail.Valid {
+			item.Detail = &detail.String
 		}
 
 		items = append(items, item)
