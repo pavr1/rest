@@ -96,10 +96,10 @@ func (h *DBHandler) Create(req *models.IncomeInvoiceCreateRequest) (*models.Inco
 	invoice.GeneratedAt = req.GeneratedAt
 
 	// Create invoice items if provided
-	if req.InvoiceItems != nil && len(req.InvoiceItems) > 0 {
+	//pvillalobos TODO: check if the invoice items are empty
+	if len(req.InvoiceItems) > 0 {
 		for _, itemReq := range req.InvoiceItems {
 			itemReq.InvoiceID = invoice.ID
-			itemReq.InvoiceType = "income" // Set invoice type for income invoices
 
 			item, err := h.createInvoiceItem(tx, &itemReq)
 			if err != nil {
@@ -311,8 +311,8 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 	var item invoiceItemModels.InvoiceItem
 	err = tx.QueryRow(query,
 		req.InvoiceID,
-		req.StockItemID,
-		req.InvoiceType,
+		req.InventoryCategoryID,
+		req.InventorySubCategoryID,
 		req.Detail,
 		req.Count,
 		req.UnitType,
@@ -329,8 +329,8 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 
 	// Fill in the rest of the fields
 	item.InvoiceID = req.InvoiceID
-	item.StockItemID = req.StockItemID
-	item.InvoiceType = req.InvoiceType
+	item.InventoryCategoryID = req.InventoryCategoryID
+	item.InventorySubCategoryID = req.InventorySubCategoryID
 	item.Detail = req.Detail
 	item.Count = req.Count
 	item.UnitType = req.UnitType
@@ -358,13 +358,15 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 	var items []models.InvoiceItem
 	for rows.Next() {
 		var item models.InvoiceItem
-		var stockItemID sql.NullString
+		var inventoryCategoryID sql.NullString
+		var inventorySubCategoryID sql.NullString
+		var detail string
 		err := rows.Scan(
 			&item.ID,
 			&item.InvoiceID,
-			&stockItemID,
-			&item.InvoiceType,
-			&item.Detail,
+			&inventoryCategoryID,
+			&inventorySubCategoryID,
+			&detail,
 			&item.Count,
 			&item.UnitType,
 			&item.Price,
@@ -378,9 +380,15 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 			return nil, fmt.Errorf("failed to scan invoice item: %w", err)
 		}
 
-		if stockItemID.Valid {
-			item.StockItemID = &stockItemID.String
+		if inventoryCategoryID.Valid {
+			item.InventoryCategoryID = &inventoryCategoryID.String
 		}
+
+		if inventorySubCategoryID.Valid {
+			item.InventorySubCategoryID = &inventorySubCategoryID.String
+		}
+
+		item.Detail = detail
 
 		items = append(items, item)
 	}

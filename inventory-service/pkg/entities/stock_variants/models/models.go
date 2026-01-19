@@ -9,6 +9,7 @@ type StockVariant struct {
 	ID                   string    `json:"id"`
 	Name                 string    `json:"name"`
 	StockSubCategoryID   string    `json:"stock_sub_category_id"`
+	InvoiceID            *string   `json:"invoice_id,omitempty"`
 	Unit                 string    `json:"unit"`
 	NumberOfUnits        float64   `json:"number_of_units"`
 	IsActive             bool      `json:"is_active"`
@@ -20,6 +21,7 @@ type StockVariant struct {
 type StockVariantCreateRequest struct {
 	Name               string  `json:"name"`
 	StockSubCategoryID string  `json:"stock_sub_category_id"`
+	InvoiceID          *string `json:"invoice_id,omitempty"`
 	Unit               string  `json:"unit"`
 	NumberOfUnits      float64 `json:"number_of_units"`
 	IsActive           *bool   `json:"is_active,omitempty"`

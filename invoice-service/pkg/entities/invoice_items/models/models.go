@@ -8,11 +8,9 @@ import (
 type InvoiceItem struct {
 	ID                     string     `json:"id"`
 	InvoiceID              string     `json:"invoice_id"`
-	StockItemID            *string    `json:"stock_item_id,omitempty"`
 	InventoryCategoryID    *string    `json:"inventory_category_id,omitempty"`
 	InventorySubCategoryID *string    `json:"inventory_sub_category_id,omitempty"`
-	InvoiceType            string     `json:"invoice_type"` // 'outcome' or 'income'
-	Detail                 *string    `json:"detail,omitempty"`
+	Detail                 string     `json:"detail,omitempty"`
 	Count                  float64    `json:"count"`
 	UnitType               string     `json:"unit_type"`
 	Price                  float64    `json:"price"`
@@ -26,11 +24,9 @@ type InvoiceItem struct {
 // InvoiceItemCreateRequest represents a request to create an invoice item
 type InvoiceItemCreateRequest struct {
 	InvoiceID              string     `json:"invoice_id"`
-	StockItemID            *string    `json:"stock_item_id,omitempty"`
 	InventoryCategoryID    *string    `json:"inventory_category_id,omitempty"`
 	InventorySubCategoryID *string    `json:"inventory_sub_category_id,omitempty"`
-	InvoiceType            string     `json:"invoice_type"` // 'outcome' or 'income'
-	Detail                 *string    `json:"detail,omitempty"`
+	Detail                 string     `json:"detail,omitempty"`
 	Count                  float64    `json:"count"`
 	UnitType               string     `json:"unit_type"`
 	Price                  float64    `json:"price"`
@@ -40,7 +36,6 @@ type InvoiceItemCreateRequest struct {
 
 // InvoiceItemUpdateRequest represents a request to update an invoice item
 type InvoiceItemUpdateRequest struct {
-	StockItemID            *string    `json:"stock_item_id,omitempty"`
 	InventoryCategoryID    *string    `json:"inventory_category_id,omitempty"`
 	InventorySubCategoryID *string    `json:"inventory_sub_category_id,omitempty"`
 	Detail                 *string    `json:"detail,omitempty"`

@@ -56,4 +56,5 @@ const (
 	DeleteOutcomeInvoice = "delete_outcome_invoice"
 	ListOutcomeInvoices  = "list_outcome_invoices"
 	CountOutcomeInvoices = "count_outcome_invoices"
+	CreateStockVariant   = "create_stock_variant"
 )

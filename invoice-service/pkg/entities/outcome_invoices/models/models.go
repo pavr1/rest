@@ -15,8 +15,6 @@ type OutcomeInvoice struct {
 	ID                     string        `json:"id"`
 	InvoiceNumber          string        `json:"invoice_number"`
 	SupplierID             *string       `json:"supplier_id,omitempty"`
-	InventoryCategoryID    *string       `json:"inventory_category_id,omitempty"`
-	InventorySubCategoryID *string       `json:"inventory_sub_category_id,omitempty"`
 	TransactionDate        time.Time     `json:"transaction_date"`
 	DueDate                *time.Time    `json:"due_date,omitempty"`
 	Subtotal               *float64      `json:"subtotal,omitempty"`
@@ -34,8 +32,6 @@ type OutcomeInvoice struct {
 type OutcomeInvoiceCreateRequest struct {
 	InvoiceNumber          string                     `json:"invoice_number"`
 	SupplierID             *string                    `json:"supplier_id,omitempty"`
-	InventoryCategoryID    *string                    `json:"inventory_category_id,omitempty"`
-	InventorySubCategoryID *string                    `json:"inventory_sub_category_id,omitempty"`
 	TransactionDate        time.Time                  `json:"transaction_date"`
 	DueDate                *time.Time                 `json:"due_date,omitempty"`
 	Subtotal               *float64                   `json:"subtotal,omitempty"`
@@ -50,8 +46,6 @@ type OutcomeInvoiceCreateRequest struct {
 // OutcomeInvoiceUpdateRequest represents a request to update an outcome invoice
 type OutcomeInvoiceUpdateRequest struct {
 	SupplierID             *string    `json:"supplier_id,omitempty"`
-	InventoryCategoryID    *string    `json:"inventory_category_id,omitempty"`
-	InventorySubCategoryID *string    `json:"inventory_sub_category_id,omitempty"`
 	TransactionDate        *time.Time `json:"transaction_date,omitempty"`
 	DueDate                *time.Time `json:"due_date,omitempty"`
 	Subtotal               *float64   `json:"subtotal,omitempty"`
