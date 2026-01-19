@@ -47,7 +47,7 @@
 }
 
 body {
-    font-family: 'Playfair Display', 'Georgia', serif;
+    font-family: Arial, sans-serif;
     background: var(--gradient-primary);
     min-height: 100vh;
     overflow-x: hidden;
@@ -95,7 +95,7 @@ body {
     font-weight: 700;
     margin-bottom: 1rem;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    font-family: 'Playfair Display', serif;
+    font-family: Arial, sans-serif;
 }
 
 .brand-logo .brand-subtitle {
@@ -151,7 +151,7 @@ body {
     color: var(--dark-color);
     font-weight: 600;
     margin-bottom: 0.5rem;
-    font-family: 'Playfair Display', serif;
+    font-family: Arial, sans-serif;
 }
 
 .login-subtitle {

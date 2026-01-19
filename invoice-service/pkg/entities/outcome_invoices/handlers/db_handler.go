@@ -156,6 +156,8 @@ func (h *DBHandler) Update(id string, req *models.OutcomeInvoiceUpdateRequest) (
 	_, err = h.db.Exec(query,
 		id,
 		req.SupplierID,
+		req.InventoryCategoryID,
+		req.InventorySubCategoryID,
 		req.TransactionDate,
 		req.TotalAmount,
 		req.ImageURL,

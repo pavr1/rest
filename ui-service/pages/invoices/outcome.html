@@ -1,7 +1,7 @@
 <!-- Outcome Invoices (Purchases) Page Partial -->
 <style>
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .page-title { font-family: 'Playfair Display', serif; font-size: 1.75rem; margin: 0; }
+    .page-title { font-family: Arial, sans-serif; font-size: 1.75rem; margin: 0; }
     .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; }
     .data-card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
     .data-table { width: 100%; margin: 0; }
@@ -12,6 +12,8 @@
     .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
     .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .invoice-item { background: #f8f9fa; border: 2px solid #e9ecef !important; }
+    .invoice-item:hover { border-color: #007bff !important; }
     .invoice-info { display: flex; flex-direction: column; }
     .invoice-number { font-weight: 600; color: var(--text-primary); }
     .invoice-supplier { font-size: 0.85rem; color: var(--text-secondary); }
@@ -65,7 +67,7 @@
 
 <!-- Modal -->
 <div class="modal fade" id="invoiceModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xl" style="max-width: 75%;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTitle">Add Purchase Invoice</h5>
@@ -101,21 +103,6 @@
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Inventory Category</label>
-                            <select class="form-select" id="inventoryCategoryId">
-                                <option value="">Select Category (Optional)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Inventory Sub-Category</label>
-                            <select class="form-select" id="inventorySubCategoryId">
-                                <option value="">Select Sub-Category (Optional)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
                             <label class="form-label">Subtotal</label>
                             <input type="number" class="form-control" id="subtotal" step="0.01" min="0">
                         </div>
@@ -139,43 +126,55 @@
                     <!-- Invoice Items Section -->
                     <div class="mb-3">
                         <label class="form-label">Invoice Items</label>
+                        <div class="row mb-2">
+                            <div class="col-md-2"><small class="text-muted fw-bold">Category</small></div>
+                            <div class="col-md-2"><small class="text-muted fw-bold">Sub-Category</small></div>
+                            <div class="col-md-2"><small class="text-muted fw-bold">Count</small></div>
+                            <div class="col-md-2"><small class="text-muted fw-bold">Unit Type</small></div>
+                            <div class="col-md-2"><small class="text-muted fw-bold">Price</small></div>
+                            <div class="col-md-2"></div>
+                        </div>
                         <div id="invoiceItemsContainer">
                             <div class="invoice-item mb-3 p-3 border rounded">
-                                <div class="row mb-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Detail <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control item-detail" required>
+                                <div class="row align-items-end">
+                                    <div class="col-md-2">
+                                        <label class="form-label">Inventory Category <span class="text-danger">*</span></label>
+                                        <select class="form-select item-inventory-category" required>
+                                            <option value="">Select Category</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
+                                        <label class="form-label">Inventory Sub-Category <span class="text-danger">*</span></label>
+                                        <select class="form-select item-inventory-sub-category" required>
+                                            <option value="">Select Sub-Category</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
                                         <label class="form-label">Count <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control item-count" step="0.01" min="0" required>
                                     </div>
-                                    <div class="col-md-3 d-flex align-items-end">
-                                        <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn">
-                                            <i class="fas fa-trash"></i> Remove
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label">Unit Type <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control item-unit-type" required>
+                                        <select class="form-select item-unit-type" required>
+                                            <option value="">Select Unit</option>
+                                            <option value="Kg">Kg</option>
+                                            <option value="g">g</option>
+                                            <option value="L">L</option>
+                                            <option value="ML">ML</option>
+                                            <option value="Unit">Unit</option>
+                                            <option value="Box">Box</option>
+                                            <option value="Bottle">Bottle</option>
+                                            <option value="Bag">Bag</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <label class="form-label">Price <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control item-price" step="0.01" min="0" required>
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Inventory Category</label>
-                                        <select class="form-select item-inventory-category">
-                                            <option value="">Select Category (Optional)</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Inventory Sub-Category</label>
-                                        <select class="form-select item-inventory-sub-category">
-                                            <option value="">Select Sub-Category (Optional)</option>
-                                        </select>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn w-100" title="Remove item">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -224,7 +223,6 @@
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadInvoices());
         document.getElementById('invoiceForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveInvoice(); });
         document.getElementById('addItemBtn')?.addEventListener('click', () => addInvoiceItem());
-        document.getElementById('inventoryCategoryId')?.addEventListener('change', () => loadInventorySubCategoriesForCategory());
     }
 
     async function loadSuppliers() {
@@ -259,22 +257,10 @@
             if (resp.ok) {
                 const result = await resp.json();
                 inventoryCategories = result.data?.categories || result.data?.items || result.data || [];
-                populateInventoryCategoryDropdown();
             }
         } catch (e) {
             console.error('Error loading inventory categories:', e);
         }
-    }
-
-    function populateInventoryCategoryDropdown() {
-        const select = document.getElementById('inventoryCategoryId');
-        select.innerHTML = '<option value="">Select Category (Optional)</option>';
-        inventoryCategories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            select.appendChild(option);
-        });
     }
 
     function populateItemCategoryDropdown(itemDiv) {
@@ -327,35 +313,6 @@
         }
     }
 
-    async function loadInventorySubCategoriesForCategory() {
-        const categoryId = document.getElementById('inventoryCategoryId').value;
-        const subCategorySelect = document.getElementById('inventorySubCategoryId');
-
-        // Clear sub-category dropdown
-        subCategorySelect.innerHTML = '<option value="">Select Sub-Category (Optional)</option>';
-
-        if (!categoryId) {
-            return;
-        }
-
-        try {
-            const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (resp.ok) {
-                const result = await resp.json();
-                const categorySubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
-
-                categorySubCategories.forEach(subCategory => {
-                    const option = document.createElement('option');
-                    option.value = subCategory.id;
-                    option.textContent = subCategory.name;
-                    subCategorySelect.appendChild(option);
-                });
-            }
-        } catch (e) {
-            console.error('Error loading inventory sub-categories:', e);
-        }
-    }
 
     async function loadInvoices() {
         showLoading();
@@ -431,17 +388,6 @@
         document.getElementById('invoiceDate').value = invoice?.invoice_date ? new Date(invoice.invoice_date).toISOString().split('T')[0] : '';
         document.getElementById('dueDate').value = invoice?.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '';
 
-        // Set inventory category and sub-category
-        document.getElementById('inventoryCategoryId').value = invoice?.inventory_category_id || '';
-        if (invoice?.inventory_category_id) {
-            // Load sub-categories for this category, then set the selected one
-            loadInventorySubCategoriesForCategory().then(() => {
-                document.getElementById('inventorySubCategoryId').value = invoice?.inventory_sub_category_id || '';
-            });
-        } else {
-            document.getElementById('inventorySubCategoryId').innerHTML = '<option value="">Select Sub-Category (Optional)</option>';
-        }
-
         document.getElementById('subtotal').value = invoice?.subtotal || '';
         document.getElementById('taxAmount').value = invoice?.tax_amount || '';
         document.getElementById('discountAmount').value = invoice?.discount_amount || '';
@@ -472,37 +418,45 @@
         itemDiv.className = 'invoice-item mb-3 p-3 border rounded';
 
         itemDiv.innerHTML = `
-            <div class="row mb-2">
-                <div class="col-md-4">
+            <div class="row align-items-end">
+                <div class="col-md-2">
                     <label class="form-label">Inventory Category <span class="text-danger">*</span></label>
                     <select class="form-select item-inventory-category" required>
                         <option value="">Select Category</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
                     <label class="form-label">Inventory Sub-Category <span class="text-danger">*</span></label>
                     <select class="form-select item-inventory-sub-category" required>
-                        <option value="">Select Category First</option>
+                        <option value="">Select Sub-Category</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Count <span class="text-danger">*</span></label>
                     <input type="number" class="form-control item-count" step="0.01" min="0" value="${item?.count || ''}" required>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn">
-                        <i class="fas fa-trash"></i> Remove
-                    </button>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-2">
                     <label class="form-label">Unit Type <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control item-unit-type" value="${item?.unit_type || ''}" required>
+                    <select class="form-select item-unit-type" required>
+                        <option value="">Select Unit</option>
+                        <option value="Kg" ${item?.unit_type === 'Kg' ? 'selected' : ''}>Kg</option>
+                        <option value="g" ${item?.unit_type === 'g' ? 'selected' : ''}>g</option>
+                        <option value="L" ${item?.unit_type === 'L' ? 'selected' : ''}>L</option>
+                        <option value="ML" ${item?.unit_type === 'ML' ? 'selected' : ''}>ML</option>
+                        <option value="Unit" ${item?.unit_type === 'Unit' ? 'selected' : ''}>Unit</option>
+                        <option value="Box" ${item?.unit_type === 'Box' ? 'selected' : ''}>Box</option>
+                        <option value="Bottle" ${item?.unit_type === 'Bottle' ? 'selected' : ''}>Bottle</option>
+                        <option value="Bag" ${item?.unit_type === 'Bag' ? 'selected' : ''}>Bag</option>
+                    </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-2">
                     <label class="form-label">Price <span class="text-danger">*</span></label>
                     <input type="number" class="form-control item-price" step="0.01" min="0" value="${item?.price || ''}" required>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn w-100" title="Remove item">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -572,8 +526,6 @@
             const data = {
                 invoice_number: document.getElementById('invoiceNumber').value,
                 supplier_id: document.getElementById('supplierId').value,
-                inventory_category_id: document.getElementById('inventoryCategoryId').value || null,
-                inventory_sub_category_id: document.getElementById('inventorySubCategoryId').value || null,
                 invoice_date: document.getElementById('invoiceDate').value || null,
                 due_date: document.getElementById('dueDate').value || null,
                 subtotal: parseFloat(document.getElementById('subtotal').value) || 0,
