@@ -17,7 +17,11 @@ type OutcomeInvoice struct {
 	SupplierID             *string       `json:"supplier_id,omitempty"`
 	InventoryCategoryID    *string       `json:"inventory_category_id,omitempty"`
 	InventorySubCategoryID *string       `json:"inventory_sub_category_id,omitempty"`
-	TransactionDate         time.Time     `json:"transaction_date"`
+	TransactionDate        time.Time     `json:"transaction_date"`
+	DueDate                *time.Time    `json:"due_date,omitempty"`
+	Subtotal               *float64      `json:"subtotal,omitempty"`
+	TaxAmount              *float64      `json:"tax_amount,omitempty"`
+	DiscountAmount         *float64      `json:"discount_amount,omitempty"`
 	TotalAmount            *float64      `json:"total_amount,omitempty"`
 	ImageURL               *string       `json:"image_url,omitempty"`
 	Notes                  *string       `json:"notes,omitempty"`
@@ -32,7 +36,11 @@ type OutcomeInvoiceCreateRequest struct {
 	SupplierID             *string                    `json:"supplier_id,omitempty"`
 	InventoryCategoryID    *string                    `json:"inventory_category_id,omitempty"`
 	InventorySubCategoryID *string                    `json:"inventory_sub_category_id,omitempty"`
-	TransactionDate         time.Time                  `json:"transaction_date"`
+	TransactionDate        time.Time                  `json:"transaction_date"`
+	DueDate                *time.Time                 `json:"due_date,omitempty"`
+	Subtotal               *float64                   `json:"subtotal,omitempty"`
+	TaxAmount              *float64                   `json:"tax_amount,omitempty"`
+	DiscountAmount         *float64                   `json:"discount_amount,omitempty"`
 	TotalAmount            *float64                   `json:"total_amount,omitempty"`
 	ImageURL               *string                    `json:"image_url,omitempty"`
 	Notes                  *string                    `json:"notes,omitempty"`
@@ -44,7 +52,11 @@ type OutcomeInvoiceUpdateRequest struct {
 	SupplierID             *string    `json:"supplier_id,omitempty"`
 	InventoryCategoryID    *string    `json:"inventory_category_id,omitempty"`
 	InventorySubCategoryID *string    `json:"inventory_sub_category_id,omitempty"`
-	TransactionDate         *time.Time `json:"transaction_date,omitempty"`
+	TransactionDate        *time.Time `json:"transaction_date,omitempty"`
+	DueDate                *time.Time `json:"due_date,omitempty"`
+	Subtotal               *float64   `json:"subtotal,omitempty"`
+	TaxAmount              *float64   `json:"tax_amount,omitempty"`
+	DiscountAmount         *float64   `json:"discount_amount,omitempty"`
 	TotalAmount            *float64   `json:"total_amount,omitempty"`
 	ImageURL               *string    `json:"image_url,omitempty"`
 	Notes                  *string    `json:"notes,omitempty"`

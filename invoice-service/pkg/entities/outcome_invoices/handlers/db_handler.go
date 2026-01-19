@@ -61,6 +61,10 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 		req.InventoryCategoryID,
 		req.InventorySubCategoryID,
 		req.TransactionDate,
+		req.DueDate,
+		req.Subtotal,
+		req.TaxAmount,
+		req.DiscountAmount,
 		req.TotalAmount,
 		req.ImageURL,
 		req.Notes,
@@ -79,6 +83,10 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 	invoice.InventoryCategoryID = req.InventoryCategoryID
 	invoice.InventorySubCategoryID = req.InventorySubCategoryID
 	invoice.TransactionDate = req.TransactionDate
+	invoice.DueDate = req.DueDate
+	invoice.Subtotal = req.Subtotal
+	invoice.TaxAmount = req.TaxAmount
+	invoice.DiscountAmount = req.DiscountAmount
 	invoice.TotalAmount = req.TotalAmount
 	invoice.ImageURL = req.ImageURL
 	invoice.Notes = req.Notes
@@ -120,6 +128,10 @@ func (h *DBHandler) GetByID(id string) (*models.OutcomeInvoice, error) {
 		&invoice.InventoryCategoryID,
 		&invoice.InventorySubCategoryID,
 		&invoice.TransactionDate,
+		&invoice.DueDate,
+		&invoice.Subtotal,
+		&invoice.TaxAmount,
+		&invoice.DiscountAmount,
 		&invoice.TotalAmount,
 		&invoice.ImageURL,
 		&invoice.Notes,
@@ -159,6 +171,10 @@ func (h *DBHandler) Update(id string, req *models.OutcomeInvoiceUpdateRequest) (
 		req.InventoryCategoryID,
 		req.InventorySubCategoryID,
 		req.TransactionDate,
+		req.DueDate,
+		req.Subtotal,
+		req.TaxAmount,
+		req.DiscountAmount,
 		req.TotalAmount,
 		req.ImageURL,
 		req.Notes,
@@ -240,6 +256,10 @@ func (h *DBHandler) List(req *models.OutcomeInvoiceListRequest) (*models.Outcome
 			&invoice.InventoryCategoryID,
 			&invoice.InventorySubCategoryID,
 			&invoice.TransactionDate,
+			&invoice.DueDate,
+			&invoice.Subtotal,
+			&invoice.TaxAmount,
+			&invoice.DiscountAmount,
 			&invoice.TotalAmount,
 			&invoice.ImageURL,
 			&invoice.Notes,

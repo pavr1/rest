@@ -83,9 +83,9 @@
                             <input type="text" class="form-control" id="invoiceNumber" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Supplier <span class="text-danger">*</span></label>
-                            <select class="form-select" id="supplierId" required>
-                                <option value="">Select Supplier...</option>
+                            <label class="form-label">Supplier</label>
+                            <select class="form-select" id="supplierId">
+                                <option value="">Select Supplier (Optional)...</option>
                             </select>
                         </div>
                     </div>
@@ -93,22 +93,22 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Invoice Date</label>
-                            <input type="date" class="form-control" id="invoiceDate">
+                            <input type="date" class="form-control" id="invoiceDate" value="">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Due Date</label>
-                            <input type="date" class="form-control" id="dueDate">
+                            <input type="date" class="form-control" id="dueDate" value="">
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Subtotal</label>
-                            <input type="number" class="form-control" id="subtotal" step="0.01" min="0">
+                            <input type="number" class="form-control" id="subtotal" step="0.01" min="0" disabled readonly>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Tax Amount</label>
-                            <input type="number" class="form-control" id="taxAmount" step="0.01" min="0">
+                            <label class="form-label">Tax Amount (13%)</label>
+                            <input type="number" class="form-control" id="taxAmount" step="0.01" min="0" disabled readonly>
                         </div>
                     </div>
 
@@ -223,6 +223,19 @@
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadInvoices());
         document.getElementById('invoiceForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveInvoice(); });
         document.getElementById('addItemBtn')?.addEventListener('click', () => addInvoiceItem());
+
+        // Add event listeners for automatic calculation
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('item-count') || e.target.classList.contains('item-price') || e.target.id === 'discountAmount') {
+                calculateTotals();
+            }
+        });
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-item-btn') || e.target.closest('.remove-item-btn')) {
+                // Delay calculation to allow DOM update
+                setTimeout(calculateTotals, 100);
+            }
+        });
     }
 
     async function loadSuppliers() {
@@ -385,8 +398,10 @@
         document.getElementById('invoiceId').value = invoice?.id || '';
         document.getElementById('invoiceNumber').value = invoice?.invoice_number || '';
         document.getElementById('supplierId').value = invoice?.supplier_id || '';
-        document.getElementById('invoiceDate').value = invoice?.invoice_date ? new Date(invoice.invoice_date).toISOString().split('T')[0] : '';
-        document.getElementById('dueDate').value = invoice?.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : '';
+        // Set current date for new invoices
+        const currentDate = new Date().toISOString().split('T')[0];
+        document.getElementById('invoiceDate').value = invoice?.invoice_date ? new Date(invoice.invoice_date).toISOString().split('T')[0] : currentDate;
+        document.getElementById('dueDate').value = invoice?.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : currentDate;
 
         document.getElementById('subtotal').value = invoice?.subtotal || '';
         document.getElementById('taxAmount').value = invoice?.tax_amount || '';
@@ -398,7 +413,34 @@
         // Populate invoice items
         populateInvoiceItems(invoice?.invoice_items || []);
 
+        // Calculate totals after populating items
+        calculateTotals();
+
         modal.show();
+    }
+
+    function calculateTotals() {
+        let subtotal = 0;
+
+        // Calculate subtotal from all invoice items
+        const itemElements = document.querySelectorAll('.invoice-item');
+        itemElements.forEach(itemEl => {
+            const count = parseFloat(itemEl.querySelector('.item-count').value) || 0;
+            const price = parseFloat(itemEl.querySelector('.item-price').value) || 0;
+            subtotal += count * price;
+        });
+
+        // Calculate tax as 13% of subtotal
+        const taxAmount = subtotal * 0.13;
+
+        // Calculate total (subtotal + tax - discount)
+        const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+        const total = subtotal + taxAmount - discount;
+
+        // Update the fields
+        document.getElementById('subtotal').value = subtotal.toFixed(2);
+        document.getElementById('taxAmount').value = taxAmount.toFixed(2);
+        document.getElementById('totalAmount').value = total.toFixed(2);
     }
 
     function populateInvoiceItems(items) {
