@@ -106,26 +106,26 @@
         try {
             const token = window.authService.getToken();
             
-            // Load menu items
-            const itemsResp = await fetch(CONFIG.MENU.items, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (itemsResp.ok) {
-                const result = await itemsResp.json();
-                menuItems = result.data?.items || result.data || [];
+            // Load menu variants
+            const variantsResp = await fetch(CONFIG.MENU.variants, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (variantsResp.ok) {
+                const result = await variantsResp.json();
+                menuItems = result.data?.variants || result.data?.items || result.data || [];
                 populateMenuItemFilter();
             }
             
-            // Load stock items for unit cost info
-            const stockResp = await fetch(CONFIG.MENU.stockItems, { headers: { 'Authorization': `Bearer ${token}` } });
+            // Load inventory variants (stock items) for unit cost info
+            const stockResp = await fetch(CONFIG.MENU.inventoryVariants, { headers: { 'Authorization': `Bearer ${token}` } });
             if (stockResp.ok) {
                 const result = await stockResp.json();
-                stockItems = result.data?.items || result.data || [];
+                stockItems = result.data?.variants || result.data?.items || result.data || [];
             }
             
-            // Load ingredients for each menu item
+            // Load ingredients for each menu variant
             allIngredients = [];
             for (const item of menuItems) {
                 try {
-                    const ingResp = await fetch(CONFIG.MENU.ingredients(item.id), { headers: { 'Authorization': `Bearer ${token}` } });
+                    const ingResp = await fetch(CONFIG.MENU.ingredientsByVariant(item.id), { headers: { 'Authorization': `Bearer ${token}` } });
                     if (ingResp.ok) {
                         const result = await ingResp.json();
                         const ingredients = result.data?.ingredients || [];

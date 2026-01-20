@@ -216,6 +216,7 @@
 (function() {
     let variants = [];
     let subCategories = [];
+    let inventorySubCategories = [];
     let stockVariants = [];
     let currentIngredients = [];
     let modal = null;
@@ -270,8 +271,19 @@
         document.getElementById('variantSubCategory').innerHTML = '<option value="">Select...</option>' + options;
     }
     
+    async function loadInventorySubCategories() {
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.MENU.inventorySubCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (resp.ok) {
+                const result = await resp.json();
+                inventorySubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
+            }
+        } catch (e) { console.error('Error loading inventory sub-categories:', e); }
+    }
+    
     function populateStockSubCategoriesDropdown() {
-        const options = subCategories.map(sc => `<option value="${sc.id}">${sc.name} (${sc.item_type})</option>`).join('');
+        const options = inventorySubCategories.map(sc => `<option value="${sc.id}">${sc.name}</option>`).join('');
         document.getElementById('newIngredientStockSubCategory').innerHTML = '<option value="">Select sub-category...</option>' + options;
     }
     
@@ -489,6 +501,7 @@
         document.getElementById('newIngredientNotes').value = '';
 
         ingredientsModal.show();
+        await loadInventorySubCategories();
         populateStockSubCategoriesDropdown();
         await loadIngredients(menuVariantId);
     }
@@ -504,7 +517,7 @@
         
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.ingredientsByVariant(menuItemId), { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.ingredientsByVariant(menuVariantId), { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
             currentIngredients = result.data?.ingredients || [];
