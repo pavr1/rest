@@ -283,7 +283,7 @@
 
     function populateItemCategoryDropdown(itemDiv) {
         const categorySelect = itemDiv.querySelector('.item-inventory-category');
-        categorySelect.innerHTML = '<option value="">Select Category (Optional)</option>';
+        categorySelect.innerHTML = '<option value="">Select Category</option>';
 
         inventoryCategories.forEach(category => {
             const option = document.createElement('option');
@@ -297,7 +297,7 @@
         const subCategorySelect = itemDiv.querySelector('.item-inventory-sub-category');
 
         // Clear sub-category dropdown
-        subCategorySelect.innerHTML = '<option value="">Select Sub-Category (Optional)</option>';
+        subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
 
         if (!categoryId) {
             return;
@@ -405,7 +405,7 @@
         document.getElementById('supplierId').value = invoice?.supplier_id || '';
         // Set current date for new invoices
         const currentDate = new Date().toISOString().split('T')[0];
-        document.getElementById('invoiceDate').value = invoice?.invoice_date ? new Date(invoice.invoice_date).toISOString().split('T')[0] : currentDate;
+        document.getElementById('invoiceDate').value = invoice?.transaction_date ? new Date(invoice.transaction_date).toISOString().split('T')[0] : currentDate;
         document.getElementById('dueDate').value = invoice?.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : currentDate;
 
         document.getElementById('subtotal').value = invoice?.subtotal || '';
@@ -579,15 +579,13 @@
             const data = {
                 invoice_number: document.getElementById('invoiceNumber').value,
                 supplier_id: document.getElementById('supplierId').value || null,
-                invoice_date: document.getElementById('invoiceDate').value || null,
-                due_date: document.getElementById('dueDate').value || null,
+                transaction_date: document.getElementById('invoiceDate').value ? new Date(document.getElementById('invoiceDate').value).toISOString() : new Date().toISOString(),
+                due_date: document.getElementById('dueDate').value ? new Date(document.getElementById('dueDate').value).toISOString() : null,
                 subtotal: parseFloat(document.getElementById('subtotal').value) || 0,
                 tax_amount: parseFloat(document.getElementById('taxAmount').value) || 0,
                 discount_amount: parseFloat(document.getElementById('discountAmount').value) || 0,
                 total_amount: parseFloat(document.getElementById('totalAmount').value) || 0,
-                notes: document.getElementById('notes').value,
-                is_paid: document.getElementById('isPaid').checked,
-                status: document.getElementById('isPaid').checked ? 'completed' : 'pending',
+                notes: document.getElementById('notes').value || null,
                 invoice_items: invoiceItems
             };
 

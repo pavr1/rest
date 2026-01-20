@@ -5,7 +5,7 @@
 
 start: ## Start invoice-service container
 	@echo "📄 Starting Invoice Service..."
-	@docker-compose -f docker/docker-compose.yml up -d
+	@docker-compose -f docker/docker-compose.yml up -d --build
 	@echo "✅ Started on port 8092"
 
 stop: ## Stop invoice-service container
@@ -16,7 +16,7 @@ stop: ## Stop invoice-service container
 restart: ## Restart invoice-service container
 	@echo "🔄 Restarting Invoice Service..."
 	@docker-compose -f docker/docker-compose.yml down
-	@docker-compose -f docker/docker-compose.yml up -d
+	@docker-compose -f docker/docker-compose.yml up -d --build
 	@echo "✅ Restarted"
 
 logs: ## View invoice-service logs
