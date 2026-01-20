@@ -1,4 +1,4 @@
--- Count invoice items with optional filters
+-- Count invoice items for a specific invoice
 SELECT COUNT(*)
 FROM invoice_items
-WHERE ($1 IS NULL OR invoice_id = $1);
+WHERE invoice_id = $1;
