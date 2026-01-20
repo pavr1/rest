@@ -110,7 +110,7 @@ CREATE TABLE stock_variants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE CASCADE,
-    invoice_id UUID REFERENCES outcome_invoices(id) ON DELETE SET NULL,
+    invoice_id UUID,  -- FK to outcome_invoices added after that table is created
     unit VARCHAR(50) NOT NULL,
     number_of_units DECIMAL(10,2) NOT NULL CHECK (number_of_units > 0),
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -159,6 +159,10 @@ CREATE TABLE outcome_invoices (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Add FK constraint to stock_variants now that outcome_invoices exists
+ALTER TABLE stock_variants ADD CONSTRAINT fk_stock_variants_invoice
+    FOREIGN KEY (invoice_id) REFERENCES outcome_invoices(id) ON DELETE SET NULL;
 
 -- 15. Invoice Items
 CREATE TABLE invoice_items (

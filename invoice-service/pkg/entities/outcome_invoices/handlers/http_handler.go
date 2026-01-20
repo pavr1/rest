@@ -31,6 +31,11 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Convert empty strings to nil for optional UUID fields
+	if req.SupplierID != nil && *req.SupplierID == "" {
+		req.SupplierID = nil
+	}
+
 	invoice, err := h.dbHandler.Create(&req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create outcome invoice")
@@ -67,6 +72,11 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
+	}
+
+	// Convert empty strings to nil for optional UUID fields
+	if req.SupplierID != nil && *req.SupplierID == "" {
+		req.SupplierID = nil
 	}
 
 	invoice, err := h.dbHandler.Update(id, &req)

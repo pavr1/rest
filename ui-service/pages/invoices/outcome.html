@@ -127,33 +127,38 @@
                     <div class="mb-3">
                         <label class="form-label">Invoice Items</label>
                         <div class="row mb-2">
-                            <div class="col-md-2"><small class="text-muted fw-bold">Category</small></div>
-                            <div class="col-md-2"><small class="text-muted fw-bold">Sub-Category</small></div>
-                            <div class="col-md-2"><small class="text-muted fw-bold">Count</small></div>
-                            <div class="col-md-2"><small class="text-muted fw-bold">Unit Type</small></div>
-                            <div class="col-md-2"><small class="text-muted fw-bold">Price</small></div>
-                            <div class="col-md-2"></div>
+                            <div class="col"><small class="text-muted fw-bold">Category</small></div>
+                            <div class="col"><small class="text-muted fw-bold">Sub-Category</small></div>
+                            <div class="col"><small class="text-muted fw-bold">Detail</small></div>
+                            <div class="col"><small class="text-muted fw-bold">Count</small></div>
+                            <div class="col"><small class="text-muted fw-bold">Unit Type</small></div>
+                            <div class="col"><small class="text-muted fw-bold">Price</small></div>
+                            <div class="col-1"></div>
                         </div>
                         <div id="invoiceItemsContainer">
                             <div class="invoice-item mb-3 p-3 border rounded">
                                 <div class="row align-items-end">
-                                    <div class="col-md-2">
+                                    <div class="col">
                                         <label class="form-label">Inventory Category <span class="text-danger">*</span></label>
                                         <select class="form-select item-inventory-category" required>
                                             <option value="">Select Category</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col">
                                         <label class="form-label">Inventory Sub-Category <span class="text-danger">*</span></label>
                                         <select class="form-select item-inventory-sub-category" required>
                                             <option value="">Select Sub-Category</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col">
+                                        <label class="form-label">Detail</label>
+                                        <input type="text" class="form-control item-detail" placeholder="Item detail...">
+                                    </div>
+                                    <div class="col">
                                         <label class="form-label">Count <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control item-count" step="0.01" min="0" required>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col">
                                         <label class="form-label">Unit Type <span class="text-danger">*</span></label>
                                         <select class="form-select item-unit-type" required>
                                             <option value="">Select Unit</option>
@@ -167,11 +172,11 @@
                                             <option value="Bag">Bag</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col">
                                         <label class="form-label">Price <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control item-price" step="0.01" min="0" required>
                                     </div>
-                                    <div class="col-md-2 d-flex align-items-end">
+                                    <div class="col-1 d-flex align-items-end">
                                         <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn w-100" title="Remove item">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -461,23 +466,27 @@
 
         itemDiv.innerHTML = `
             <div class="row align-items-end">
-                <div class="col-md-2">
+                <div class="col">
                     <label class="form-label">Inventory Category <span class="text-danger">*</span></label>
                     <select class="form-select item-inventory-category" required>
                         <option value="">Select Category</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col">
                     <label class="form-label">Inventory Sub-Category <span class="text-danger">*</span></label>
                     <select class="form-select item-inventory-sub-category" required>
                         <option value="">Select Sub-Category</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col">
+                    <label class="form-label">Detail</label>
+                    <input type="text" class="form-control item-detail" placeholder="Item detail..." value="${item?.detail || ''}">
+                </div>
+                <div class="col">
                     <label class="form-label">Count <span class="text-danger">*</span></label>
                     <input type="number" class="form-control item-count" step="0.01" min="0" value="${item?.count || ''}" required>
                 </div>
-                <div class="col-md-2">
+                <div class="col">
                     <label class="form-label">Unit Type <span class="text-danger">*</span></label>
                     <select class="form-select item-unit-type" required>
                         <option value="">Select Unit</option>
@@ -491,11 +500,11 @@
                         <option value="Bag" ${item?.unit_type === 'Bag' ? 'selected' : ''}>Bag</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col">
                     <label class="form-label">Price <span class="text-danger">*</span></label>
                     <input type="number" class="form-control item-price" step="0.01" min="0" value="${item?.price || ''}" required>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
+                <div class="col-1 d-flex align-items-end">
                     <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn w-100" title="Remove item">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -548,11 +557,13 @@
                 const count = parseFloat(itemEl.querySelector('.item-count').value) || 0;
                 const unitType = itemEl.querySelector('.item-unit-type').value.trim();
                 const price = parseFloat(itemEl.querySelector('.item-price').value) || 0;
+                const detail = itemEl.querySelector('.item-detail').value.trim();
                 const inventoryCategoryId = itemEl.querySelector('.item-inventory-category').value;
                 const inventorySubCategoryId = itemEl.querySelector('.item-inventory-sub-category').value;
 
                 if (inventoryCategoryId && inventorySubCategoryId && count > 0 && unitType && price > 0) {
                     const itemData = {
+                        detail: detail || null,
                         count: count,
                         unit_type: unitType,
                         price: price,
@@ -567,7 +578,7 @@
 
             const data = {
                 invoice_number: document.getElementById('invoiceNumber').value,
-                supplier_id: document.getElementById('supplierId').value,
+                supplier_id: document.getElementById('supplierId').value || null,
                 invoice_date: document.getElementById('invoiceDate').value || null,
                 due_date: document.getElementById('dueDate').value || null,
                 subtotal: parseFloat(document.getElementById('subtotal').value) || 0,
