@@ -127,8 +127,7 @@
                     <div class="mb-3">
                         <label class="form-label">Invoice Items</label>
                         <div class="row mb-2">
-                            <div class="col"><small class="text-muted fw-bold">Category</small></div>
-                            <div class="col"><small class="text-muted fw-bold">Sub-Category</small></div>
+                            <div class="col-3"><small class="text-muted fw-bold">Stock Variant</small></div>
                             <div class="col"><small class="text-muted fw-bold">Detail</small></div>
                             <div class="col"><small class="text-muted fw-bold">Count</small></div>
                             <div class="col"><small class="text-muted fw-bold">Unit Type</small></div>
@@ -138,16 +137,10 @@
                         <div id="invoiceItemsContainer">
                             <div class="invoice-item mb-3 p-3 border rounded">
                                 <div class="row align-items-end">
-                                    <div class="col">
-                                        <label class="form-label">Inventory Category <span class="text-danger">*</span></label>
-                                        <select class="form-select item-inventory-category" required>
-                                            <option value="">Select Category</option>
-                                        </select>
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label">Inventory Sub-Category <span class="text-danger">*</span></label>
-                                        <select class="form-select item-inventory-sub-category" required>
-                                            <option value="">Select Sub-Category</option>
+                                    <div class="col-3">
+                                        <label class="form-label">Stock Variant <span class="text-danger">*</span></label>
+                                        <select class="form-select item-stock-variant" required>
+                                            <option value="">Select Stock Variant</option>
                                         </select>
                                     </div>
                                     <div class="col">
@@ -210,8 +203,7 @@
 (function() {
     let invoices = [];
     let suppliers = [];
-    let inventoryCategories = [];
-    let inventorySubCategories = [];
+    let stockVariants = [];
     let modal = null;
     let editingId = null;
 
@@ -219,7 +211,7 @@
         modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
         setupEventListeners();
         loadSuppliers();
-        loadInventoryCategories();
+        loadStockVariants();
         loadInvoices();
     }
 
@@ -268,67 +260,29 @@
         });
     }
 
-    async function loadInventoryCategories() {
+    async function loadStockVariants() {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.inventoryVariants, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
-                inventoryCategories = result.data?.categories || result.data?.items || result.data || [];
+                stockVariants = result.data?.variants || result.data?.items || result.data || [];
             }
         } catch (e) {
-            console.error('Error loading inventory categories:', e);
+            console.error('Error loading stock variants:', e);
         }
     }
 
-    function populateItemCategoryDropdown(itemDiv) {
-        const categorySelect = itemDiv.querySelector('.item-inventory-category');
-        categorySelect.innerHTML = '<option value="">Select Category</option>';
+    function populateStockVariantDropdown(itemDiv) {
+        const variantSelect = itemDiv.querySelector('.item-stock-variant');
+        variantSelect.innerHTML = '<option value="">Select Stock Variant</option>';
 
-        inventoryCategories.forEach(category => {
+        stockVariants.forEach(variant => {
             const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            categorySelect.appendChild(option);
+            option.value = variant.id;
+            option.textContent = variant.name + (variant.description ? ` - ${variant.description}` : '');
+            variantSelect.appendChild(option);
         });
-    }
-
-    async function loadItemSubCategoriesForCategory(itemDiv, categoryId) {
-        const subCategorySelect = itemDiv.querySelector('.item-inventory-sub-category');
-
-        // Clear sub-category dropdown
-        subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
-
-        if (!categoryId) {
-            return;
-        }
-
-        try {
-            const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-
-            if (!resp.ok) {
-                subCategorySelect.innerHTML = '<option value="">Failed to load sub-categories</option>';
-                return;
-            }
-
-            const result = await resp.json();
-            const categorySubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
-
-            if (categorySubCategories.length === 0) {
-                subCategorySelect.innerHTML = '<option value="">No sub-categories available</option>';
-            } else {
-                categorySubCategories.forEach(subCat => {
-                    const option = document.createElement('option');
-                    option.value = subCat.id;
-                    option.textContent = subCat.name;
-                    subCategorySelect.appendChild(option);
-                });
-            }
-        } catch (e) {
-            console.error('Failed to load sub-categories for item:', e);
-            subCategorySelect.innerHTML = '<option value="">Error loading sub-categories</option>';
-        }
     }
 
 
@@ -466,16 +420,10 @@
 
         itemDiv.innerHTML = `
             <div class="row align-items-end">
-                <div class="col">
-                    <label class="form-label">Inventory Category <span class="text-danger">*</span></label>
-                    <select class="form-select item-inventory-category" required>
-                        <option value="">Select Category</option>
-                    </select>
-                </div>
-                <div class="col">
-                    <label class="form-label">Inventory Sub-Category <span class="text-danger">*</span></label>
-                    <select class="form-select item-inventory-sub-category" required>
-                        <option value="">Select Sub-Category</option>
+                <div class="col-3">
+                    <label class="form-label">Stock Variant <span class="text-danger">*</span></label>
+                    <select class="form-select item-stock-variant" required>
+                        <option value="">Select Stock Variant</option>
                     </select>
                 </div>
                 <div class="col">
@@ -514,31 +462,18 @@
 
         container.appendChild(itemDiv);
 
-        // Populate category dropdown
-        populateItemCategoryDropdown(itemDiv);
+        // Populate stock variant dropdown
+        populateStockVariantDropdown(itemDiv);
 
         // Add event listeners
         itemDiv.querySelector('.remove-item-btn').addEventListener('click', () => {
             itemDiv.remove();
         });
 
-        itemDiv.querySelector('.item-inventory-category').addEventListener('change', (e) => {
-            loadItemSubCategoriesForCategory(itemDiv, e.target.value);
-        });
-
         // Set initial values if editing
-        if (item) {
-            const categorySelect = itemDiv.querySelector('.item-inventory-category');
-            const subCategorySelect = itemDiv.querySelector('.item-inventory-sub-category');
-
-            if (item.inventory_category_id) {
-                categorySelect.value = item.inventory_category_id;
-                loadItemSubCategoriesForCategory(itemDiv, item.inventory_category_id).then(() => {
-                    if (item.inventory_sub_category_id) {
-                        subCategorySelect.value = item.inventory_sub_category_id;
-                    }
-                });
-            }
+        if (item && item.stock_variant_id) {
+            const variantSelect = itemDiv.querySelector('.item-stock-variant');
+            variantSelect.value = item.stock_variant_id;
         }
     }
 
@@ -558,18 +493,16 @@
                 const unitType = itemEl.querySelector('.item-unit-type').value.trim();
                 const price = parseFloat(itemEl.querySelector('.item-price').value) || 0;
                 const detail = itemEl.querySelector('.item-detail').value.trim();
-                const inventoryCategoryId = itemEl.querySelector('.item-inventory-category').value;
-                const inventorySubCategoryId = itemEl.querySelector('.item-inventory-sub-category').value;
+                const stockVariantId = itemEl.querySelector('.item-stock-variant').value;
 
-                if (inventoryCategoryId && inventorySubCategoryId && count > 0 && unitType && price > 0) {
+                if (stockVariantId && count > 0 && unitType && price > 0) {
                     const itemData = {
                         detail: detail || null,
                         count: count,
                         unit_type: unitType,
                         price: price,
                         items_per_unit: 1, // Default value
-                        inventory_category_id: inventoryCategoryId,
-                        inventory_sub_category_id: inventorySubCategoryId
+                        stock_variant_id: stockVariantId
                     };
 
                     invoiceItems.push(itemData);

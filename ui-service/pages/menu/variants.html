@@ -160,9 +160,9 @@
                         <h6 class="card-title"><i class="fas fa-plus me-2"></i>Add Ingredient</h6>
                         <div class="row g-2 align-items-end">
                             <div class="col-md-4">
-                                <label class="form-label">Stock Sub-Category</label>
-                                <select class="form-select" id="newIngredientStockSubCategory">
-                                    <option value="">Select sub-category...</option>
+                                <label class="form-label">Stock Variant</label>
+                                <select class="form-select" id="newIngredientStockVariant">
+                                    <option value="">Select stock variant...</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -271,20 +271,20 @@
         document.getElementById('variantSubCategory').innerHTML = '<option value="">Select...</option>' + options;
     }
     
-    async function loadInventorySubCategories() {
+    async function loadStockVariants() {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.inventorySubCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.inventoryVariants, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
-                inventorySubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
+                stockVariants = result.data?.variants || result.data?.items || result.data || [];
             }
-        } catch (e) { console.error('Error loading inventory sub-categories:', e); }
+        } catch (e) { console.error('Error loading stock variants:', e); }
     }
     
-    function populateStockSubCategoriesDropdown() {
-        const options = inventorySubCategories.map(sc => `<option value="${sc.id}">${sc.name}</option>`).join('');
-        document.getElementById('newIngredientStockSubCategory').innerHTML = '<option value="">Select sub-category...</option>' + options;
+    function populateStockVariantsDropdown() {
+        const options = stockVariants.map(sv => `<option value="${sv.id}">${sv.name}${sv.description ? ' - ' + sv.description : ''}</option>`).join('');
+        document.getElementById('newIngredientStockVariant').innerHTML = '<option value="">Select stock variant...</option>' + options;
     }
     
     async function loadVariants() {
@@ -501,8 +501,8 @@
         document.getElementById('newIngredientNotes').value = '';
 
         ingredientsModal.show();
-        await loadInventorySubCategories();
-        populateStockSubCategoriesDropdown();
+        await loadStockVariants();
+        populateStockVariantsDropdown();
         await loadIngredients(menuVariantId);
     }
     
@@ -545,18 +545,16 @@
         let totalCost = 0;
         
         listEl.innerHTML = currentIngredients.map(ing => {
-            // For now, we'll display basic info without cost calculation
-            // since we're using stock_sub_category_id instead of individual stock items
             return `
                 <div class="ingredient-row">
                     <div class="ingredient-name">
-                        <strong>${escapeHtml(ing.stock_sub_category_name || 'Unknown')}</strong>
+                        <strong>${escapeHtml(ing.stock_variant_name || 'Unknown')}</strong>
                         <small class="text-muted ms-2">(Qty: ${ing.quantity})</small>
                     </div>
                     <input type="number" class="form-control form-control-sm ingredient-qty"
                            value="${ing.quantity}" step="0.01" min="0.01"
-                           data-stock-id="${ing.stock_sub_category_id}"
-                           onchange="window.menuVariantsPage.updateIngredient('${ing.id}', '${ing.stock_sub_category_id}', this.value)">
+                           data-stock-id="${ing.stock_variant_id}"
+                           onchange="window.menuVariantsPage.updateIngredient('${ing.id}', '${ing.stock_variant_id}', this.value)">
                     <small class="text-muted" style="width: 80px;">Optional: ${ing.is_optional ? 'Yes' : 'No'}</small>
                     <button class="btn btn-outline-danger btn-sm" onclick="window.menuVariantsPage.removeIngredient('${ing.id}')">
                         <i class="fas fa-times"></i>
@@ -570,13 +568,13 @@
     
     async function addIngredient() {
         const menuVariantId = document.getElementById('ingredientMenuVariantId').value;
-        const stockSubCategoryId = document.getElementById('newIngredientStockSubCategory').value;
+        const stockVariantId = document.getElementById('newIngredientStockVariant').value;
         const quantity = parseFloat(document.getElementById('newIngredientQty').value);
         const isOptional = document.getElementById('newIngredientOptional').checked;
         const notes = document.getElementById('newIngredientNotes').value;
 
-        if (!stockSubCategoryId || !quantity || quantity <= 0) {
-            Swal.fire('Error', 'Please select a stock sub-category and enter a valid quantity', 'warning');
+        if (!stockVariantId || !quantity || quantity <= 0) {
+            Swal.fire('Error', 'Please select a stock variant and enter a valid quantity', 'warning');
             return;
         }
 
@@ -587,7 +585,7 @@
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    stock_sub_category_id: stockSubCategoryId,
+                    stock_variant_id: stockVariantId,
                     quantity: quantity,
                     is_optional: isOptional,
                     notes: notes || null
@@ -595,7 +593,7 @@
             });
             if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
 
-            document.getElementById('newIngredientStockSubCategory').value = '';
+            document.getElementById('newIngredientStockVariant').value = '';
             document.getElementById('newIngredientQty').value = '';
             document.getElementById('newIngredientOptional').checked = false;
             document.getElementById('newIngredientNotes').value = '';
@@ -604,7 +602,7 @@
         } catch (e) { Swal.fire('Error', e.message, 'error'); }
     }
     
-    async function updateIngredient(ingredientId, stockSubCategoryId, newQuantity) {
+    async function updateIngredient(ingredientId, stockVariantId, newQuantity) {
         const menuVariantId = document.getElementById('ingredientMenuVariantId').value;
         const quantity = parseFloat(newQuantity);
 

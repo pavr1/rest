@@ -70,7 +70,11 @@ const CONFIG = {
     INVENTORY: {
         // Suppliers
         suppliers: SERVICE_URLS.gateway + '/api/v1/inventory/suppliers',
-        supplier: (id) => SERVICE_URLS.gateway + `/api/v1/inventory/suppliers/${id}`
+        supplier: (id) => SERVICE_URLS.gateway + `/api/v1/inventory/suppliers/${id}`,
+        // Stock Count (inventory tracking)
+        stockCount: SERVICE_URLS.gateway + '/api/v1/inventory/stock-count',
+        stockCountById: (id) => SERVICE_URLS.gateway + `/api/v1/inventory/stock-count/${id}`,
+        stockCountMarkOut: (id) => SERVICE_URLS.gateway + `/api/v1/inventory/stock-count/${id}/out`
     },
     INVOICE: {
         // Outcome Invoices (supplier purchases)

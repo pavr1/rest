@@ -50,11 +50,13 @@ func (q *Queries) Get(name string) (string, error) {
 
 // SQL query constants
 const (
-	CreateOutcomeInvoice = "create_outcome_invoice"
-	GetOutcomeInvoice    = "get_outcome_invoice"
-	UpdateOutcomeInvoice = "update_outcome_invoice"
-	DeleteOutcomeInvoice = "delete_outcome_invoice"
-	ListOutcomeInvoices  = "list_outcome_invoices"
-	CountOutcomeInvoices = "count_outcome_invoices"
-	CreateStockCount     = "create_stock_count"
+	ListStockCountQuery          = "list_stock_count"
+	CountStockCountQuery         = "count_stock_count"
+	ListStockCountByVariantQuery = "list_stock_count_by_variant"
+	CountStockCountByVariantQuery = "count_stock_count_by_variant"
+	GetStockCountByIDQuery       = "get_stock_count_by_id"
+	CreateStockCountQuery        = "create_stock_count"
+	UpdateStockCountQuery        = "update_stock_count"
+	MarkStockOutQuery            = "mark_stock_out"
+	DeleteStockCountQuery        = "delete_stock_count"
 )

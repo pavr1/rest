@@ -1,13 +1,12 @@
 -- Update an invoice item
 UPDATE invoice_items SET
-    inventory_category_id = COALESCE($2, inventory_category_id),
-    inventory_sub_category_id = COALESCE($3, inventory_sub_category_id),
-    detail = COALESCE($4, detail),
-    count = COALESCE($5, count),
-    unit_type = COALESCE($6, unit_type),
-    price = COALESCE($7, price),
-    items_per_unit = COALESCE($8, items_per_unit),
-    expiration_date = COALESCE($9, expiration_date),
+    stock_variant_id = COALESCE($2, stock_variant_id),
+    detail = COALESCE($3, detail),
+    count = COALESCE($4, count),
+    unit_type = COALESCE($5, unit_type),
+    price = COALESCE($6, price),
+    items_per_unit = COALESCE($7, items_per_unit),
+    expiration_date = COALESCE($8, expiration_date),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, total, updated_at;
+RETURNING id, invoice_id, stock_variant_id, detail, count, unit_type, price, items_per_unit, total, expiration_date, created_at, updated_at;

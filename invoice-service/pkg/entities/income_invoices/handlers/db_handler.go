@@ -311,8 +311,6 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 	var item invoiceItemModels.InvoiceItem
 	err = tx.QueryRow(query,
 		req.InvoiceID,
-		req.InventoryCategoryID,
-		req.InventorySubCategoryID,
 		req.Detail,
 		req.Count,
 		req.UnitType,
@@ -329,8 +327,6 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 
 	// Fill in the rest of the fields
 	item.InvoiceID = req.InvoiceID
-	item.InventoryCategoryID = req.InventoryCategoryID
-	item.InventorySubCategoryID = req.InventorySubCategoryID
 	item.Detail = req.Detail
 	item.Count = req.Count
 	item.UnitType = req.UnitType

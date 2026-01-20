@@ -9,7 +9,7 @@ WHERE id = $1
 RETURNING
     id,
     menu_variant_id,
-    stock_sub_category_id,
+    stock_variant_id,
     quantity,
     is_optional,
     notes,

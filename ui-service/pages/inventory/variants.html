@@ -50,9 +50,9 @@
             <thead>
                 <tr>
                     <th>Name</th>
+                    <th>Description</th>
                     <th>Sub-Category</th>
-                    <th>Unit</th>
-                    <th>Units</th>
+                    <th>Status</th>
                     <th width="120">Actions</th>
                 </tr>
             </thead>
@@ -88,22 +88,12 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Unit <span class="text-danger">*</span></label>
-                        <select class="form-select" id="itemUnit" required>
-                            <option value="">Select Unit</option>
-                            <option value="Kg">Kg</option>
-                            <option value="g">g</option>
-                            <option value="L">L</option>
-                            <option value="ML">ML</option>
-                            <option value="Unit">Unit</option>
-                            <option value="Box">Box</option>
-                            <option value="Bottle">Bottle</option>
-                            <option value="Bag">Bag</option>
-                        </select>
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="itemDescription" rows="2" placeholder="Optional description..."></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Number of Units <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="itemNumberOfUnits" min="0.01" step="0.01" required>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="itemIsActive" checked>
+                        <label class="form-check-label" for="itemIsActive">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -269,12 +259,15 @@
         table.classList.remove('d-none');
         tbody.innerHTML = items.map(item => {
             const subCategory = subCategories.find(sc => sc.id === item.stock_sub_category_id);
+            const statusBadge = item.is_active !== false 
+                ? '<span class="badge bg-success">Active</span>' 
+                : '<span class="badge bg-secondary">Inactive</span>';
             return `
                 <tr>
                     <td><strong>${escapeHtml(item.name)}</strong></td>
+                    <td>${escapeHtml(item.description || '-')}</td>
                     <td>${subCategory ? escapeHtml(subCategory.name) : '-'}</td>
-                    <td>${escapeHtml(item.unit || '-')}</td>
-                    <td>${item.number_of_units || 0}</td>
+                    <td>${statusBadge}</td>
                     <td>
                         <div class="action-btns">
                             <button class="btn btn-outline-primary btn-action" onclick="window.inventoryVarPage.edit('${item.id}')" title="Edit"><i class="fas fa-edit"></i></button>
@@ -313,8 +306,8 @@
             document.getElementById('itemSubCategory').innerHTML = '<option value="">Select a category first</option>';
         }
 
-        document.getElementById('itemUnit').value = item?.unit || '';
-        document.getElementById('itemNumberOfUnits').value = item?.number_of_units || '';
+        document.getElementById('itemDescription').value = item?.description || '';
+        document.getElementById('itemIsActive').checked = item?.is_active !== false;
         modal.show();
     }
 
@@ -327,15 +320,15 @@
             const name = document.getElementById('itemName').value.trim();
             const categoryId = document.getElementById('itemCategory').value;
             const subCategoryId = document.getElementById('itemSubCategory').value;
-            const unit = document.getElementById('itemUnit').value;
-            const numberOfUnits = parseFloat(document.getElementById('itemNumberOfUnits').value) || 0;
+            const description = document.getElementById('itemDescription').value.trim();
+            const isActive = document.getElementById('itemIsActive').checked;
 
             console.log('Saving variant...');
             console.log('Name:', name);
             console.log('Category ID:', categoryId);
             console.log('Sub-Category ID:', subCategoryId);
-            console.log('Unit:', unit);
-            console.log('Number of Units:', numberOfUnits);
+            console.log('Description:', description);
+            console.log('Is Active:', isActive);
 
             if (!name) {
                 throw new Error('Name is required');
@@ -349,19 +342,11 @@
                 throw new Error('Please select a sub-category');
             }
 
-            if (!unit) {
-                throw new Error('Unit is required');
-            }
-
-            if (numberOfUnits <= 0) {
-                throw new Error('Number of units must be greater than 0');
-            }
-
             const data = {
                 name: name,
                 stock_sub_category_id: subCategoryId,
-                unit: unit,
-                number_of_units: numberOfUnits
+                description: description || null,
+                is_active: isActive
             };
             const url = editingId ? `${CONFIG.MENU.inventoryVariants}/${editingId}` : CONFIG.MENU.inventoryVariants;
             const resp = await fetch(url, { method: editingId ? 'PUT' : 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(data) });

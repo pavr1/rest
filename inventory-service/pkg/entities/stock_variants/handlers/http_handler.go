@@ -84,16 +84,6 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Unit == "" {
-		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Unit is required")
-		return
-	}
-
-	if req.NumberOfUnits <= 0 {
-		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Number of units must be greater than 0")
-		return
-	}
-
 	variant, err := h.dbHandler.Create(&req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create stock variant")
@@ -113,11 +103,6 @@ func (h *HTTPHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
 		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invalid request format")
-		return
-	}
-
-	if req.NumberOfUnits != nil && *req.NumberOfUnits <= 0 {
-		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Number of units must be greater than 0")
 		return
 	}
 

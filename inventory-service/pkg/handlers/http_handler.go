@@ -12,6 +12,7 @@ import (
 	sharedHttp "shared/http"
 
 	stockCategoryHandlers "inventory-service/pkg/entities/stock_categories/handlers"
+	stockCountHandlers "inventory-service/pkg/entities/stock_count/handlers"
 	stockSubCategoryHandlers "inventory-service/pkg/entities/stock_sub_categories/handlers"
 	stockVariantHandlers "inventory-service/pkg/entities/stock_variants/handlers"
 	supplierHandlers "inventory-service/pkg/entities/suppliers/handlers"
@@ -25,6 +26,7 @@ type MainHTTPHandler struct {
 	httpHealthMonitor       *sharedHttp.HTTPHealthMonitor
 	cancelHealthMonitor     context.CancelFunc
 	stockCategoryHandler    *stockCategoryHandlers.HTTPHandler
+	stockCountHandler       *stockCountHandlers.HTTPHandler
 	stockSubCategoryHandler *stockSubCategoryHandlers.HTTPHandler
 	stockVariantHandler     *stockVariantHandlers.HTTPHandler
 	supplierHandler         *supplierHandlers.HTTPHandler
@@ -62,6 +64,14 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		return nil, fmt.Errorf("failed to create stock category handler: %w", err)
 	}
 	stockCategoryHTTPHandler := stockCategoryHandlers.NewHTTPHandler(stockCategoryDBHandler, logger)
+
+	// Create stock count handlers
+	stockCountDBHandler, err := stockCountHandlers.NewDBHandler(db, logger)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to create stock count handler: %w", err)
+	}
+	stockCountHTTPHandler := stockCountHandlers.NewHTTPHandler(stockCountDBHandler, logger)
 
 	// Create stock sub-category handlers
 	stockSubCategoryDBHandler, err := stockSubCategoryHandlers.NewDBHandler(db, logger)
@@ -105,6 +115,7 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 		httpHealthMonitor:       httpHealthMonitor,
 		cancelHealthMonitor:     cancel,
 		stockCategoryHandler:    stockCategoryHTTPHandler,
+		stockCountHandler:       stockCountHTTPHandler,
 		stockSubCategoryHandler: stockSubCategoryHTTPHandler,
 		stockVariantHandler:     stockVariantHTTPHandler,
 		supplierHandler:         supplierHTTPHandler,
@@ -150,6 +161,14 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/api/v1/inventory/variants", h.stockVariantHandler.Create).Methods("POST")
 	router.HandleFunc("/api/v1/inventory/variants/{id}", h.stockVariantHandler.Update).Methods("PUT")
 	router.HandleFunc("/api/v1/inventory/variants/{id}", h.stockVariantHandler.Delete).Methods("DELETE")
+
+	// Stock Count
+	router.HandleFunc("/api/v1/inventory/stock-count", h.stockCountHandler.List).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/stock-count/{id}", h.stockCountHandler.GetByID).Methods("GET")
+	router.HandleFunc("/api/v1/inventory/stock-count", h.stockCountHandler.Create).Methods("POST")
+	router.HandleFunc("/api/v1/inventory/stock-count/{id}", h.stockCountHandler.Update).Methods("PUT")
+	router.HandleFunc("/api/v1/inventory/stock-count/{id}/out", h.stockCountHandler.MarkOut).Methods("PATCH")
+	router.HandleFunc("/api/v1/inventory/stock-count/{id}", h.stockCountHandler.Delete).Methods("DELETE")
 
 	// Suppliers
 	router.HandleFunc("/api/v1/inventory/suppliers", h.supplierHandler.List).Methods("GET")

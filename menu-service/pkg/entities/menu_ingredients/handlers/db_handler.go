@@ -55,8 +55,8 @@ func (h *DBHandler) List(page, limit int) ([]models.MenuIngredient, error) {
 		err := rows.Scan(
 			&ingredient.ID,
 			&ingredient.MenuVariantID,
-			&ingredient.StockSubCategoryID,
-			&ingredient.StockSubCategoryName,
+			&ingredient.StockVariantID,
+			&ingredient.StockVariantName,
 			&ingredient.Quantity,
 			&ingredient.IsOptional,
 			&notes,
@@ -94,8 +94,8 @@ func (h *DBHandler) GetByID(id string) (*models.MenuIngredient, error) {
 	err = h.db.QueryRow(query, id).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
-		&ingredient.StockSubCategoryID,
-		&ingredient.StockSubCategoryName,
+		&ingredient.StockVariantID,
+		&ingredient.StockVariantName,
 		&ingredient.Quantity,
 		&ingredient.IsOptional,
 		&notes,
@@ -127,10 +127,10 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 	var ingredient models.MenuIngredient
 	var notes sql.NullString
 
-	err = h.db.QueryRow(query, menuVariantID, req.StockSubCategoryID, req.Quantity, req.IsOptional, req.Notes).Scan(
+	err = h.db.QueryRow(query, menuVariantID, req.StockVariantID, req.Quantity, req.IsOptional, req.Notes).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
-		&ingredient.StockSubCategoryID,
+		&ingredient.StockVariantID,
 		&ingredient.Quantity,
 		&ingredient.IsOptional,
 		&notes,
@@ -141,7 +141,7 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 	if err != nil {
 		// Check for unique constraint violation
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			return nil, fmt.Errorf("menu ingredient already exists for this menu variant and stock sub-category")
+			return nil, fmt.Errorf("menu ingredient already exists for this menu variant and stock variant")
 		}
 		return nil, fmt.Errorf("failed to create menu ingredient: %w", err)
 	}
@@ -166,7 +166,7 @@ func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*
 	err = h.db.QueryRow(query, id, req.Quantity, req.IsOptional, req.Notes).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
-		&ingredient.StockSubCategoryID,
+		&ingredient.StockVariantID,
 		&ingredient.Quantity,
 		&ingredient.IsOptional,
 		&notes,
@@ -233,8 +233,8 @@ func (h *DBHandler) GetByMenuVariant(menuVariantID string) ([]models.MenuIngredi
 		err := rows.Scan(
 			&ingredient.ID,
 			&ingredient.MenuVariantID,
-			&ingredient.StockSubCategoryID,
-			&ingredient.StockSubCategoryName,
+			&ingredient.StockVariantID,
+			&ingredient.StockVariantName,
 			&ingredient.Quantity,
 			&ingredient.IsOptional,
 			&notes,

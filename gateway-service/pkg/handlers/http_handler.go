@@ -207,6 +207,11 @@ func (h *HTTPHandler) SetupRoutes(sessionMiddleware *middleware.SessionMiddlewar
 	inventoryRouter.HandleFunc("/variants", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
 	inventoryRouter.HandleFunc("/variants/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
 
+	// Stock Count
+	inventoryRouter.HandleFunc("/stock-count", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
+	inventoryRouter.HandleFunc("/stock-count/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")
+	inventoryRouter.HandleFunc("/stock-count/{id}/out", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("PATCH")
+
 	// Suppliers
 	inventoryRouter.HandleFunc("/suppliers", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "POST")
 	inventoryRouter.HandleFunc("/suppliers/{id}", h.CreateProxyHandler(h.inventoryServiceUrl)).Methods("GET", "PUT", "DELETE")

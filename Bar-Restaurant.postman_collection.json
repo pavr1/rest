@@ -81,6 +81,11 @@
 			"key": "stock_variant_id",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "stock_count_id",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -639,7 +644,7 @@
 								"description": "Add a new ingredient to a menu variant (requires authentication)",
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"stock_sub_category_id\": \"{{stock_sub_category_id}}\",\n    \"quantity\": 2.5,\n    \"is_optional\": false,\n    \"notes\": \"Fresh ingredient\"\n}"
+									"raw": "{\n    \"stock_variant_id\": \"{{stock_variant_id}}\",\n    \"quantity\": 2.5,\n    \"is_optional\": false,\n    \"notes\": \"Fresh ingredient\"\n}"
 								}
 							}
 						},
@@ -1433,7 +1438,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"6Pack\",\n    \"stock_sub_category_id\": \"{{stock_sub_category_id}}\",\n    \"unit\": \"Bottle\",\n    \"number_of_units\": 6.0\n}"
+									"raw": "{\n    \"name\": \"Chicken Wings\",\n    \"description\": \"Fresh chicken wings\",\n    \"stock_sub_category_id\": \"{{stock_sub_category_id}}\"\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/variants",
@@ -1453,7 +1458,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"12Pack\",\n    \"unit\": \"Bottle\",\n    \"number_of_units\": 12.0\n}"
+									"raw": "{\n    \"name\": \"Chicken Legs\",\n    \"description\": \"Fresh chicken legs\"\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/variants/{{stock_variant_id}}",
@@ -1476,6 +1481,136 @@
 									"path": ["api", "v1", "inventory", "variants", "{{stock_variant_id}}"]
 								},
 								"description": "Delete an inventory variant (requires authentication)"
+							}
+						}
+					]
+				},
+				{
+					"name": "Stock Count",
+					"description": "Track inventory counts for stock variants",
+					"item": [
+						{
+							"name": "List Stock Count",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/stock-count?page=1&limit=20",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "stock-count"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "stock_variant_id", "value": "{{stock_variant_id}}", "disabled": true}
+									]
+								},
+								"description": "List stock count records (requires authentication)"
+							}
+						},
+						{
+							"name": "Get Stock Count",
+							"request": {
+								"method": "GET",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/stock-count/{{stock_count_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "stock-count", "{{stock_count_id}}"]
+								},
+								"description": "Get a specific stock count record (requires authentication)"
+							}
+						},
+						{
+							"name": "Create Stock Count",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.id) {",
+											"    pm.collectionVariables.set('stock_count_id', jsonData.data.id);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"stock_variant_id\": \"{{stock_variant_id}}\",\n    \"invoice_id\": \"{{outcome_invoice_id}}\",\n    \"count\": 5.0,\n    \"unit\": \"Kg\",\n    \"purchased_at\": \"2025-01-19T12:00:00Z\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/stock-count",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "stock-count"]
+								},
+								"description": "Create a new stock count record (requires authentication)"
+							}
+						},
+						{
+							"name": "Update Stock Count",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"count\": 3.5,\n    \"unit\": \"Kg\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/stock-count/{{stock_count_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "stock-count", "{{stock_count_id}}"]
+								},
+								"description": "Update a stock count record (requires authentication)"
+							}
+						},
+						{
+							"name": "Mark Stock Out",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{"key": "Content-Type", "value": "application/json"},
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"is_out\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/stock-count/{{stock_count_id}}/out",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "stock-count", "{{stock_count_id}}", "out"]
+								},
+								"description": "Mark stock as out (cook reporting) (requires authentication)"
+							}
+						},
+						{
+							"name": "Delete Stock Count",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{"key": "Authorization", "value": "Bearer {{token}}"}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/stock-count/{{stock_count_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "stock-count", "{{stock_count_id}}"]
+								},
+								"description": "Delete a stock count record (requires authentication)"
 							}
 						}
 					]

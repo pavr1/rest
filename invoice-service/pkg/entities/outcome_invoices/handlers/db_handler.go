@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 
 	invoiceItemModels "invoice-service/pkg/entities/invoice_items/models"
 	invoiceItemSql "invoice-service/pkg/entities/invoice_items/sql"
@@ -91,10 +90,10 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 	// Create invoice items if provided
 	if len(req.InvoiceItems) > 0 {
 		for i, itemReq := range req.InvoiceItems {
-			// Validate required field: inventory_sub_category_id
-			if itemReq.InventorySubCategoryID == nil || *itemReq.InventorySubCategoryID == "" {
-				h.logger.WithError(fmt.Errorf("inventory_sub_category_id is required for invoice item %d", i+1)).Error("Failed to create outcome invoice")
-				return nil, fmt.Errorf("inventory_sub_category_id is required for invoice item %d", i+1)
+			// Validate required field: stock_variant_id
+			if itemReq.StockVariantID == nil || *itemReq.StockVariantID == "" {
+				h.logger.WithError(fmt.Errorf("stock_variant_id is required for invoice item %d", i+1)).Error("Failed to create outcome invoice")
+				return nil, fmt.Errorf("stock_variant_id is required for invoice item %d", i+1)
 			}
 
 			itemReq.InvoiceID = invoice.ID
@@ -104,11 +103,10 @@ func (h *DBHandler) Create(req *models.OutcomeInvoiceCreateRequest) (*models.Out
 				return nil, fmt.Errorf("failed to create invoice item: %w", err)
 			}
 
-			variantName := itemReq.Detail + " " + strconv.FormatFloat(itemReq.Count, 'f', -1, 64) + " " + itemReq.UnitType
-
-			err = h.createStockVariant(tx, variantName, *itemReq.InventorySubCategoryID, invoice.ID, itemReq.UnitType, itemReq.Count)
+			// Create stock_count record for this purchase
+			err = h.createStockCount(tx, *itemReq.StockVariantID, invoice.ID, itemReq.Count, itemReq.UnitType, req.TransactionDate)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create stock variant: %w", err)
+				return nil, fmt.Errorf("failed to create stock count: %w", err)
 			}
 
 			invoice.InvoiceItems = append(invoice.InvoiceItems, *item)
@@ -308,8 +306,7 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 	var item invoiceItemModels.InvoiceItem
 	err = tx.QueryRow(query,
 		req.InvoiceID,
-		req.InventoryCategoryID,
-		req.InventorySubCategoryID,
+		req.StockVariantID,
 		req.Detail,
 		req.Count,
 		req.UnitType,
@@ -317,23 +314,14 @@ func (h *DBHandler) createInvoiceItem(tx *sql.Tx, req *invoiceItemModels.Invoice
 		req.ItemsPerUnit,
 		req.ExpirationDate,
 	).Scan(
-		&item.ID, &item.Total, &item.CreatedAt, &item.UpdatedAt,
+		&item.ID, &item.InvoiceID, &item.StockVariantID, &item.Detail,
+		&item.Count, &item.UnitType, &item.Price, &item.ItemsPerUnit,
+		&item.Total, &item.ExpirationDate, &item.CreatedAt, &item.UpdatedAt,
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create invoice item: %w", err)
 	}
-
-	// Fill in the rest of the fields
-	item.InvoiceID = req.InvoiceID
-	item.InventoryCategoryID = req.InventoryCategoryID
-	item.InventorySubCategoryID = req.InventorySubCategoryID
-	item.Detail = req.Detail
-	item.Count = req.Count
-	item.UnitType = req.UnitType
-	item.Price = req.Price
-	item.ItemsPerUnit = req.ItemsPerUnit
-	item.ExpirationDate = req.ExpirationDate
 
 	return &item, nil
 }
@@ -355,14 +343,13 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 	var items []models.InvoiceItem
 	for rows.Next() {
 		var item models.InvoiceItem
-		var inventoryCategoryID sql.NullString
-		var inventorySubCategoryID sql.NullString
+		var stockVariantID sql.NullString
+		var stockVariantName sql.NullString
 		var detail string
 		err := rows.Scan(
 			&item.ID,
 			&item.InvoiceID,
-			&inventoryCategoryID,
-			&inventorySubCategoryID,
+			&stockVariantID,
 			&detail,
 			&item.Count,
 			&item.UnitType,
@@ -372,17 +359,18 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 			&item.ExpirationDate,
 			&item.CreatedAt,
 			&item.UpdatedAt,
+			&stockVariantName,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan invoice item: %w", err)
 		}
 
-		if inventoryCategoryID.Valid {
-			item.InventoryCategoryID = &inventoryCategoryID.String
+		if stockVariantID.Valid {
+			item.StockVariantID = &stockVariantID.String
 		}
 
-		if inventorySubCategoryID.Valid {
-			item.InventorySubCategoryID = &inventorySubCategoryID.String
+		if stockVariantName.Valid {
+			item.StockVariantName = &stockVariantName.String
 		}
 
 		item.Detail = detail
@@ -397,25 +385,24 @@ func (h *DBHandler) getInvoiceItems(invoiceID string) ([]models.InvoiceItem, err
 	return items, nil
 }
 
-// createStockVariant creates a stock variant within a transaction
-func (h *DBHandler) createStockVariant(tx *sql.Tx, name, stockSubCategoryID, invoiceID, unit string, numberOfUnits float64) error {
-	query, err := h.queries.Get(outcomesql.CreateStockVariant)
+// createStockCount creates a stock count record within a transaction
+func (h *DBHandler) createStockCount(tx *sql.Tx, stockVariantID, invoiceID string, count float64, unit string, purchasedAt interface{}) error {
+	query, err := h.queries.Get(outcomesql.CreateStockCount)
 	if err != nil {
-		return fmt.Errorf("failed to get create stock variant query: %w", err)
+		return fmt.Errorf("failed to get create stock count query: %w", err)
 	}
 
-	_, err = tx.Exec(query, name, stockSubCategoryID, invoiceID, unit, numberOfUnits)
+	_, err = tx.Exec(query, stockVariantID, invoiceID, count, unit, purchasedAt)
 	if err != nil {
-		return fmt.Errorf("failed to create stock variant: %w", err)
+		return fmt.Errorf("failed to create stock count: %w", err)
 	}
 
 	h.logger.WithFields(logrus.Fields{
-		"invoice_id":            invoiceID,
-		"name":                  name,
-		"stock_sub_category_id": stockSubCategoryID,
-		"unit":                  unit,
-		"number_of_units":       numberOfUnits,
-	}).Info("Stock variant created for invoice")
+		"invoice_id":       invoiceID,
+		"stock_variant_id": stockVariantID,
+		"count":            count,
+		"unit":             unit,
+	}).Info("Stock count record created for invoice")
 
 	return nil
 }

@@ -4,25 +4,25 @@ import (
 	"time"
 )
 
-// MenuIngredient represents a menu variant's stock sub-category requirement
+// MenuIngredient represents a menu variant's stock variant requirement
 type MenuIngredient struct {
-	ID                    string    `json:"id"`
-	MenuVariantID         string    `json:"menu_variant_id"`
-	StockSubCategoryID    string    `json:"stock_sub_category_id"`
-	StockSubCategoryName  string    `json:"stock_sub_category_name,omitempty"`
-	Quantity              float64   `json:"quantity"`
-	IsOptional            bool      `json:"is_optional"`
-	Notes                 *string   `json:"notes,omitempty"`
-	CreatedAt             time.Time `json:"created_at"`
-	UpdatedAt             time.Time `json:"updated_at"`
+	ID               string    `json:"id"`
+	MenuVariantID    string    `json:"menu_variant_id"`
+	StockVariantID   string    `json:"stock_variant_id"`
+	StockVariantName string    `json:"stock_variant_name,omitempty"`
+	Quantity         float64   `json:"quantity"`
+	IsOptional       bool      `json:"is_optional"`
+	Notes            *string   `json:"notes,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 // MenuIngredientCreateRequest represents a request to add an ingredient to a menu variant
 type MenuIngredientCreateRequest struct {
-	StockSubCategoryID string  `json:"stock_sub_category_id"`
-	Quantity           float64 `json:"quantity"`
-	IsOptional         bool    `json:"is_optional,omitempty"`
-	Notes              *string `json:"notes,omitempty"`
+	StockVariantID string  `json:"stock_variant_id"`
+	Quantity       float64 `json:"quantity"`
+	IsOptional     bool    `json:"is_optional,omitempty"`
+	Notes          *string `json:"notes,omitempty"`
 }
 
 // MenuIngredientUpdateRequest represents a request to update an ingredient
