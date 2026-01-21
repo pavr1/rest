@@ -1,22 +1,41 @@
 <!-- Variant Ingredients Page Partial -->
 <style>
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-    .page-title { font-family: Arial, sans-serif; font-size: 1.75rem; margin: 0; }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+    .page-title { font-family: Arial, sans-serif; font-size: 1.5rem; margin: 0; }
     .variant-name { color: var(--primary-color); }
-    .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; margin-bottom: 1.5rem; }
-    .data-card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
-    .data-table { width: 100%; margin: 0; }
-    .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
-    .data-table td { padding: 0.75rem 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
+    .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; display: flex; flex-direction: column; }
+    .data-card-header { padding: 0.75rem 1rem; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .data-card-header h5 { font-size: 1rem; }
+    .table-container { flex: 1; overflow-y: auto; min-height: 200px; }
+    .data-table { width: 100%; margin: 0; font-size: 0.875rem; }
+    .data-table th { background: #f8f9fa; padding: 0.5rem 0.75rem; font-weight: 600; font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; position: sticky; top: 0; z-index: 1; }
+    .data-table td { padding: 0.5rem 0.75rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
     .data-table tbody tr:hover { background: #f8f9fa; }
-    .action-btns { display: flex; gap: 0.5rem; }
-    .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
-    .empty-state, .loading-state { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); }
-    .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
-    .filter-section { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius); }
-    .qty-input { width: 70px; text-align: center; }
-    .ingredient-badge { background: #d4edda; color: #155724; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
-    .optional-badge { background: #fff3cd; color: #856404; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; }
+    .action-btns { display: flex; gap: 0.25rem; }
+    .btn-action { width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.8rem; }
+    .empty-state, .loading-state { text-align: center; padding: 1.5rem 1rem; color: var(--text-secondary); }
+    .empty-state i { font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.5; }
+    .empty-state h6 { font-size: 0.9rem; }
+    .filter-section { padding: 0.75rem; background: #f8f9fa; flex-shrink: 0; }
+    .filter-section .row { margin: 0; }
+    .filter-section .row > div { padding: 0 0.5rem; }
+    .filter-section .row > div:first-child { padding-left: 0; }
+    .filter-section .row > div:last-child { padding-right: 0; }
+    .filter-section .form-label { font-size: 0.8rem; margin-bottom: 0.25rem; }
+    .filter-section .form-control, .filter-section .form-select { font-size: 0.875rem; }
+    .qty-input { width: 60px; text-align: center; }
+    .ingredient-badge { background: #d4edda; color: #155724; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.7rem; }
+    .optional-badge { background: #fff3cd; color: #856404; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.7rem; }
+    .ingredients-row { display: flex; gap: 1rem; height: calc(100vh - 180px); min-height: 400px; }
+    .ingredients-col { display: flex; flex-direction: column; min-width: 0; }
+    .ingredients-col.available { flex: 1.2; }
+    .ingredients-col.added { flex: 0.8; }
+    .ingredients-col .data-card { flex: 1; }
+    @media (max-width: 1200px) {
+        .ingredients-row { flex-direction: column; height: auto; }
+        .ingredients-col { flex: none; }
+        .ingredients-col .data-card { min-height: 300px; }
+    }
 </style>
 
 <div class="page-header">
@@ -28,35 +47,58 @@
     </div>
 </div>
 
-
-<!-- Available Inventory Section -->
+<div class="ingredients-row">
+<!-- Available Items Section -->
+<div class="ingredients-col available">
 <div class="data-card">
     <div class="data-card-header">
-        <h5 class="mb-0"><i class="fas fa-boxes text-info me-2"></i>Available Inventory</h5>
+        <h5 class="mb-0" id="availableSectionTitle"><i class="fas fa-boxes text-info me-2"></i>Available Inventory</h5>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="lookForMenusToggle">
+            <label class="form-check-label" for="lookForMenusToggle">Look for Menus</label>
+        </div>
     </div>
     
-    <div class="filter-section">
+    <!-- Inventory Filters (shown when toggle is OFF) -->
+    <div class="filter-section" id="inventoryFilters">
         <div class="row">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Filter by Category</label>
                 <select class="form-select" id="categoryFilter">
                     <option value="">Select a Category</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Filter by Sub-Category</label>
                 <select class="form-select" id="subCategoryFilter" disabled>
                     <option value="">Select a category first</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Search by Name</label>
                 <input type="text" class="form-control" id="nameFilter" placeholder="Type to search...">
             </div>
         </div>
     </div>
     
-    <div id="inventoryContainer">
+    <!-- Menu Filters (shown when toggle is ON) -->
+    <div class="filter-section d-none" id="menuFilters">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Filter by Menu Category</label>
+                <select class="form-select" id="menuCategoryFilter">
+                    <option value="">Select a Menu Category</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Search by Name</label>
+                <input type="text" class="form-control" id="menuNameFilter" placeholder="Type to search...">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory Items Container (shown when toggle is OFF) -->
+    <div id="inventoryContainer" class="table-container">
         <div class="loading-state d-none" id="inventoryLoading">
             <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
             <p class="mb-0">Loading inventory...</p>
@@ -84,52 +126,94 @@
             <tbody id="inventoryBody"></tbody>
         </table>
     </div>
+    
+    <!-- Menu Items Container (shown when toggle is ON) -->
+    <div id="menuContainer" class="table-container d-none">
+        <div class="loading-state d-none" id="menuLoading">
+            <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+            <p class="mb-0">Loading menu sub-categories...</p>
+        </div>
+        <div class="empty-state" id="selectMenuCategoryState">
+            <i class="fas fa-filter"></i>
+            <h6>Select a menu category to view sub-categories</h6>
+            <p class="mb-0 small">Use the filter above to browse menu sub-categories.</p>
+        </div>
+        <div class="empty-state d-none" id="menuEmpty">
+            <i class="fas fa-utensils"></i>
+            <h6>No menu sub-categories found</h6>
+            <p class="mb-0 small">Try a different filter.</p>
+        </div>
+        <table class="data-table d-none" id="menuTable">
+            <thead>
+                <tr>
+                    <th>Menu Sub-Category</th>
+                    <th>Category</th>
+                    <th width="90">Quantity</th>
+                    <th width="80">Optional</th>
+                    <th width="80">Action</th>
+                </tr>
+            </thead>
+            <tbody id="menuBody"></tbody>
+        </table>
+    </div>
 </div>
+</div>
+<!-- End Available Items -->
 
 <!-- Added Ingredients Section -->
+<div class="ingredients-col added">
 <div class="data-card">
     <div class="data-card-header">
         <h5 class="mb-0"><i class="fas fa-check-circle text-success me-2"></i>Added Ingredients</h5>
         <span class="badge bg-primary" id="ingredientCount">0</span>
     </div>
-    <div id="ingredientsContainer">
+    <div id="ingredientsContainer" class="table-container">
         <div class="loading-state d-none" id="ingredientsLoading">
             <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
-            <p class="mb-0">Loading ingredients...</p>
+            <p class="mb-0">Loading...</p>
         </div>
         <div class="empty-state" id="ingredientsEmpty">
             <i class="fas fa-inbox"></i>
-            <h6>No ingredients added yet</h6>
-            <p class="mb-0 small">Use the table below to add ingredients.</p>
+            <h6>No ingredients yet</h6>
+            <p class="mb-0 small">Add from the left panel.</p>
         </div>
         <table class="data-table d-none" id="ingredientsTable">
             <thead>
                 <tr>
-                    <th>Inventory Variant</th>
-                    <th>Quantity</th>
-                    <th>Optional</th>
-                    <th width="80">Actions</th>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Qty</th>
+                    <th width="50"></th>
                 </tr>
             </thead>
             <tbody id="ingredientsBody"></tbody>
         </table>
     </div>
 </div>
+</div>
+<!-- End Added Ingredients -->
+</div>
+<!-- End ingredients-row -->
 
 <script>
 (function() {
     let menuVariantId = null;
     let menuVariantName = null;
+    let currentMenuSubCategoryId = null; // The sub-category of the current menu variant (to prevent self-reference)
     let ingredients = [];
     let inventoryVariants = [];
     let subCategories = [];
     let categories = [];
+    let menuCategories = [];
+    let menuSubCategories = [];
+    let isMenuMode = false;
 
     async function init() {
         // Get menu variant info from sessionStorage
         menuVariantId = sessionStorage.getItem('menuVariantId');
         menuVariantName = sessionStorage.getItem('menuVariantName');
         const menuVariantSubCategory = sessionStorage.getItem('menuVariantSubCategory');
+        currentMenuSubCategoryId = sessionStorage.getItem('menuVariantSubCategoryId');
 
         if (!menuVariantId) {
             Swal.fire('Error', 'No menu variant selected', 'error');
@@ -145,6 +229,7 @@
         
         setupEventListeners();
         await loadCategories();
+        await loadMenuCategories();
         await loadIngredients();
     }
 
@@ -152,9 +237,17 @@
         document.getElementById('backBtn')?.addEventListener('click', () => {
             sessionStorage.removeItem('menuVariantId');
             sessionStorage.removeItem('menuVariantName');
+            sessionStorage.removeItem('menuVariantSubCategoryId');
             window.app.navigateTo('menu-variants');
         });
 
+        // Toggle between inventory and menu mode
+        document.getElementById('lookForMenusToggle')?.addEventListener('change', (e) => {
+            isMenuMode = e.target.checked;
+            toggleMode();
+        });
+
+        // Inventory filters
         document.getElementById('categoryFilter')?.addEventListener('change', () => {
             const categoryId = document.getElementById('categoryFilter')?.value;
             document.getElementById('nameFilter').value = '';
@@ -178,6 +271,40 @@
             clearTimeout(nameFilterTimeout);
             nameFilterTimeout = setTimeout(() => renderInventoryTable(), 300);
         });
+
+        // Menu filters
+        document.getElementById('menuCategoryFilter')?.addEventListener('change', () => {
+            document.getElementById('menuNameFilter').value = '';
+            loadMenuSubCategories();
+        });
+
+        let menuNameFilterTimeout = null;
+        document.getElementById('menuNameFilter')?.addEventListener('input', () => {
+            clearTimeout(menuNameFilterTimeout);
+            menuNameFilterTimeout = setTimeout(() => renderMenuTable(), 300);
+        });
+    }
+
+    function toggleMode() {
+        const titleEl = document.getElementById('availableSectionTitle');
+        
+        if (isMenuMode) {
+            // Switch to menu mode
+            titleEl.innerHTML = '<i class="fas fa-utensils text-info me-2"></i>Available Menu Sub-Categories';
+            document.getElementById('inventoryFilters').classList.add('d-none');
+            document.getElementById('menuFilters').classList.remove('d-none');
+            document.getElementById('inventoryContainer').classList.add('d-none');
+            document.getElementById('menuContainer').classList.remove('d-none');
+            showSelectMenuCategory();
+        } else {
+            // Switch to inventory mode
+            titleEl.innerHTML = '<i class="fas fa-boxes text-info me-2"></i>Available Inventory';
+            document.getElementById('inventoryFilters').classList.remove('d-none');
+            document.getElementById('menuFilters').classList.add('d-none');
+            document.getElementById('inventoryContainer').classList.remove('d-none');
+            document.getElementById('menuContainer').classList.add('d-none');
+            showSelectCategory();
+        }
     }
 
     function initSearchableSelects() {
@@ -187,6 +314,9 @@
         SearchableSelect.init('#subCategoryFilter', {
             searchPlaceholderValue: 'Search sub-categories...',
             placeholderValue: 'Select a category first'
+        });
+        SearchableSelect.init('#menuCategoryFilter', {
+            searchPlaceholderValue: 'Search menu categories...'
         });
     }
 
@@ -207,6 +337,25 @@
             initSearchableSelects();
         } catch (e) {
             console.error('Failed to load categories:', e);
+        }
+    }
+
+    async function loadMenuCategories() {
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.MENU.categories, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) return;
+            const result = await resp.json();
+            menuCategories = result.data?.categories || result.data?.items || result.data || [];
+
+            // Build choices for SearchableSelect
+            const choices = [{ value: '', label: 'Select a Menu Category', selected: true }];
+            menuCategories.forEach(cat => {
+                choices.push({ value: cat.id, label: cat.name });
+            });
+            SearchableSelect.setChoices('#menuCategoryFilter', choices);
+        } catch (e) {
+            console.error('Failed to load menu categories:', e);
         }
     }
 
@@ -232,6 +381,28 @@
             loadInventory();
         } catch (e) {
             console.error('Failed to load sub-categories:', e);
+        }
+    }
+
+    async function loadMenuSubCategories() {
+        const categoryId = document.getElementById('menuCategoryFilter').value;
+        if (!categoryId) {
+            showSelectMenuCategory();
+            return;
+        }
+
+        showMenuLoading();
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.subCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) return;
+            const result = await resp.json();
+            menuSubCategories = result.data?.sub_categories || result.data?.items || result.data || [];
+            renderMenuTable();
+        } catch (e) {
+            console.error('Failed to load menu sub-categories:', e);
+            showMenuEmpty();
         }
     }
 
@@ -301,18 +472,34 @@
         empty.classList.add('d-none');
         table.classList.remove('d-none');
 
-        tbody.innerHTML = ingredients.map(ing => `
-            <tr>
-                <td><strong>${escapeHtml(ing.stock_variant_name || 'Unknown')}</strong></td>
-                <td>${ing.quantity}</td>
-                <td>${ing.is_optional ? '<span class="optional-badge">Optional</span>' : '-'}</td>
-                <td>
-                    <button class="btn btn-outline-danger btn-action" onclick="window.variantIngredientsPage.remove('${ing.id}')" title="Remove">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = ingredients.map(ing => {
+            const isStock = ing.stock_variant_id != null;
+            const typeIcon = isStock 
+                ? '<i class="fas fa-boxes text-info" title="Inventory"></i>'
+                : '<i class="fas fa-utensils text-warning" title="Menu"></i>';
+            const name = isStock ? ing.stock_variant_name : ing.menu_sub_category_name;
+            const optionalBadge = ing.is_optional ? ' <span class="optional-badge">Opt</span>' : '';
+            
+            return `
+                <tr>
+                    <td>${typeIcon}</td>
+                    <td><strong>${escapeHtml(name || 'Unknown')}</strong>${optionalBadge}</td>
+                    <td>${ing.quantity}</td>
+                    <td>
+                        <button class="btn btn-outline-danger btn-action btn-sm" onclick="window.variantIngredientsPage.remove('${ing.id}')" title="Remove">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Re-render the appropriate table to update available items
+        if (isMenuMode) {
+            renderMenuTable();
+        } else {
+            renderInventoryTable();
+        }
     }
 
     function renderInventoryTable() {
@@ -329,9 +516,9 @@
             filtered = inventoryVariants.filter(v => v.name.toLowerCase().includes(nameFilter));
         }
 
-        // Exclude already added ingredients
-        const addedIds = new Set(ingredients.map(i => i.stock_variant_id));
-        filtered = filtered.filter(v => !addedIds.has(v.id));
+        // Exclude already added stock ingredients
+        const addedStockIds = new Set(ingredients.filter(i => i.stock_variant_id).map(i => i.stock_variant_id));
+        filtered = filtered.filter(v => !addedStockIds.has(v.id));
 
         if (!filtered.length) {
             table.classList.add('d-none');
@@ -351,8 +538,53 @@
                     <td><input type="number" class="form-control form-control-sm qty-input" id="qty_${variant.id}" value="1" min="1" step="1"></td>
                     <td><input type="checkbox" class="form-check-input" id="opt_${variant.id}"></td>
                     <td>
-                        <button class="btn btn-success btn-action" onclick="window.variantIngredientsPage.add('${variant.id}')" title="Add">
-                            <i class="fas fa-plus"></i>
+                        <button class="btn btn-success btn-action" onclick="window.variantIngredientsPage.addStock('${variant.id}')" title="Add">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderMenuTable() {
+        const tbody = document.getElementById('menuBody');
+        const table = document.getElementById('menuTable');
+        const empty = document.getElementById('menuEmpty');
+        document.getElementById('menuLoading').classList.add('d-none');
+        document.getElementById('selectMenuCategoryState').classList.add('d-none');
+
+        // Filter by name
+        const nameFilter = document.getElementById('menuNameFilter').value.toLowerCase().trim();
+        let filtered = menuSubCategories;
+        if (nameFilter) {
+            filtered = menuSubCategories.filter(sc => sc.name.toLowerCase().includes(nameFilter));
+        }
+
+        // Exclude already added menu sub-category ingredients and self-reference
+        const addedMenuIds = new Set(ingredients.filter(i => i.menu_sub_category_id).map(i => i.menu_sub_category_id));
+        filtered = filtered.filter(sc => !addedMenuIds.has(sc.id) && sc.id !== currentMenuSubCategoryId);
+
+        if (!filtered.length) {
+            table.classList.add('d-none');
+            empty.classList.remove('d-none');
+            return;
+        }
+
+        empty.classList.add('d-none');
+        table.classList.remove('d-none');
+
+        tbody.innerHTML = filtered.map(subCat => {
+            const category = menuCategories.find(c => c.id === subCat.category_id);
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(subCat.name)}</strong></td>
+                    <td>${category ? escapeHtml(category.name) : '-'}</td>
+                    <td><input type="number" class="form-control form-control-sm qty-input" id="menu_qty_${subCat.id}" value="1" min="1" step="1"></td>
+                    <td><input type="checkbox" class="form-check-input" id="menu_opt_${subCat.id}"></td>
+                    <td>
+                        <button class="btn btn-success btn-action" onclick="window.variantIngredientsPage.addMenu('${subCat.id}')" title="Add">
+                            <i class="fas fa-chevron-right"></i>
                         </button>
                     </td>
                 </tr>
@@ -387,7 +619,28 @@
         document.getElementById('inventoryTable').classList.add('d-none');
     }
 
-    async function addIngredient(stockVariantId) {
+    function showMenuLoading() {
+        document.getElementById('menuLoading').classList.remove('d-none');
+        document.getElementById('selectMenuCategoryState').classList.add('d-none');
+        document.getElementById('menuEmpty').classList.add('d-none');
+        document.getElementById('menuTable').classList.add('d-none');
+    }
+
+    function showMenuEmpty() {
+        document.getElementById('menuLoading').classList.add('d-none');
+        document.getElementById('selectMenuCategoryState').classList.add('d-none');
+        document.getElementById('menuEmpty').classList.remove('d-none');
+        document.getElementById('menuTable').classList.add('d-none');
+    }
+
+    function showSelectMenuCategory() {
+        document.getElementById('menuLoading').classList.add('d-none');
+        document.getElementById('selectMenuCategoryState').classList.remove('d-none');
+        document.getElementById('menuEmpty').classList.add('d-none');
+        document.getElementById('menuTable').classList.add('d-none');
+    }
+
+    async function addStockIngredient(stockVariantId) {
         const qtyInput = document.getElementById(`qty_${stockVariantId}`);
         const optInput = document.getElementById(`opt_${stockVariantId}`);
         
@@ -411,9 +664,37 @@
                 throw new Error(err.message || 'Failed to add ingredient');
             }
 
-            Swal.fire({ icon: 'success', title: 'Added!', timer: 1000, showConfirmButton: false });
             await loadIngredients();
-            renderInventoryTable(); // Re-render to hide added item
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    }
+
+    async function addMenuIngredient(menuSubCategoryId) {
+        const qtyInput = document.getElementById(`menu_qty_${menuSubCategoryId}`);
+        const optInput = document.getElementById(`menu_opt_${menuSubCategoryId}`);
+        
+        const quantity = parseInt(qtyInput.value) || 1;
+        const isOptional = optInput.checked;
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.ingredients}?menu_variant_id=${menuVariantId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    menu_sub_category_id: menuSubCategoryId,
+                    quantity: quantity,
+                    is_optional: isOptional
+                })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.message || 'Failed to add menu ingredient');
+            }
+
+            await loadIngredients();
         } catch (e) {
             Swal.fire('Error', e.message, 'error');
         }
@@ -440,9 +721,7 @@
 
             if (!resp.ok) throw new Error('Failed to remove ingredient');
 
-            Swal.fire({ icon: 'success', title: 'Removed!', timer: 1000, showConfirmButton: false });
             await loadIngredients();
-            renderInventoryTable(); // Re-render to show removed item
         } catch (e) {
             Swal.fire('Error', e.message, 'error');
         }
@@ -456,7 +735,8 @@
     }
 
     window.variantIngredientsPage = {
-        add: addIngredient,
+        addStock: addStockIngredient,
+        addMenu: addMenuIngredient,
         remove: removeIngredient
     };
 

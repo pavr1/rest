@@ -84,6 +84,12 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate request - must have exactly one of stock_variant_id or menu_sub_category_id
+	if err := req.Validate(); err != nil {
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	// Get menu variant ID from query parameter
 	menuVariantID := r.URL.Query().Get("menu_variant_id")
 	if menuVariantID == "" {

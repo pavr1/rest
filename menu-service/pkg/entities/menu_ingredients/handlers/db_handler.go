@@ -50,13 +50,15 @@ func (h *DBHandler) List(page, limit int) ([]models.MenuIngredient, error) {
 	var ingredients []models.MenuIngredient
 	for rows.Next() {
 		var ingredient models.MenuIngredient
-		var notes sql.NullString
+		var notes, stockVariantID, stockVariantName, menuSubCategoryID, menuSubCategoryName sql.NullString
 
 		err := rows.Scan(
 			&ingredient.ID,
 			&ingredient.MenuVariantID,
-			&ingredient.StockVariantID,
-			&ingredient.StockVariantName,
+			&stockVariantID,
+			&stockVariantName,
+			&menuSubCategoryID,
+			&menuSubCategoryName,
 			&ingredient.Quantity,
 			&ingredient.IsOptional,
 			&notes,
@@ -69,6 +71,14 @@ func (h *DBHandler) List(page, limit int) ([]models.MenuIngredient, error) {
 
 		if notes.Valid {
 			ingredient.Notes = &notes.String
+		}
+		if stockVariantID.Valid {
+			ingredient.StockVariantID = &stockVariantID.String
+			ingredient.StockVariantName = stockVariantName.String
+		}
+		if menuSubCategoryID.Valid {
+			ingredient.MenuSubCategoryID = &menuSubCategoryID.String
+			ingredient.MenuSubCategoryName = menuSubCategoryName.String
 		}
 
 		ingredients = append(ingredients, ingredient)
@@ -89,13 +99,15 @@ func (h *DBHandler) GetByID(id string) (*models.MenuIngredient, error) {
 	}
 
 	var ingredient models.MenuIngredient
-	var notes sql.NullString
+	var notes, stockVariantID, stockVariantName, menuSubCategoryID, menuSubCategoryName sql.NullString
 
 	err = h.db.QueryRow(query, id).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
-		&ingredient.StockVariantID,
-		&ingredient.StockVariantName,
+		&stockVariantID,
+		&stockVariantName,
+		&menuSubCategoryID,
+		&menuSubCategoryName,
 		&ingredient.Quantity,
 		&ingredient.IsOptional,
 		&notes,
@@ -113,6 +125,14 @@ func (h *DBHandler) GetByID(id string) (*models.MenuIngredient, error) {
 	if notes.Valid {
 		ingredient.Notes = &notes.String
 	}
+	if stockVariantID.Valid {
+		ingredient.StockVariantID = &stockVariantID.String
+		ingredient.StockVariantName = stockVariantName.String
+	}
+	if menuSubCategoryID.Valid {
+		ingredient.MenuSubCategoryID = &menuSubCategoryID.String
+		ingredient.MenuSubCategoryName = menuSubCategoryName.String
+	}
 
 	return &ingredient, nil
 }
@@ -125,12 +145,13 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 	}
 
 	var ingredient models.MenuIngredient
-	var notes sql.NullString
+	var notes, stockVariantID, menuSubCategoryID sql.NullString
 
-	err = h.db.QueryRow(query, menuVariantID, req.StockVariantID, req.Quantity, req.IsOptional, req.Notes).Scan(
+	err = h.db.QueryRow(query, menuVariantID, req.StockVariantID, req.MenuSubCategoryID, req.Quantity, req.IsOptional, req.Notes).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
-		&ingredient.StockVariantID,
+		&stockVariantID,
+		&menuSubCategoryID,
 		&ingredient.Quantity,
 		&ingredient.IsOptional,
 		&notes,
@@ -141,13 +162,23 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 	if err != nil {
 		// Check for unique constraint violation
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			return nil, fmt.Errorf("menu ingredient already exists for this menu variant and stock variant")
+			return nil, fmt.Errorf("menu ingredient already exists for this menu variant")
+		}
+		// Check for check constraint violation
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23514" {
+			return nil, fmt.Errorf("must specify either stock_variant_id or menu_sub_category_id, but not both")
 		}
 		return nil, fmt.Errorf("failed to create menu ingredient: %w", err)
 	}
 
 	if notes.Valid {
 		ingredient.Notes = &notes.String
+	}
+	if stockVariantID.Valid {
+		ingredient.StockVariantID = &stockVariantID.String
+	}
+	if menuSubCategoryID.Valid {
+		ingredient.MenuSubCategoryID = &menuSubCategoryID.String
 	}
 
 	return &ingredient, nil
@@ -161,12 +192,13 @@ func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*
 	}
 
 	var ingredient models.MenuIngredient
-	var notes sql.NullString
+	var notes, stockVariantID, menuSubCategoryID sql.NullString
 
 	err = h.db.QueryRow(query, id, req.Quantity, req.IsOptional, req.Notes).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
-		&ingredient.StockVariantID,
+		&stockVariantID,
+		&menuSubCategoryID,
 		&ingredient.Quantity,
 		&ingredient.IsOptional,
 		&notes,
@@ -183,6 +215,12 @@ func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*
 
 	if notes.Valid {
 		ingredient.Notes = &notes.String
+	}
+	if stockVariantID.Valid {
+		ingredient.StockVariantID = &stockVariantID.String
+	}
+	if menuSubCategoryID.Valid {
+		ingredient.MenuSubCategoryID = &menuSubCategoryID.String
 	}
 
 	return &ingredient, nil
@@ -228,13 +266,15 @@ func (h *DBHandler) GetByMenuVariant(menuVariantID string) ([]models.MenuIngredi
 	var ingredients []models.MenuIngredient
 	for rows.Next() {
 		var ingredient models.MenuIngredient
-		var notes sql.NullString
+		var notes, stockVariantID, stockVariantName, menuSubCategoryID, menuSubCategoryName sql.NullString
 
 		err := rows.Scan(
 			&ingredient.ID,
 			&ingredient.MenuVariantID,
-			&ingredient.StockVariantID,
-			&ingredient.StockVariantName,
+			&stockVariantID,
+			&stockVariantName,
+			&menuSubCategoryID,
+			&menuSubCategoryName,
 			&ingredient.Quantity,
 			&ingredient.IsOptional,
 			&notes,
@@ -247,6 +287,14 @@ func (h *DBHandler) GetByMenuVariant(menuVariantID string) ([]models.MenuIngredi
 
 		if notes.Valid {
 			ingredient.Notes = &notes.String
+		}
+		if stockVariantID.Valid {
+			ingredient.StockVariantID = &stockVariantID.String
+			ingredient.StockVariantName = stockVariantName.String
+		}
+		if menuSubCategoryID.Valid {
+			ingredient.MenuSubCategoryID = &menuSubCategoryID.String
+			ingredient.MenuSubCategoryName = menuSubCategoryName.String
 		}
 
 		ingredients = append(ingredients, ingredient)

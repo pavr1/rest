@@ -10,6 +10,7 @@ RETURNING
     id,
     menu_variant_id,
     stock_variant_id,
+    menu_sub_category_id,
     quantity,
     is_optional,
     notes,

@@ -623,14 +623,16 @@
         const variant = variants.find(v => v.id === menuVariantId);
         if (!variant) return;
 
-        // Get sub-category name
+        // Get sub-category name and ID
         const subCategory = subCategories.find(sc => sc.id === variant.sub_category_id);
         const subCategoryName = variant.sub_category_name || subCategory?.name || '';
+        const subCategoryId = variant.sub_category_id || '';
 
         // Store variant info and navigate to dedicated ingredients page
         sessionStorage.setItem('menuVariantId', menuVariantId);
         sessionStorage.setItem('menuVariantName', variant.name);
         sessionStorage.setItem('menuVariantSubCategory', subCategoryName);
+        sessionStorage.setItem('menuVariantSubCategoryId', subCategoryId);
         window.app.navigateTo('variant-ingredients');
     }
     

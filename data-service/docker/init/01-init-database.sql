@@ -121,15 +121,22 @@ CREATE TABLE menu_ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     menu_variant_id UUID NOT NULL REFERENCES menu_variants(id) ON DELETE CASCADE,
     stock_variant_id UUID REFERENCES stock_variants(id) ON DELETE RESTRICT,
+    menu_sub_category_id UUID REFERENCES menu_sub_categories(id) ON DELETE RESTRICT,
     quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
     is_optional BOOLEAN NOT NULL DEFAULT false,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Ensure exactly one of stock_variant_id or menu_sub_category_id is provided
+    CONSTRAINT chk_ingredient_type CHECK (
+        (stock_variant_id IS NOT NULL AND menu_sub_category_id IS NULL) OR
+        (stock_variant_id IS NULL AND menu_sub_category_id IS NOT NULL)
+    )
 );
 
--- Menu Ingredients index
+-- Menu Ingredients indexes
 CREATE INDEX idx_menu_ingredients_stock_variant ON menu_ingredients(stock_variant_id);
+CREATE INDEX idx_menu_ingredients_menu_sub_category ON menu_ingredients(menu_sub_category_id);
 
 -- 13. Suppliers
 CREATE TABLE suppliers (
