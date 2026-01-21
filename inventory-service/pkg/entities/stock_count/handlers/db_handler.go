@@ -21,11 +21,11 @@ func parseFloat(s string) float64 {
 
 // DBHandler handles database operations for stock count
 type DBHandler struct {
-	db            *sharedDb.DbHandler
-	queries       *stockCountSQL.Queries
-	logger        *logrus.Logger
-	config        *sharedConfig.Config
-	portionGrams  float64
+	db           *sharedDb.DbHandler
+	queries      *stockCountSQL.Queries
+	logger       *logrus.Logger
+	config       *sharedConfig.Config
+	portionGrams float64
 }
 
 // NewDBHandler creates a new database handler
@@ -139,7 +139,7 @@ func (h *DBHandler) GetByID(id string) (*models.StockCount, error) {
 	var sc models.StockCount
 	var invoiceID, unitPrice, costPerPortion sql.NullString
 	var invoiceNumber, supplierName sql.NullString
-	
+
 	err = h.db.QueryRow(query, id).Scan(
 		&sc.ID, &sc.StockVariantID, &invoiceID, &sc.Count, &sc.Unit,
 		&unitPrice, &costPerPortion,
@@ -195,7 +195,7 @@ func (h *DBHandler) Create(req *models.StockCountCreateRequest) (*models.StockCo
 
 	var sc models.StockCount
 	var invoiceID, unitPriceStr, costPerPortionStr sql.NullString
-	
+
 	err = h.db.QueryRow(query, req.StockVariantID, req.InvoiceID, req.Count, req.Unit, req.UnitPrice, costPerPortion, req.PurchasedAt).Scan(
 		&sc.ID, &sc.StockVariantID, &invoiceID, &sc.Count, &sc.Unit,
 		&unitPriceStr, &costPerPortionStr,
@@ -242,7 +242,7 @@ func (h *DBHandler) Update(id string, req *models.StockCountUpdateRequest) (*mod
 	newCount := existing.Count
 	newUnit := existing.Unit
 	newUnitPrice := existing.UnitPrice
-	
+
 	if req.Count != nil {
 		newCount = *req.Count
 	}
@@ -271,7 +271,7 @@ func (h *DBHandler) Update(id string, req *models.StockCountUpdateRequest) (*mod
 
 	var sc models.StockCount
 	var invoiceID, unitPriceStr, costPerPortionStr sql.NullString
-	
+
 	err = h.db.QueryRow(query, id, req.Count, req.Unit, newUnitPrice, costPerPortion, req.IsOut).Scan(
 		&sc.ID, &sc.StockVariantID, &invoiceID, &sc.Count, &sc.Unit,
 		&unitPriceStr, &costPerPortionStr,
@@ -315,7 +315,7 @@ func (h *DBHandler) MarkOut(id string, isOut bool) (*models.StockCount, error) {
 
 	var sc models.StockCount
 	var invoiceID, unitPriceStr, costPerPortionStr sql.NullString
-	
+
 	err = h.db.QueryRow(query, id, isOut).Scan(
 		&sc.ID, &sc.StockVariantID, &invoiceID, &sc.Count, &sc.Unit,
 		&unitPriceStr, &costPerPortionStr,
@@ -414,7 +414,7 @@ func (h *DBHandler) scanStockCounts(rows *sql.Rows) ([]models.StockCount, error)
 		var sc models.StockCount
 		var invoiceID, unitPriceStr, costPerPortionStr sql.NullString
 		var invoiceNumber, supplierName sql.NullString
-		
+
 		if err := rows.Scan(
 			&sc.ID, &sc.StockVariantID, &invoiceID, &sc.Count, &sc.Unit,
 			&unitPriceStr, &costPerPortionStr,
@@ -423,7 +423,7 @@ func (h *DBHandler) scanStockCounts(rows *sql.Rows) ([]models.StockCount, error)
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan stock count record: %w", err)
 		}
-		
+
 		// Handle nullable fields
 		if invoiceID.Valid {
 			sc.InvoiceID = &invoiceID.String
@@ -442,7 +442,7 @@ func (h *DBHandler) scanStockCounts(rows *sql.Rows) ([]models.StockCount, error)
 		if supplierName.Valid {
 			sc.SupplierName = &supplierName.String
 		}
-		
+
 		stockCounts = append(stockCounts, sc)
 	}
 	return stockCounts, nil

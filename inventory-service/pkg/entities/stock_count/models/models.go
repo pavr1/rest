@@ -8,17 +8,17 @@ import (
 
 // StockCount represents an inventory count record for a stock variant
 type StockCount struct {
-	ID              string    `json:"id"`
-	StockVariantID  string    `json:"stock_variant_id"`
-	InvoiceID       *string   `json:"invoice_id,omitempty"`
-	Count           float64   `json:"count"`
-	Unit            string    `json:"unit"`
-	UnitPrice       *float64  `json:"unit_price,omitempty"`
-	CostPerPortion  *float64  `json:"cost_per_portion,omitempty"`
-	PurchasedAt     time.Time `json:"purchased_at"`
-	IsOut           bool      `json:"is_out"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID             string    `json:"id"`
+	StockVariantID string    `json:"stock_variant_id"`
+	InvoiceID      *string   `json:"invoice_id,omitempty"`
+	Count          float64   `json:"count"`
+	Unit           string    `json:"unit"`
+	UnitPrice      *float64  `json:"unit_price,omitempty"`
+	CostPerPortion *float64  `json:"cost_per_portion,omitempty"`
+	PurchasedAt    time.Time `json:"purchased_at"`
+	IsOut          bool      `json:"is_out"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 	// Joined fields (optional, populated on list/get)
 	StockVariantName *string `json:"stock_variant_name,omitempty"`
 	InvoiceNumber    *string `json:"invoice_number,omitempty"`
@@ -45,10 +45,10 @@ type StockCountUpdateRequest struct {
 
 // Supported units for stock count (all convertible to kg)
 const (
-	UnitKG = "kg"  // Kilograms
-	UnitG  = "g"   // Grams
-	UnitL  = "l"   // Liters (treated as kg for cost calculation)
-	UnitML = "ml"  // Milliliters (treated as g for cost calculation)
+	UnitKG = "kg" // Kilograms
+	UnitG  = "g"  // Grams
+	UnitL  = "l"  // Liters (treated as kg for cost calculation)
+	UnitML = "ml" // Milliliters (treated as g for cost calculation)
 )
 
 // ConvertToKG converts the given count and unit to kilograms

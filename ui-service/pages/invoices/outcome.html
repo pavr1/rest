@@ -169,8 +169,6 @@
     let modal = null;
     let editingId = null;
 
-    let itemChoicesInstances = []; // Track Choices.js instances for cleanup
-
     function init() {
         modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
         setupEventListeners();
@@ -255,13 +253,10 @@
         });
         
         // Initialize searchable select for stock variant
-        const instance = SearchableSelect.init('#' + uniqueId, {
+        SearchableSelect.init('#' + uniqueId, {
             searchPlaceholderValue: 'Search stock variants...',
             allowHTML: true
         });
-        
-        // Track the instance for cleanup
-        itemChoicesInstances.push({ id: uniqueId, instance: instance });
     }
 
 
@@ -462,11 +457,7 @@
         // Add event listeners
         itemDiv.querySelector('.remove-item-btn').addEventListener('click', () => {
             // Destroy Choices instance before removing
-            const choicesInstance = itemChoicesInstances.find(c => c.id === uniqueId);
-            if (choicesInstance && choicesInstance.instance) {
-                choicesInstance.instance.destroy();
-                itemChoicesInstances = itemChoicesInstances.filter(c => c.id !== uniqueId);
-            }
+            SearchableSelect.destroy('#' + uniqueId);
             itemDiv.remove();
         });
 
