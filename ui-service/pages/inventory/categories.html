@@ -35,7 +35,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Description</th>
-                    <th>Items</th>
+                    <!-- pvillalobos - fetch number of sub-categories and rename column to sub-categories -->
                     <th width="120">Actions</th>
                 </tr>
             </thead>
@@ -131,11 +131,11 @@
         
         empty.classList.add('d-none');
         table.classList.remove('d-none');
+        // pvillalobos - fetch number of sub-categories and rename column to sub-categories
         tbody.innerHTML = items.map(item => `
             <tr>
                 <td><strong>${escapeHtml(item.name)}</strong></td>
                 <td>${escapeHtml(item.description || '-')}</td>
-                <td>${item.item_count || 0}</td>
                 <td>
                     <div class="action-btns">
                         <button class="btn btn-outline-primary btn-action" onclick="window.stockCatPage.edit('${item.id}')" title="Edit"><i class="fas fa-edit"></i></button>
