@@ -186,13 +186,17 @@
             const token = window.authService.getToken();
             const params = new URLSearchParams();
             const catId = document.getElementById('categoryFilter').value;
+            console.log('Category filter value:', catId);
             if (catId) params.append('category_id', catId);
 
             const url = CONFIG.MENU.subCategories + (params.toString() ? `?${params}` : '');
+            console.log('Fetching sub-categories from:', url);
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
+            console.log('Sub-categories response:', result);
             subCategories = result.data?.sub_categories || result.sub_categories || [];
+            console.log('Parsed sub-categories:', subCategories.length);
             renderTable();
         } catch (e) {
             Swal.fire('Error', 'Failed to load menu sub-categories', 'error');

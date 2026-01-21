@@ -43,7 +43,6 @@
                     <th>Name</th>
                     <th>Description</th>
                     <th>Display Order</th>
-                    <th>Status</th>
                     <th>Items</th>
                     <th width="120">Actions</th>
                 </tr>
@@ -75,10 +74,6 @@
                     <div class="mb-3">
                         <label class="form-label">Display Order</label>
                         <input type="number" class="form-control" id="displayOrder" value="0" min="0">
-                    </div>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="isActive" checked>
-                        <label class="form-check-label" for="isActive">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -139,7 +134,6 @@
                 <td><strong>${escapeHtml(cat.name)}</strong></td>
                 <td>${escapeHtml(cat.description || '-')}</td>
                 <td>${cat.display_order || 0}</td>
-                <td><span class="status-badge ${cat.is_active ? 'active' : 'inactive'}">${cat.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td>${cat.item_count || 0}</td>
                 <td>
                     <div class="action-btns">
@@ -170,7 +164,6 @@
         document.getElementById('categoryName').value = cat?.name || '';
         document.getElementById('categoryDescription').value = cat?.description || '';
         document.getElementById('displayOrder').value = cat?.display_order || 0;
-        document.getElementById('isActive').checked = cat?.is_active !== false;
         modal.show();
     }
     
@@ -184,8 +177,7 @@
             const data = {
                 name: document.getElementById('categoryName').value,
                 description: document.getElementById('categoryDescription').value,
-                display_order: parseInt(document.getElementById('displayOrder').value) || 0,
-                is_active: document.getElementById('isActive').checked
+                display_order: parseInt(document.getElementById('displayOrder').value) || 0
             };
             const url = editingId ? `${CONFIG.MENU.categories}/${editingId}` : CONFIG.MENU.categories;
             const resp = await fetch(url, {

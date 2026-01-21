@@ -92,13 +92,13 @@
                 <div class="modal-body">
                     <input type="hidden" id="variantId">
                     <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label class="form-label">Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="variantName" required>
-                        </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
                             <select class="form-select" id="variantSubCategory" required><option value="">Select...</option></select>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="variantName" required>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -292,7 +292,7 @@
         modalSelect.innerHTML = '<option value="">Select...</option>';
 
         subCategories.forEach(sc => {
-            const optionText = escapeHtml(sc.name) + ' (' + sc.item_type + ')';
+            const optionText = escapeHtml(sc.name);
             filterSelect.innerHTML += `<option value="${sc.id}">${optionText}</option>`;
             modalSelect.innerHTML += `<option value="${sc.id}">${optionText}</option>`;
         });
