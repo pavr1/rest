@@ -274,17 +274,15 @@
             if (categoryId) {
                 loadSubCategoriesForFilter();
             } else {
-                const subCatSelect = document.getElementById('subCategoryFilter');
-                subCatSelect.innerHTML = '<option value="">Select a category first</option>';
-                subCatSelect.disabled = true;
                 subCategories = [];
-                SearchableSelect.refresh('#subCategoryFilter', { searchPlaceholderValue: 'Select a category first' });
+                SearchableSelect.setChoices('#subCategoryFilter', [{ value: '', label: 'Select a category first', selected: true }]);
                 SearchableSelect.setEnabled('#subCategoryFilter', false);
                 showSelectCategory();
             }
         });
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadVariants());
-        document.getElementById('variantCategory')?.addEventListener('change', () => {
+        document.getElementById('variantCategory')?.addEventListener('change', (e) => {
+            console.log('variantCategory change event fired, value:', e.target.value);
             document.getElementById('variantSubCategory').value = '';
             loadSubCategoriesForModal();
         });
@@ -331,15 +329,13 @@
             const result = await resp.json();
             subCategories = result.data?.sub_categories || result.sub_categories || [];
             
-            const select = document.getElementById('subCategoryFilter');
-            select.innerHTML = '<option value="">All Sub-Categories</option>';
-            select.disabled = false;
-            
+            // Build choices array for Choices.js
+            const choices = [{ value: '', label: 'All Sub-Categories', selected: true }];
             subCategories.forEach(sc => {
-                select.innerHTML += `<option value="${sc.id}">${escapeHtml(sc.name)}</option>`;
+                choices.push({ value: sc.id, label: sc.name });
             });
             
-            SearchableSelect.refresh('#subCategoryFilter', { searchPlaceholderValue: 'Search sub-categories...' });
+            SearchableSelect.setChoices('#subCategoryFilter', choices);
             SearchableSelect.setEnabled('#subCategoryFilter', true);
             
             loadVariants();
@@ -348,43 +344,43 @@
     
     async function loadSubCategoriesForModal() {
         const categoryId = document.getElementById('variantCategory').value;
-        const subCategorySelect = document.getElementById('variantSubCategory');
-        
-        subCategorySelect.innerHTML = '<option value="">Loading...</option>';
-        SearchableSelect.refresh('#variantSubCategory', { searchPlaceholderValue: 'Loading...' });
         
         if (!categoryId) {
-            subCategorySelect.innerHTML = '<option value="">Select a category first</option>';
-            SearchableSelect.refresh('#variantSubCategory', { searchPlaceholderValue: 'Select a category first' });
+            // Use Choices.js API to set empty state
+            const choices = [{ value: '', label: 'Select a category first', selected: true }];
+            SearchableSelect.setChoices('#variantSubCategory', choices);
             return;
         }
         
+        // Show loading state
+        SearchableSelect.setChoices('#variantSubCategory', [{ value: '', label: 'Loading...', selected: true }]);
+        
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(`${CONFIG.MENU.subCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const url = `${CONFIG.MENU.subCategories}?category_id=${categoryId}`;
+            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) {
-                subCategorySelect.innerHTML = '<option value="">Failed to load</option>';
-                SearchableSelect.refresh('#variantSubCategory');
+                SearchableSelect.setChoices('#variantSubCategory', [{ value: '', label: 'Failed to load', selected: true }]);
                 return;
             }
             
             const result = await resp.json();
             const modalSubCategories = result.data?.sub_categories || result.sub_categories || [];
             
-            subCategorySelect.innerHTML = '<option value="">Select...</option>';
+            // Build choices array for Choices.js
+            const choices = [{ value: '', label: 'Select...', selected: true }];
             if (modalSubCategories.length === 0) {
-                subCategorySelect.innerHTML = '<option value="">No sub-categories available</option>';
+                choices[0].label = 'No sub-categories available';
             } else {
                 modalSubCategories.forEach(sc => {
-                    subCategorySelect.innerHTML += `<option value="${sc.id}">${escapeHtml(sc.name)}</option>`;
+                    choices.push({ value: sc.id, label: sc.name });
                 });
             }
             
-            SearchableSelect.refresh('#variantSubCategory', { searchPlaceholderValue: 'Search sub-categories...' });
+            SearchableSelect.setChoices('#variantSubCategory', choices);
         } catch (e) {
             console.error('Error loading sub-categories for modal:', e);
-            subCategorySelect.innerHTML = '<option value="">Error loading</option>';
-            SearchableSelect.refresh('#variantSubCategory');
+            SearchableSelect.setChoices('#variantSubCategory', [{ value: '', label: 'Error loading', selected: true }]);
         }
     }
     
