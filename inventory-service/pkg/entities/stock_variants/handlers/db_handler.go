@@ -31,19 +31,41 @@ func NewDBHandler(db *sharedDb.DbHandler, logger *logrus.Logger) (*DBHandler, er
 	}, nil
 }
 
-// List returns a paginated list of stock variants
+// ListAll returns all active stock variants without pagination
+func (h *DBHandler) ListAll() (*models.StockVariantListResponse, error) {
+	listQuery, err := h.queries.Get(stockVariantSQL.ListAllStockVariantsQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list query: %w", err)
+	}
+
+	rows, err := h.db.Query(listQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list stock variants: %w", err)
+	}
+	defer rows.Close()
+
+	var variants []models.StockVariant
+	for rows.Next() {
+		var variant models.StockVariant
+
+		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.AvgCost, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan stock variant: %w", err)
+		}
+
+		variants = append(variants, variant)
+	}
+
+	return &models.StockVariantListResponse{
+		Variants: variants,
+		Total:    len(variants),
+		Page:     1,
+		Limit:    len(variants),
+	}, nil
+}
+
+// List returns a paginated list of active stock variants
 func (h *DBHandler) List(page, limit int) (*models.StockVariantListResponse, error) {
 	offset := (page - 1) * limit
-
-	countQuery, err := h.queries.Get(stockVariantSQL.CountStockVariantsQuery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get count query: %w", err)
-	}
-
-	var total int
-	if err := h.db.QueryRow(countQuery).Scan(&total); err != nil {
-		return nil, fmt.Errorf("failed to count stock variants: %w", err)
-	}
 
 	listQuery, err := h.queries.Get(stockVariantSQL.ListStockVariantsQuery)
 	if err != nil {
@@ -69,25 +91,15 @@ func (h *DBHandler) List(page, limit int) (*models.StockVariantListResponse, err
 
 	return &models.StockVariantListResponse{
 		Variants: variants,
-		Total:    total,
+		Total:    len(variants),
 		Page:     page,
 		Limit:    limit,
 	}, nil
 }
 
-// ListByCategory returns a paginated list of stock variants filtered by category
+// ListByCategory returns a paginated list of active stock variants filtered by category
 func (h *DBHandler) ListByCategory(categoryID string, page, limit int) (*models.StockVariantListResponse, error) {
 	offset := (page - 1) * limit
-
-	countQuery, err := h.queries.Get(stockVariantSQL.CountStockVariantsByCategoryQuery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get count query: %w", err)
-	}
-
-	var total int
-	if err := h.db.QueryRow(countQuery, categoryID).Scan(&total); err != nil {
-		return nil, fmt.Errorf("failed to count stock variants: %w", err)
-	}
 
 	listQuery, err := h.queries.Get(stockVariantSQL.ListStockVariantsByCategoryQuery)
 	if err != nil {
@@ -113,25 +125,15 @@ func (h *DBHandler) ListByCategory(categoryID string, page, limit int) (*models.
 
 	return &models.StockVariantListResponse{
 		Variants: variants,
-		Total:    total,
+		Total:    len(variants),
 		Page:     page,
 		Limit:    limit,
 	}, nil
 }
 
-// ListBySubCategory returns a paginated list of stock variants filtered by sub-category
+// ListBySubCategory returns a paginated list of active stock variants filtered by sub-category
 func (h *DBHandler) ListBySubCategory(subCategoryID string, page, limit int) (*models.StockVariantListResponse, error) {
 	offset := (page - 1) * limit
-
-	countQuery, err := h.queries.Get(stockVariantSQL.CountStockVariantsBySubCategoryQuery)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get count query: %w", err)
-	}
-
-	var total int
-	if err := h.db.QueryRow(countQuery, subCategoryID).Scan(&total); err != nil {
-		return nil, fmt.Errorf("failed to count stock variants: %w", err)
-	}
 
 	listQuery, err := h.queries.Get(stockVariantSQL.ListStockVariantsBySubCategoryQuery)
 	if err != nil {
@@ -157,7 +159,7 @@ func (h *DBHandler) ListBySubCategory(subCategoryID string, page, limit int) (*m
 
 	return &models.StockVariantListResponse{
 		Variants: variants,
-		Total:    total,
+		Total:    len(variants),
 		Page:     page,
 		Limit:    limit,
 	}, nil

@@ -25,16 +25,6 @@ func NewHTTPHandler(dbHandler *DBHandler, logger *logrus.Logger) *HTTPHandler {
 
 // List handles GET /api/v1/stock/variants
 func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	if limit < 1 || limit > 100 {
-		limit = 100
-	}
-
 	// Check if filtering by sub-category or category
 	subCategoryID := r.URL.Query().Get("sub_category_id")
 	categoryID := r.URL.Query().Get("category_id")
@@ -43,11 +33,28 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if subCategoryID != "" {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		if limit < 1 || limit > 100 {
+			limit = 100
+		}
 		response, err = h.dbHandler.ListBySubCategory(subCategoryID, page, limit)
 	} else if categoryID != "" {
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		if page < 1 {
+			page = 1
+		}
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		if limit < 1 || limit > 100 {
+			limit = 100
+		}
 		response, err = h.dbHandler.ListByCategory(categoryID, page, limit)
 	} else {
-		response, err = h.dbHandler.List(page, limit)
+		// No filters - return all active stock variants
+		response, err = h.dbHandler.ListAll()
 	}
 
 	if err != nil {
