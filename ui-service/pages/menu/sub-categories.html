@@ -2,7 +2,6 @@
 <style>
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
     .page-title { font-family: Arial, sans-serif; font-size: 1.75rem; margin: 0; }
-    .filters { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
     .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; }
     .data-table { width: 100%; margin: 0; }
     .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
@@ -12,6 +11,7 @@
     .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
     .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .filter-section { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius); }
     .status-badge { padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 500; }
     .status-badge.active { background: #d4edda; color: #155724; }
     .status-badge.inactive { background: #f8d7da; color: #721c24; }
@@ -27,8 +27,15 @@
     <button class="btn btn-primary" id="addSubCategoryBtn"><i class="fas fa-plus me-2"></i>Add Sub-Category</button>
 </div>
 
-<div class="filters">
-    <select class="form-select" id="categoryFilter" style="width: auto;"><option value="">All Categories</option></select>
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label">Filter by Category</label>
+            <select class="form-select" id="categoryFilter">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+    </div>
 </div>
 
 <div class="data-card">
@@ -122,11 +129,6 @@
     let editingId = null;
 
     function init() {
-        console.log('🔄 Initializing sub-categories page...');
-        console.log('CONFIG available:', typeof CONFIG);
-        console.log('CONFIG.MENU available:', CONFIG?.MENU);
-        console.log('loadSubCategories function:', typeof loadSubCategories);
-
         modal = new bootstrap.Modal(document.getElementById('subCategoryModal'));
         setupEventListeners();
         loadCategories();
@@ -141,7 +143,7 @@
             searchPlaceholderValue: 'Search categories...'
         });
         SearchableSelect.init('#subCategoryType', {
-            searchEnabled: false // Simple type filter
+            searchEnabled: false
         });
     }
 
@@ -164,21 +166,21 @@
     }
     
     function populateCategoryDropdowns() {
-        const options = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        document.getElementById('categoryFilter').innerHTML = '<option value="">All Categories</option>' + options;
-        document.getElementById('subCategoryCategory').innerHTML = '<option value="">Select...</option>' + options;
+        const select = document.getElementById('categoryFilter');
+        const categorySelect = document.getElementById('subCategoryCategory');
+        select.innerHTML = '<option value="">All Categories</option>';
+        categorySelect.innerHTML = '<option value="">Select...</option>';
+
+        categories.forEach(cat => {
+            select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            categorySelect.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+        });
         
         // Initialize searchable selects after populating
         initSearchableSelects();
     }
     
     async function loadSubCategories() {
-        console.log('🔄 loadSubCategories called');
-        if (!CONFIG?.MENU?.subCategories) {
-            console.error('CONFIG.MENU.subCategories not available');
-            return;
-        }
-
         showLoading();
         try {
             const token = window.authService.getToken();
@@ -187,18 +189,12 @@
             if (catId) params.append('category_id', catId);
 
             const url = CONFIG.MENU.subCategories + (params.toString() ? `?${params}` : '');
-            console.log('📡 Fetching:', url);
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            console.log('📡 Response:', resp.status);
             if (!resp.ok) throw new Error('Failed');
             const result = await resp.json();
-            console.log('📄 Response data:', result);
-            // Response is wrapped in { success, message, data: { sub_categories, total, page, limit } }
             subCategories = result.data?.sub_categories || result.sub_categories || [];
-            console.log('📋 Loaded sub-categories:', subCategories.length);
             renderTable();
         } catch (e) {
-            console.error('❌ Error in loadSubCategories:', e);
             Swal.fire('Error', 'Failed to load menu sub-categories', 'error');
             showEmpty();
         }

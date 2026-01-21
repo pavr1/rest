@@ -2,7 +2,7 @@
 <style>
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
     .page-title { font-family: Arial, sans-serif; font-size: 1.75rem; margin: 0; }
-    .filters { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .filter-section { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius); }
     .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; }
     .data-table { width: 100%; margin: 0; }
     .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
@@ -32,14 +32,23 @@
     <button class="btn btn-primary" id="addVariantBtn"><i class="fas fa-plus me-2"></i>Add Variant</button>
 </div>
 
-<div class="filters">
-    <select class="form-select" id="subCategoryFilter" style="width: auto;"><option value="">All Sub-Categories</option></select>
-    <select class="form-select" id="availabilityFilter" style="width: auto;">
-        <option value="">All Status</option>
-        <option value="true">Available</option>
-        <option value="false">Unavailable</option>
-    </select>
-    <button class="btn btn-outline-secondary" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label">Filter by Sub-Category</label>
+            <select class="form-select" id="subCategoryFilter">
+                <option value="">All Sub-Categories</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Filter by Status</label>
+            <select class="form-select" id="availabilityFilter">
+                <option value="">All Status</option>
+                <option value="true">Available</option>
+                <option value="false">Unavailable</option>
+            </select>
+        </div>
+    </div>
 </div>
 
 <div class="data-card">
@@ -245,7 +254,6 @@
 
     function setupEventListeners() {
         document.getElementById('addVariantBtn')?.addEventListener('click', () => openModal());
-        document.getElementById('refreshBtn')?.addEventListener('click', () => loadVariants());
         document.getElementById('variantForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveVariant(); });
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadVariants());
         document.getElementById('availabilityFilter')?.addEventListener('change', () => loadVariants());
@@ -278,9 +286,16 @@
     }
     
     function populateSubCategoryDropdowns() {
-        const options = subCategories.map(sc => `<option value="${sc.id}">${sc.name} (${sc.item_type})</option>`).join('');
-        document.getElementById('subCategoryFilter').innerHTML = '<option value="">All Sub-Categories</option>' + options;
-        document.getElementById('variantSubCategory').innerHTML = '<option value="">Select...</option>' + options;
+        const filterSelect = document.getElementById('subCategoryFilter');
+        const modalSelect = document.getElementById('variantSubCategory');
+        filterSelect.innerHTML = '<option value="">All Sub-Categories</option>';
+        modalSelect.innerHTML = '<option value="">Select...</option>';
+
+        subCategories.forEach(sc => {
+            const optionText = escapeHtml(sc.name) + ' (' + sc.item_type + ')';
+            filterSelect.innerHTML += `<option value="${sc.id}">${optionText}</option>`;
+            modalSelect.innerHTML += `<option value="${sc.id}">${optionText}</option>`;
+        });
         
         // Initialize searchable selects after populating
         initSearchableSelects();
@@ -298,11 +313,16 @@
     }
     
     function populateStockVariantsDropdown() {
-        const options = stockVariants.map(sv => `<option value="${sv.id}">${sv.name}${sv.description ? ' - ' + sv.description : ''}</option>`).join('');
-        document.getElementById('newIngredientStockVariant').innerHTML = '<option value="">Select stock variant...</option>' + options;
+        const select = document.getElementById('newIngredientStockVariant');
+        select.innerHTML = '<option value="">Select stock variant...</option>';
+        
+        stockVariants.forEach(sv => {
+            const label = escapeHtml(sv.name) + (sv.description ? ' - ' + escapeHtml(sv.description) : '');
+            select.innerHTML += `<option value="${sv.id}">${label}</option>`;
+        });
         
         // Initialize searchable select for stock variants (can be a large list)
-        SearchableSelect.refresh('#newIngredientStockVariant', {
+        SearchableSelect.init('#newIngredientStockVariant', {
             searchPlaceholderValue: 'Search stock variants...'
         });
     }
