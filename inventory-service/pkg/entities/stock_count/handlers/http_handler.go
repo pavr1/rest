@@ -90,10 +90,7 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.InvoiceID == "" {
-		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Invoice ID is required")
-		return
-	}
+	// Invoice ID is now optional (can be manual stock count)
 
 	if req.Count <= 0 {
 		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Count must be greater than 0")
@@ -102,6 +99,13 @@ func (h *HTTPHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	if req.Unit == "" {
 		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Unit is required")
+		return
+	}
+
+	// Validate unit is supported
+	validUnits := map[string]bool{"kg": true, "g": true, "l": true, "ml": true}
+	if !validUnits[req.Unit] {
+		sharedHttp.SendErrorResponse(w, http.StatusBadRequest, "Unit must be one of: kg, g, l, ml")
 		return
 	}
 

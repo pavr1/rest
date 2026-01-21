@@ -25,7 +25,8 @@
     <h1 class="page-title">Stock Count</h1>
     <div>
         <button class="btn btn-outline-primary me-2" id="backToVariantsBtn"><i class="fas fa-arrow-left me-2"></i>Back to Variants</button>
-        <button class="btn btn-outline-secondary" id="refreshBtn"><i class="fas fa-sync-alt me-2"></i>Refresh</button>
+        <button class="btn btn-outline-secondary me-2" id="refreshBtn"><i class="fas fa-sync-alt me-2"></i>Refresh</button>
+        <button class="btn btn-primary" id="addBtn"><i class="fas fa-plus me-2"></i>Add Stock Count</button>
     </div>
 </div>
 
@@ -97,6 +98,8 @@
                     <th>Stock Variant</th>
                     <th>Count</th>
                     <th>Unit</th>
+                    <th>Unit Price</th>
+                    <th>Cost/Portion</th>
                     <th>Purchased At</th>
                     <th>Supplier</th>
                     <th>Status</th>
@@ -105,6 +108,60 @@
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
+    </div>
+</div>
+
+<!-- Add Stock Count Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Stock Count</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Stock Variant <span class="text-danger">*</span></label>
+                        <select class="form-select" id="addVariant" required>
+                            <option value="">Select Variant</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Count <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="addCount" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unit <span class="text-danger">*</span></label>
+                            <select class="form-select" id="addUnit" required>
+                                <option value="">Select Unit</option>
+                                <option value="kg">Kilograms (kg)</option>
+                                <option value="g">Grams (g)</option>
+                                <option value="l">Liters (l)</option>
+                                <option value="ml">Milliliters (ml)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="addUnitPrice" step="0.01" min="0" placeholder="Enter total price for this purchase">
+                        </div>
+                        <small class="text-muted">Leave empty if unknown. Cost per portion will be calculated automatically.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Purchased At <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="addPurchasedAt" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="addSaveBtn">Add Stock Count</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -132,16 +189,20 @@
                             <label class="form-label">Unit <span class="text-danger">*</span></label>
                             <select class="form-select" id="editUnit" required>
                                 <option value="">Select Unit</option>
-                                <option value="Kg">Kg</option>
-                                <option value="g">g</option>
-                                <option value="L">L</option>
-                                <option value="ML">ML</option>
-                                <option value="Unit">Unit</option>
-                                <option value="Box">Box</option>
-                                <option value="Bottle">Bottle</option>
-                                <option value="Bag">Bag</option>
+                                <option value="kg">Kilograms (kg)</option>
+                                <option value="g">Grams (g)</option>
+                                <option value="l">Liters (l)</option>
+                                <option value="ml">Milliliters (ml)</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="editUnitPrice" step="0.01" min="0" placeholder="Enter total price">
+                        </div>
+                        <small class="text-muted">Cost per portion will be recalculated automatically.</small>
                     </div>
                     <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" id="editIsOut">
@@ -162,13 +223,18 @@
     let stockCounts = [];
     let stockVariants = [];
     let editModal = null;
+    let addModal = null;
 
     async function init() {
         console.log('Initializing stock count page...');
         editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        addModal = new bootstrap.Modal(document.getElementById('addModal'));
         setupEventListeners();
         await loadStockVariants();
         loadData();
+        
+        // Set default date to today for add form
+        document.getElementById('addPurchasedAt').valueAsDate = new Date();
     }
 
     function initSearchableSelects() {
@@ -178,6 +244,9 @@
         SearchableSelect.init('#statusFilter', {
             searchEnabled: false // Simple status filter, no search needed
         });
+        SearchableSelect.init('#addVariant', {
+            searchPlaceholderValue: 'Search variants...'
+        });
     }
 
     function setupEventListeners() {
@@ -185,8 +254,10 @@
             window.app.navigateTo('inventory-variants');
         });
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
+        document.getElementById('addBtn')?.addEventListener('click', () => openAddModal());
         document.getElementById('variantFilter')?.addEventListener('change', () => loadData());
         document.getElementById('statusFilter')?.addEventListener('change', () => filterData());
+        document.getElementById('addForm')?.addEventListener('submit', (e) => { e.preventDefault(); create(); });
         document.getElementById('editForm')?.addEventListener('submit', (e) => { e.preventDefault(); save(); });
     }
 
@@ -198,10 +269,18 @@
             const result = await resp.json();
             stockVariants = result.data?.variants || result.data?.items || result.data || [];
 
-            const select = document.getElementById('variantFilter');
-            select.innerHTML = '<option value="">All Variants</option>';
+            // Populate filter select
+            const filterSelect = document.getElementById('variantFilter');
+            filterSelect.innerHTML = '<option value="">All Variants</option>';
             stockVariants.forEach(v => {
-                select.innerHTML += `<option value="${v.id}">${escapeHtml(v.name)}</option>`;
+                filterSelect.innerHTML += `<option value="${v.id}">${escapeHtml(v.name)}</option>`;
+            });
+            
+            // Populate add modal select
+            const addSelect = document.getElementById('addVariant');
+            addSelect.innerHTML = '<option value="">Select Variant</option>';
+            stockVariants.forEach(v => {
+                addSelect.innerHTML += `<option value="${v.id}">${escapeHtml(v.name)}</option>`;
             });
             
             // Initialize searchable selects after populating
@@ -282,12 +361,16 @@
                 ? '<span class="status-badge out-of-stock">Out of Stock</span>' 
                 : '<span class="status-badge in-stock">In Stock</span>';
             const purchasedAt = item.purchased_at ? new Date(item.purchased_at).toLocaleDateString() : '-';
+            const unitPrice = item.unit_price ? `$${item.unit_price.toFixed(2)}` : '-';
+            const costPerPortion = item.cost_per_portion ? `$${item.cost_per_portion.toFixed(2)}` : '-';
             
             return `
                 <tr>
                     <td><strong>${escapeHtml(item.stock_variant_name || 'Unknown')}</strong></td>
                     <td>${item.count}</td>
                     <td>${escapeHtml(item.unit || '-')}</td>
+                    <td>${unitPrice}</td>
+                    <td>${costPerPortion}</td>
                     <td>${purchasedAt}</td>
                     <td>${escapeHtml(item.supplier_name || '-')}</td>
                     <td>${statusBadge}</td>
@@ -318,13 +401,81 @@
         document.getElementById('dataTable').classList.add('d-none'); 
     }
 
+    function openAddModal() {
+        document.getElementById('addForm').reset();
+        document.getElementById('addPurchasedAt').valueAsDate = new Date();
+        SearchableSelect.setValue('#addVariant', '');
+        addModal.show();
+    }
+
     function openEditModal(item) {
         document.getElementById('editId').value = item.id;
         document.getElementById('editVariantName').value = item.stock_variant_name || 'Unknown';
         document.getElementById('editCount').value = item.count;
-        document.getElementById('editUnit').value = item.unit || '';
+        document.getElementById('editUnit').value = item.unit ? item.unit.toLowerCase() : '';
+        document.getElementById('editUnitPrice').value = item.unit_price || '';
         document.getElementById('editIsOut').checked = item.is_out || false;
         editModal.show();
+    }
+
+    async function create() {
+        const btn = document.getElementById('addSaveBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        
+        try {
+            const token = window.authService.getToken();
+            const stockVariantId = document.getElementById('addVariant').value;
+            const count = parseFloat(document.getElementById('addCount').value);
+            const unit = document.getElementById('addUnit').value;
+            const unitPriceStr = document.getElementById('addUnitPrice').value;
+            const purchasedAt = document.getElementById('addPurchasedAt').value;
+
+            if (!stockVariantId) {
+                throw new Error('Stock variant is required');
+            }
+
+            if (!count || count <= 0) {
+                throw new Error('Count must be greater than 0');
+            }
+
+            if (!unit) {
+                throw new Error('Unit is required');
+            }
+
+            if (!purchasedAt) {
+                throw new Error('Purchased at is required');
+            }
+
+            const data = {
+                stock_variant_id: stockVariantId,
+                count: count,
+                unit: unit,
+                purchased_at: new Date(purchasedAt).toISOString()
+            };
+
+            // Only include unit_price if provided
+            if (unitPriceStr && parseFloat(unitPriceStr) > 0) {
+                data.unit_price = parseFloat(unitPriceStr);
+            }
+
+            const resp = await fetch(CONFIG.INVENTORY.stockCount, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!resp.ok) throw new Error((await resp.json()).message || 'Failed to create stock count');
+            
+            addModal.hide();
+            Swal.fire({ icon: 'success', title: 'Created!', timer: 1500, showConfirmButton: false });
+            await loadData();
+        } catch (e) { 
+            Swal.fire('Error', e.message, 'error'); 
+        } finally { 
+            btn.disabled = false; 
+            btn.innerHTML = 'Add Stock Count'; 
+        }
     }
 
     async function save() {
@@ -337,6 +488,7 @@
             const id = document.getElementById('editId').value;
             const count = parseFloat(document.getElementById('editCount').value);
             const unit = document.getElementById('editUnit').value;
+            const unitPriceStr = document.getElementById('editUnitPrice').value;
             const isOut = document.getElementById('editIsOut').checked;
 
             if (!count || count <= 0) {
@@ -348,6 +500,12 @@
             }
 
             const data = { count, unit, is_out: isOut };
+            
+            // Include unit_price if provided (even 0 to allow clearing)
+            if (unitPriceStr !== '') {
+                data.unit_price = parseFloat(unitPriceStr) || 0;
+            }
+            
             const resp = await fetch(CONFIG.INVENTORY.stockCountById(id), {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },

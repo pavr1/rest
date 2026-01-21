@@ -60,7 +60,7 @@ func (h *DBHandler) List(page, limit int) (*models.StockVariantListResponse, err
 	for rows.Next() {
 		var variant models.StockVariant
 
-		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
+		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.AvgCost, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan stock variant: %w", err)
 		}
 
@@ -104,7 +104,7 @@ func (h *DBHandler) ListByCategory(categoryID string, page, limit int) (*models.
 	for rows.Next() {
 		var variant models.StockVariant
 
-		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
+		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.AvgCost, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan stock variant: %w", err)
 		}
 
@@ -148,7 +148,7 @@ func (h *DBHandler) ListBySubCategory(subCategoryID string, page, limit int) (*m
 	for rows.Next() {
 		var variant models.StockVariant
 
-		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
+		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.AvgCost, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan stock variant: %w", err)
 		}
 
@@ -172,7 +172,7 @@ func (h *DBHandler) GetByID(id string) (*models.StockVariant, error) {
 
 	var variant models.StockVariant
 
-	err = h.db.QueryRow(query, id).Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt)
+	err = h.db.QueryRow(query, id).Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.AvgCost, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -199,7 +199,7 @@ func (h *DBHandler) Create(req *models.StockVariantCreateRequest) (*models.Stock
 	var variant models.StockVariant
 
 	err = h.db.QueryRow(query, req.Name, req.Description, req.StockSubCategoryID, isActive).Scan(
-		&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt,
+		&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.AvgCost, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stock variant: %w", err)
@@ -219,7 +219,7 @@ func (h *DBHandler) Update(id string, req *models.StockVariantUpdateRequest) (*m
 	var variant models.StockVariant
 
 	err = h.db.QueryRow(query, id, req.Name, req.Description, req.IsActive).Scan(
-		&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt,
+		&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.AvgCost, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

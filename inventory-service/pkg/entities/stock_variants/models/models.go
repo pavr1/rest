@@ -10,6 +10,7 @@ type StockVariant struct {
 	Name               string    `json:"name"`
 	Description        *string   `json:"description,omitempty"`
 	StockSubCategoryID string    `json:"stock_sub_category_id"`
+	AvgCost            float64   `json:"avg_cost"`
 	IsActive           bool      `json:"is_active"`
 	CreatedAt          time.Time `json:"created_at"`
 	UpdatedAt          time.Time `json:"updated_at"`

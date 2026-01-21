@@ -259,6 +259,9 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_NAME", "barrest_db")
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
+		// Cost calculation settings
+		config.Set("DEFAULT_PORTION_GRAMS", "120")      // Default portion size in grams for cost calculation
+		config.Set("DEFAULT_EARNING_MARGIN", "30.0")    // Default earning margin percentage (30%)
 	case "invoice":
 		config.Set("SERVER_PORT", "8092")
 		config.Set("SERVER_HOST", "0.0.0.0")
@@ -279,6 +282,9 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_NAME", "barrest_db")
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
+		// Cost calculation settings
+		config.Set("DEFAULT_PORTION_GRAMS", "120")      // Default portion size in grams for cost calculation
+		config.Set("DEFAULT_EARNING_MARGIN", "30.0")    // Default earning margin percentage (30%)
 	case "gateway":
 		config.Set("SERVER_PORT", "8082")
 		config.Set("SERVER_HOST", "0.0.0.0")
@@ -341,6 +347,8 @@ func populateConfigFromEnvironment(config *Config, logger *logrus.Logger) {
 		"CORS_ALLOWED_HEADERS",
 		"DEFAULT_TAX_RATE",
 		"DEFAULT_SERVICE_RATE",
+		"DEFAULT_PORTION_GRAMS",
+		"DEFAULT_EARNING_MARGIN",
 	}
 
 	for _, key := range envKeys {

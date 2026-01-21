@@ -1548,14 +1548,14 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"stock_variant_id\": \"{{stock_variant_id}}\",\n    \"invoice_id\": \"{{outcome_invoice_id}}\",\n    \"count\": 5.0,\n    \"unit\": \"Kg\",\n    \"purchased_at\": \"2025-01-19T12:00:00Z\"\n}"
+									"raw": "{\n    \"stock_variant_id\": \"{{stock_variant_id}}\",\n    \"invoice_id\": \"{{outcome_invoice_id}}\",\n    \"count\": 5.0,\n    \"unit\": \"kg\",\n    \"unit_price\": 25.50,\n    \"purchased_at\": \"2025-01-19T12:00:00Z\"\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/stock-count",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "stock-count"]
 								},
-								"description": "Create a new stock count record (requires authentication)"
+								"description": "Create a new stock count record (requires authentication). Supported units: kg, g, l, ml. Cost per portion is calculated automatically from unit_price."
 							}
 						},
 						{
@@ -1568,14 +1568,14 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"count\": 3.5,\n    \"unit\": \"Kg\"\n}"
+									"raw": "{\n    \"count\": 3.5,\n    \"unit\": \"kg\",\n    \"unit_price\": 20.00\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/stock-count/{{stock_count_id}}",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "stock-count", "{{stock_count_id}}"]
 								},
-								"description": "Update a stock count record (requires authentication)"
+								"description": "Update a stock count record (requires authentication). Cost per portion is recalculated when count, unit, or unit_price changes."
 							}
 						},
 						{

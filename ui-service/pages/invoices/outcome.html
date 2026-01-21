@@ -135,49 +135,11 @@
                             <div class="col-1"></div>
                         </div>
                         <div id="invoiceItemsContainer">
-                            <div class="invoice-item mb-3 p-3 border rounded">
-                                <div class="row align-items-end">
-                                    <div class="col-3">
-                                        <label class="form-label">Stock Variant <span class="text-danger">*</span></label>
-                                        <select class="form-select item-stock-variant" required>
-                                            <option value="">Select Stock Variant</option>
-                                        </select>
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label">Detail</label>
-                                        <input type="text" class="form-control item-detail" placeholder="Item detail...">
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label">Count <span class="text-danger">*</span></label>
-                                        <input type="number" class="form-control item-count" step="0.01" min="0" required>
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label">Unit Type <span class="text-danger">*</span></label>
-                                        <select class="form-select item-unit-type" required>
-                                            <option value="">Select Unit</option>
-                                            <option value="Kg">Kg</option>
-                                            <option value="g">g</option>
-                                            <option value="L">L</option>
-                                            <option value="ML">ML</option>
-                                            <option value="Unit">Unit</option>
-                                            <option value="Box">Box</option>
-                                            <option value="Bottle">Bottle</option>
-                                            <option value="Bag">Bag</option>
-                                        </select>
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label">Price <span class="text-danger">*</span></label>
-                                        <input type="number" class="form-control item-price" step="0.01" min="0" required>
-                                    </div>
-                                    <div class="col-1 d-flex align-items-end">
-                                        <button type="button" class="btn btn-outline-danger btn-sm remove-item-btn w-100" title="Remove item">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Invoice items are dynamically added here -->
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm" id="addItemBtn">Add Item</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="addItemBtn">
+                            <i class="fas fa-plus me-1"></i>Add Item
+                        </button>
                     </div>
 
                     <div class="mb-3">
@@ -206,6 +168,8 @@
     let stockVariants = [];
     let modal = null;
     let editingId = null;
+
+    let itemChoicesInstances = []; // Track Choices.js instances for cleanup
 
     function init() {
         modal = new bootstrap.Modal(document.getElementById('invoiceModal'));
@@ -258,6 +222,12 @@
             option.textContent = supplier.name;
             select.appendChild(option);
         });
+        
+        // Initialize searchable select for supplier
+        SearchableSelect.init('#supplierId', {
+            searchPlaceholderValue: 'Search suppliers...',
+            allowHTML: true
+        });
     }
 
     async function loadStockVariants() {
@@ -273,7 +243,7 @@
         }
     }
 
-    function populateStockVariantDropdown(itemDiv) {
+    function populateStockVariantDropdown(itemDiv, uniqueId) {
         const variantSelect = itemDiv.querySelector('.item-stock-variant');
         variantSelect.innerHTML = '<option value="">Select Stock Variant</option>';
 
@@ -283,6 +253,15 @@
             option.textContent = variant.name + (variant.description ? ` - ${variant.description}` : '');
             variantSelect.appendChild(option);
         });
+        
+        // Initialize searchable select for stock variant
+        const instance = SearchableSelect.init('#' + uniqueId, {
+            searchPlaceholderValue: 'Search stock variants...',
+            allowHTML: true
+        });
+        
+        // Track the instance for cleanup
+        itemChoicesInstances.push({ id: uniqueId, instance: instance });
     }
 
 
@@ -356,7 +335,10 @@
         // Populate form
         document.getElementById('invoiceId').value = invoice?.id || '';
         document.getElementById('invoiceNumber').value = invoice?.invoice_number || '';
-        document.getElementById('supplierId').value = invoice?.supplier_id || '';
+        
+        // Set supplier using SearchableSelect
+        SearchableSelect.setValue('#supplierId', invoice?.supplier_id || '');
+        
         // Set current date for new invoices
         const currentDate = new Date().toISOString().split('T')[0];
         document.getElementById('invoiceDate').value = invoice?.transaction_date ? new Date(invoice.transaction_date).toISOString().split('T')[0] : currentDate;
@@ -404,6 +386,15 @@
 
     function populateInvoiceItems(items) {
         const container = document.getElementById('invoiceItemsContainer');
+        
+        // Destroy all existing Choices instances
+        itemChoicesInstances.forEach(c => {
+            if (c.instance) {
+                try { c.instance.destroy(); } catch (e) { /* ignore */ }
+            }
+        });
+        itemChoicesInstances = [];
+        
         container.innerHTML = '';
 
         if (items.length === 0) {
@@ -417,12 +408,15 @@
         const container = document.getElementById('invoiceItemsContainer');
         const itemDiv = document.createElement('div');
         itemDiv.className = 'invoice-item mb-3 p-3 border rounded';
+        
+        // Generate unique ID for the select element
+        const uniqueId = 'stock-variant-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
         itemDiv.innerHTML = `
             <div class="row align-items-end">
                 <div class="col-3">
                     <label class="form-label">Stock Variant <span class="text-danger">*</span></label>
-                    <select class="form-select item-stock-variant" required>
+                    <select class="form-select item-stock-variant" id="${uniqueId}" required>
                         <option value="">Select Stock Variant</option>
                     </select>
                 </div>
@@ -463,17 +457,25 @@
         container.appendChild(itemDiv);
 
         // Populate stock variant dropdown
-        populateStockVariantDropdown(itemDiv);
+        populateStockVariantDropdown(itemDiv, uniqueId);
 
         // Add event listeners
         itemDiv.querySelector('.remove-item-btn').addEventListener('click', () => {
+            // Destroy Choices instance before removing
+            const choicesInstance = itemChoicesInstances.find(c => c.id === uniqueId);
+            if (choicesInstance && choicesInstance.instance) {
+                choicesInstance.instance.destroy();
+                itemChoicesInstances = itemChoicesInstances.filter(c => c.id !== uniqueId);
+            }
             itemDiv.remove();
         });
 
         // Set initial values if editing
         if (item && item.stock_variant_id) {
-            const variantSelect = itemDiv.querySelector('.item-stock-variant');
-            variantSelect.value = item.stock_variant_id;
+            // Set value after Choices.js is initialized
+            setTimeout(() => {
+                SearchableSelect.setValue('#' + uniqueId, item.stock_variant_id);
+            }, 100);
         }
     }
 

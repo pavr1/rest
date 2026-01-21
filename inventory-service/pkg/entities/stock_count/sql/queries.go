@@ -50,13 +50,14 @@ func (q *Queries) Get(name string) (string, error) {
 
 // SQL query constants
 const (
-	ListStockCountQuery          = "list_stock_count"
-	CountStockCountQuery         = "count_stock_count"
-	ListStockCountByVariantQuery = "list_stock_count_by_variant"
+	ListStockCountQuery           = "list_stock_count"
+	CountStockCountQuery          = "count_stock_count"
+	ListStockCountByVariantQuery  = "list_stock_count_by_variant"
 	CountStockCountByVariantQuery = "count_stock_count_by_variant"
-	GetStockCountByIDQuery       = "get_stock_count_by_id"
-	CreateStockCountQuery        = "create_stock_count"
-	UpdateStockCountQuery        = "update_stock_count"
-	MarkStockOutQuery            = "mark_stock_out"
-	DeleteStockCountQuery        = "delete_stock_count"
+	GetStockCountByIDQuery        = "get_stock_count_by_id"
+	CreateStockCountQuery         = "create_stock_count"
+	UpdateStockCountQuery         = "update_stock_count"
+	MarkStockOutQuery             = "mark_stock_out"
+	DeleteStockCountQuery         = "delete_stock_count"
+	CalculateAvgCostQuery         = "calculate_avg_cost"
 )

@@ -65,8 +65,8 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 	stockCategoryHTTPHandler := stockCategoryHandlers.NewHTTPHandler(stockCategoryDBHandler, logger)
 
-	// Create stock count handlers
-	stockCountDBHandler, err := stockCountHandlers.NewDBHandler(db, logger)
+	// Create stock count handlers (pass config for cost calculation settings)
+	stockCountDBHandler, err := stockCountHandlers.NewDBHandler(db, cfg, logger)
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("failed to create stock count handler: %w", err)

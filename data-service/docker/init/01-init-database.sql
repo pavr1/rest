@@ -111,6 +111,7 @@ CREATE TABLE stock_variants (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE CASCADE,
+    avg_cost DECIMAL(10,2) DEFAULT 0,  -- Average cost per portion across active stock counts
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -172,9 +173,11 @@ CREATE TABLE outcome_invoices (
 CREATE TABLE stock_count (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     stock_variant_id UUID NOT NULL REFERENCES stock_variants(id) ON DELETE CASCADE,
-    invoice_id UUID NOT NULL REFERENCES outcome_invoices(id) ON DELETE CASCADE,
+    invoice_id UUID REFERENCES outcome_invoices(id) ON DELETE CASCADE,  -- Nullable for manual stock counts
     count DECIMAL(10,2) NOT NULL CHECK (count > 0),
-    unit VARCHAR(50) NOT NULL,
+    unit VARCHAR(50) NOT NULL,  -- Supported: kg, g, l, ml (all convert to kg for cost calculation)
+    unit_price DECIMAL(10,2),  -- Price per unit (passed from invoice or manual input)
+    cost_per_portion DECIMAL(10,2),  -- Calculated: unit_price / num_portions (based on default portion grams)
     purchased_at TIMESTAMP NOT NULL,
     is_out BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

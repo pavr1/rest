@@ -4,6 +4,8 @@ SELECT
     sc.invoice_id, 
     sc.count, 
     sc.unit, 
+    sc.unit_price,
+    sc.cost_per_portion,
     sc.purchased_at, 
     sc.is_out, 
     sc.created_at, 
