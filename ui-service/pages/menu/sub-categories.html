@@ -56,7 +56,7 @@
                     <th>Name</th>
                     <th>Type</th>
                     <th>Category</th>
-                    <th>Order</th>
+                    <!-- pvillalobos - delete display order -->
                     <th>Status</th>
                     <th width="120">Actions</th>
                 </tr>
@@ -99,17 +99,11 @@
                         <label class="form-label">Description</label>
                         <textarea class="form-control" id="subCategoryDescription" rows="2"></textarea>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Display Order</label>
-                            <input type="number" class="form-control" id="subCategoryOrder" value="0" min="0">
-                        </div>
-                        <div class="col-md-6 mb-3 d-flex align-items-end">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="subCategoryActive" checked>
-                                <label class="form-check-label" for="subCategoryActive">Active</label>
-                            </div>
-                        </div>
+                    <!-- pvillalobos - delete display order -->
+                    <input type="hidden" id="subCategoryOrder" value="0">
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="subCategoryActive" checked>
+                        <label class="form-check-label" for="subCategoryActive">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -218,13 +212,13 @@
             const cat = categories.find(c => c.id === sc.category_id);
             const typeIcon = sc.item_type === 'bar' ? 'fa-cocktail' : 'fa-utensils';
             const typeLabel = sc.item_type === 'bar' ? 'Bar' : 'Kitchen';
+            // pvillalobos - delete display order
             return `
                 <tr>
                     <td><div class="item-image-placeholder"><i class="fas ${typeIcon}"></i></div></td>
                     <td><strong>${escapeHtml(sc.name)}</strong>${sc.description ? `<br><small class="text-muted">${escapeHtml(sc.description)}</small>` : ''}</td>
                     <td><span class="type-badge ${sc.item_type}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
                     <td>${sc.category_name || cat?.name || '-'}</td>
-                    <td>${sc.display_order}</td>
                     <td><span class="status-badge ${sc.is_active ? 'active' : 'inactive'}">${sc.is_active ? 'Active' : 'Inactive'}</span></td>
                     <td>
                         <div class="action-btns">

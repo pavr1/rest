@@ -42,8 +42,8 @@
                 <tr>
                     <th>Name</th>
                     <th>Description</th>
-                    <th>Display Order</th>
-                    <th>Items</th>
+                    <!-- pvillalobos - delete display order -->
+                    <!-- pvillalobos - fetch number of sub-categories and rename column to sub-categories -->
                     <th width="120">Actions</th>
                 </tr>
             </thead>
@@ -71,10 +71,8 @@
                         <label class="form-label">Description</label>
                         <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Display Order</label>
-                        <input type="number" class="form-control" id="displayOrder" value="0" min="0">
-                    </div>
+                    <!-- pvillalobos - delete display order -->
+                    <input type="hidden" id="displayOrder" value="0">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -129,12 +127,12 @@
         
         empty.classList.add('d-none');
         table.classList.remove('d-none');
+        // pvillalobos - delete display order
+        // pvillalobos - fetch number of sub-categories and rename column to sub-categories
         tbody.innerHTML = categories.map(cat => `
             <tr>
                 <td><strong>${escapeHtml(cat.name)}</strong></td>
                 <td>${escapeHtml(cat.description || '-')}</td>
-                <td>${cat.display_order || 0}</td>
-                <td>${cat.item_count || 0}</td>
                 <td>
                     <div class="action-btns">
                         <button class="btn btn-outline-primary btn-action" onclick="window.menuCatPage.edit('${cat.id}')" title="Edit"><i class="fas fa-edit"></i></button>
@@ -163,6 +161,7 @@
         document.getElementById('categoryId').value = cat?.id || '';
         document.getElementById('categoryName').value = cat?.name || '';
         document.getElementById('categoryDescription').value = cat?.description || '';
+        // pvillalobos - delete display order
         document.getElementById('displayOrder').value = cat?.display_order || 0;
         modal.show();
     }
@@ -174,6 +173,7 @@
         
         try {
             const token = window.authService.getToken();
+            // pvillalobos - delete display order
             const data = {
                 name: document.getElementById('categoryName').value,
                 description: document.getElementById('categoryDescription').value,
