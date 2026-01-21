@@ -28,6 +28,10 @@
                 <option value="">All Categories</option>
             </select>
         </div>
+        <div class="col-md-4">
+            <label class="form-label">Search by Name</label>
+            <input type="text" class="form-control" id="nameFilter" placeholder="Type to search...">
+        </div>
     </div>
 </div>
 
@@ -122,7 +126,16 @@
     function setupEventListeners() {
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
-        document.getElementById('categoryFilter')?.addEventListener('change', () => loadData());
+        document.getElementById('categoryFilter')?.addEventListener('change', () => {
+            document.getElementById('nameFilter').value = '';
+            loadData();
+        });
+        // Debounce name filter to avoid too many renders
+        let nameFilterTimeout = null;
+        document.getElementById('nameFilter')?.addEventListener('input', (e) => {
+            clearTimeout(nameFilterTimeout);
+            nameFilterTimeout = setTimeout(() => renderTable(), 300);
+        });
         document.getElementById('dataForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             const categoryId = document.getElementById('itemCategory').value;
@@ -206,11 +219,17 @@
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
 
-        if (!items.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+        // Filter by name
+        const nameFilter = document.getElementById('nameFilter').value.toLowerCase().trim();
+        const filteredItems = nameFilter 
+            ? items.filter(item => item.name.toLowerCase().includes(nameFilter))
+            : items;
+
+        if (!filteredItems.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
 
         empty.classList.add('d-none');
         table.classList.remove('d-none');
-        tbody.innerHTML = items.map(item => {
+        tbody.innerHTML = filteredItems.map(item => {
             const category = categories.find(c => c.id === item.stock_category_id);
             return `
                 <tr>

@@ -24,7 +24,8 @@
 <div class="page-header">
     <h1 class="page-title">Stock Count</h1>
     <div>
-        <button class="btn btn-outline-secondary me-2" id="refreshBtn"><i class="fas fa-sync-alt me-2"></i>Refresh</button>
+        <button class="btn btn-outline-primary me-2" id="backToVariantsBtn"><i class="fas fa-arrow-left me-2"></i>Back to Variants</button>
+        <button class="btn btn-outline-secondary" id="refreshBtn"><i class="fas fa-sync-alt me-2"></i>Refresh</button>
     </div>
 </div>
 
@@ -162,11 +163,11 @@
     let stockVariants = [];
     let editModal = null;
 
-    function init() {
+    async function init() {
         console.log('Initializing stock count page...');
         editModal = new bootstrap.Modal(document.getElementById('editModal'));
         setupEventListeners();
-        loadStockVariants();
+        await loadStockVariants();
         loadData();
     }
 
@@ -180,6 +181,9 @@
     }
 
     function setupEventListeners() {
+        document.getElementById('backToVariantsBtn')?.addEventListener('click', () => {
+            window.router.navigateTo('inventory-variants');
+        });
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
         document.getElementById('variantFilter')?.addEventListener('change', () => loadData());
         document.getElementById('statusFilter')?.addEventListener('change', () => filterData());
@@ -202,6 +206,13 @@
             
             // Initialize searchable selects after populating
             initSearchableSelects();
+            
+            // Check if there's a pre-selected variant from navigation
+            const preSelectedVariantId = sessionStorage.getItem('stockCountVariantId');
+            if (preSelectedVariantId) {
+                sessionStorage.removeItem('stockCountVariantId');
+                SearchableSelect.setValue('#variantFilter', preSelectedVariantId);
+            }
         } catch (e) {
             console.error('Failed to load stock variants:', e);
         }

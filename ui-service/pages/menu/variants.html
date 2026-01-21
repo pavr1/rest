@@ -41,10 +41,8 @@
             </select>
         </div>
         <div class="col-md-4">
-            <label class="form-label">Filter by Sub-Category</label>
-            <select class="form-select" id="subCategoryFilter" disabled>
-                <option value="">Select a category first</option>
-            </select>
+            <label class="form-label">Search by Name</label>
+            <input type="text" class="form-control" id="nameFilter" placeholder="Type to search...">
         </div>
     </div>
 </div>
@@ -252,10 +250,6 @@
             searchPlaceholderValue: 'Search categories...',
             placeholderValue: 'Select a Category'
         });
-        SearchableSelect.init('#subCategoryFilter', {
-            searchPlaceholderValue: 'Search sub-categories...',
-            placeholderValue: 'Select a category first'
-        });
         SearchableSelect.init('#variantCategory', {
             searchPlaceholderValue: 'Search categories...',
             placeholderValue: 'Select Category'
@@ -271,18 +265,21 @@
         document.getElementById('variantForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveVariant(); });
         document.getElementById('categoryFilter')?.addEventListener('change', () => {
             const categoryId = document.getElementById('categoryFilter')?.value;
+            document.getElementById('nameFilter').value = '';
             if (categoryId) {
-                loadSubCategoriesForFilter();
+                loadVariants();
             } else {
                 subCategories = [];
-                SearchableSelect.setChoices('#subCategoryFilter', [{ value: '', label: 'Select a category first', selected: true }]);
-                SearchableSelect.setEnabled('#subCategoryFilter', false);
                 showSelectCategory();
             }
         });
-        document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadVariants());
+        // Debounce name filter
+        let nameFilterTimeout = null;
+        document.getElementById('nameFilter')?.addEventListener('input', () => {
+            clearTimeout(nameFilterTimeout);
+            nameFilterTimeout = setTimeout(() => renderTable(), 300);
+        });
         document.getElementById('variantCategory')?.addEventListener('change', (e) => {
-            console.log('variantCategory change event fired, value:', e.target.value);
             document.getElementById('variantSubCategory').value = '';
             loadSubCategoriesForModal();
         });
@@ -316,31 +313,6 @@
         } catch (e) { console.error('Error loading categories:', e); }
     }
     
-    async function loadSubCategoriesForFilter() {
-        try {
-            const token = window.authService.getToken();
-            const categoryId = document.getElementById('categoryFilter')?.value;
-            if (!categoryId) return;
-            
-            const url = `${CONFIG.MENU.subCategories}?category_id=${categoryId}`;
-            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) return;
-            
-            const result = await resp.json();
-            subCategories = result.data?.sub_categories || result.sub_categories || [];
-            
-            // Build choices array for Choices.js
-            const choices = [{ value: '', label: 'All Sub-Categories', selected: true }];
-            subCategories.forEach(sc => {
-                choices.push({ value: sc.id, label: sc.name });
-            });
-            
-            SearchableSelect.setChoices('#subCategoryFilter', choices);
-            SearchableSelect.setEnabled('#subCategoryFilter', true);
-            
-            loadVariants();
-        } catch (e) { console.error('Error loading sub-categories for filter:', e); }
-    }
     
     async function loadSubCategoriesForModal() {
         const categoryId = document.getElementById('variantCategory').value;
@@ -412,7 +384,6 @@
     
     async function loadVariants() {
         const categoryId = document.getElementById('categoryFilter').value;
-        const subCategoryId = document.getElementById('subCategoryFilter').value;
         
         // Don't load if no category is selected
         if (!categoryId) {
@@ -428,14 +399,9 @@
             }
 
             const params = new URLSearchParams();
-            if (subCategoryId) {
-                params.append('sub_category_id', subCategoryId);
-            } else {
-                // If no sub-category selected, filter by category (get all sub-categories for this category)
-                params.append('category_id', categoryId);
-            }
+            params.append('category_id', categoryId);
 
-            const url = CONFIG.MENU.variants + (params.toString() ? `?${params}` : '');
+            const url = CONFIG.MENU.variants + `?${params}`;
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
 
             if (!resp.ok) {
@@ -460,11 +426,17 @@
         document.getElementById('loadingState').classList.add('d-none');
         document.getElementById('selectCategoryState').classList.add('d-none');
         
-        if (!variants.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+        // Filter by name
+        const nameFilter = document.getElementById('nameFilter').value.toLowerCase().trim();
+        const filteredVariants = nameFilter 
+            ? variants.filter(v => v.name.toLowerCase().includes(nameFilter))
+            : variants;
+        
+        if (!filteredVariants.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
         
         empty.classList.add('d-none');
         table.classList.remove('d-none');
-        tbody.innerHTML = variants.map(variant => {
+        tbody.innerHTML = filteredVariants.map(variant => {
             const subCategory = subCategories.find(sc => sc.id === variant.sub_category_id);
             const itemType = variant.item_type || subCategory?.item_type || 'kitchen';
             const typeIcon = itemType === 'bar' ? 'fa-cocktail' : 'fa-utensils';
