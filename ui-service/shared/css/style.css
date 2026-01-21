@@ -698,3 +698,128 @@ body {
         gap: 0.75rem;
     }
 }
+
+/* === CHOICES.JS CUSTOMIZATION === */
+
+/* Match Bootstrap form-select styling */
+.choices {
+    margin-bottom: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.choices__inner {
+    background-color: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius);
+    min-height: calc(1.5em + 1.5rem + 4px);
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.choices__inner:hover {
+    border-color: #ced4da;
+}
+
+.choices.is-focused .choices__inner {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+.choices.is-disabled .choices__inner {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+}
+
+/* Input styling */
+.choices__input {
+    background-color: transparent;
+    font-size: 1rem;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.choices__input::placeholder {
+    color: #6c757d;
+    opacity: 0.7;
+}
+
+/* Dropdown list */
+.choices__list--dropdown {
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    margin-top: 4px;
+    z-index: 1050;
+}
+
+.choices__list--dropdown .choices__item {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+    background-color: var(--primary-light);
+    color: var(--dark-color);
+}
+
+.choices__list--dropdown .choices__item--selectable:hover {
+    background-color: var(--primary-light);
+}
+
+/* Selected item */
+.choices__list--single .choices__item {
+    padding: 0;
+}
+
+/* Placeholder */
+.choices__placeholder {
+    color: #6c757d;
+    opacity: 0.7;
+}
+
+/* No results */
+.choices__list--dropdown .choices__item--choice.has-no-results,
+.choices__list--dropdown .choices__item--choice.has-no-choices {
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* In modals */
+.modal .choices__list--dropdown {
+    z-index: 1060;
+}
+
+/* Remove button for multiple select */
+.choices__button {
+    border-left: 1px solid var(--primary-color);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238B4513'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
+    background-size: 10px;
+    opacity: 0.75;
+}
+
+.choices__button:hover {
+    opacity: 1;
+}
+
+/* Active state arrow */
+.choices[data-type*='select-one']::after {
+    border-color: var(--primary-color) transparent transparent transparent;
+}
+
+.choices[data-type*='select-one'].is-open::after {
+    border-color: transparent transparent var(--primary-color) transparent;
+}
+
+/* Small variant for filter dropdowns */
+.choices--small .choices__inner {
+    min-height: calc(1.5em + 0.75rem + 4px);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.choices--small .choices__list--dropdown .choices__item {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+}

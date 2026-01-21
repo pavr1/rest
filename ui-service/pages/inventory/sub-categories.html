@@ -110,6 +110,15 @@
         loadData();
     }
 
+    function initSearchableSelects() {
+        SearchableSelect.init('#categoryFilter', {
+            searchPlaceholderValue: 'Search categories...'
+        });
+        SearchableSelect.init('#itemCategory', {
+            searchPlaceholderValue: 'Search categories...'
+        });
+    }
+
     function setupEventListeners() {
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
@@ -162,6 +171,9 @@
             });
 
             console.log('Categories dropdown populated with', categories.length, 'categories');
+            
+            // Initialize searchable selects after populating
+            initSearchableSelects();
         } catch (e) {
             console.error('Failed to load categories:', e);
         }
@@ -225,7 +237,7 @@
         document.getElementById('modalTitle').textContent = item ? 'Edit Inventory Sub-Category' : 'Add Inventory Sub-Category';
         document.getElementById('itemId').value = item?.id || '';
         document.getElementById('itemName').value = item?.name || '';
-        document.getElementById('itemCategory').value = item?.stock_category_id || '';
+        SearchableSelect.setValue('#itemCategory', item?.stock_category_id || '');
         document.getElementById('itemDescription').value = item?.description || '';
         modal.show();
     }

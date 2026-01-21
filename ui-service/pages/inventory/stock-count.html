@@ -170,6 +170,15 @@
         loadData();
     }
 
+    function initSearchableSelects() {
+        SearchableSelect.init('#variantFilter', {
+            searchPlaceholderValue: 'Search variants...'
+        });
+        SearchableSelect.init('#statusFilter', {
+            searchEnabled: false // Simple status filter, no search needed
+        });
+    }
+
     function setupEventListeners() {
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
         document.getElementById('variantFilter')?.addEventListener('change', () => loadData());
@@ -190,6 +199,9 @@
             stockVariants.forEach(v => {
                 select.innerHTML += `<option value="${v.id}">${escapeHtml(v.name)}</option>`;
             });
+            
+            // Initialize searchable selects after populating
+            initSearchableSelects();
         } catch (e) {
             console.error('Failed to load stock variants:', e);
         }

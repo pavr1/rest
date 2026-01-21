@@ -230,6 +230,18 @@
         loadSubCategories();
         loadVariants();
     }
+    
+    function initSearchableSelects() {
+        SearchableSelect.init('#subCategoryFilter', {
+            searchPlaceholderValue: 'Search sub-categories...'
+        });
+        SearchableSelect.init('#availabilityFilter', {
+            searchEnabled: false // Simple yes/no, no search needed
+        });
+        SearchableSelect.init('#variantSubCategory', {
+            searchPlaceholderValue: 'Search sub-categories...'
+        });
+    }
 
     function setupEventListeners() {
         document.getElementById('addVariantBtn')?.addEventListener('click', () => openModal());
@@ -269,6 +281,9 @@
         const options = subCategories.map(sc => `<option value="${sc.id}">${sc.name} (${sc.item_type})</option>`).join('');
         document.getElementById('subCategoryFilter').innerHTML = '<option value="">All Sub-Categories</option>' + options;
         document.getElementById('variantSubCategory').innerHTML = '<option value="">Select...</option>' + options;
+        
+        // Initialize searchable selects after populating
+        initSearchableSelects();
     }
     
     async function loadStockVariants() {
@@ -285,6 +300,11 @@
     function populateStockVariantsDropdown() {
         const options = stockVariants.map(sv => `<option value="${sv.id}">${sv.name}${sv.description ? ' - ' + sv.description : ''}</option>`).join('');
         document.getElementById('newIngredientStockVariant').innerHTML = '<option value="">Select stock variant...</option>' + options;
+        
+        // Initialize searchable select for stock variants (can be a large list)
+        SearchableSelect.refresh('#newIngredientStockVariant', {
+            searchPlaceholderValue: 'Search stock variants...'
+        });
     }
     
     async function loadVariants() {
@@ -394,7 +414,7 @@
 
         setValue('variantId', variant?.id);
         setValue('variantName', variant?.name);
-        setValue('variantSubCategory', variant?.sub_category_id);
+        SearchableSelect.setValue('#variantSubCategory', variant?.sub_category_id || '');
         setValue('variantDescription', variant?.description);
         setValue('variantPrice', variant?.price);
         setValue('variantPrepTime', variant?.preparation_time);
@@ -593,7 +613,7 @@
             });
             if (!resp.ok) throw new Error((await resp.json()).message || 'Failed');
 
-            document.getElementById('newIngredientStockVariant').value = '';
+            SearchableSelect.setValue('#newIngredientStockVariant', '');
             document.getElementById('newIngredientQty').value = '';
             document.getElementById('newIngredientOptional').checked = false;
             document.getElementById('newIngredientNotes').value = '';

@@ -29,17 +29,6 @@
 
 <div class="filters">
     <select class="form-select" id="categoryFilter" style="width: auto;"><option value="">All Categories</option></select>
-    <select class="form-select" id="typeFilter" style="width: auto;">
-        <option value="">All Types</option>
-        <option value="kitchen">Kitchen</option>
-        <option value="bar">Bar</option>
-    </select>
-    <select class="form-select" id="activeFilter" style="width: auto;">
-        <option value="">All Status</option>
-        <option value="true">Active</option>
-        <option value="false">Inactive</option>
-    </select>
-    <button class="btn btn-outline-secondary" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
 </div>
 
 <div class="data-card">
@@ -144,13 +133,22 @@
         loadSubCategories();
     }
 
+    function initSearchableSelects() {
+        SearchableSelect.init('#categoryFilter', {
+            searchPlaceholderValue: 'Search categories...'
+        });
+        SearchableSelect.init('#subCategoryCategory', {
+            searchPlaceholderValue: 'Search categories...'
+        });
+        SearchableSelect.init('#subCategoryType', {
+            searchEnabled: false // Simple type filter
+        });
+    }
+
     function setupEventListeners() {
         document.getElementById('addSubCategoryBtn')?.addEventListener('click', () => openModal());
-        document.getElementById('refreshBtn')?.addEventListener('click', () => loadSubCategories());
         document.getElementById('subCategoryForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveSubCategory(); });
         document.getElementById('categoryFilter')?.addEventListener('change', () => loadSubCategories());
-        document.getElementById('typeFilter')?.addEventListener('change', () => loadSubCategories());
-        document.getElementById('activeFilter')?.addEventListener('change', () => loadSubCategories());
     }
     
     async function loadCategories() {
@@ -169,6 +167,9 @@
         const options = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         document.getElementById('categoryFilter').innerHTML = '<option value="">All Categories</option>' + options;
         document.getElementById('subCategoryCategory').innerHTML = '<option value="">Select...</option>' + options;
+        
+        // Initialize searchable selects after populating
+        initSearchableSelects();
     }
     
     async function loadSubCategories() {
@@ -183,11 +184,7 @@
             const token = window.authService.getToken();
             const params = new URLSearchParams();
             const catId = document.getElementById('categoryFilter').value;
-            const itemType = document.getElementById('typeFilter').value;
-            const isActive = document.getElementById('activeFilter').value;
             if (catId) params.append('category_id', catId);
-            if (itemType) params.append('item_type', itemType);
-            if (isActive) params.append('is_active', isActive);
 
             const url = CONFIG.MENU.subCategories + (params.toString() ? `?${params}` : '');
             console.log('📡 Fetching:', url);
@@ -248,8 +245,8 @@
         document.getElementById('modalTitle').textContent = subCategory ? 'Edit Menu Sub-Category' : 'Add Menu Sub-Category';
         document.getElementById('subCategoryId').value = subCategory?.id || '';
         document.getElementById('subCategoryName').value = subCategory?.name || '';
-        document.getElementById('subCategoryCategory').value = subCategory?.category_id || '';
-        document.getElementById('subCategoryType').value = subCategory?.item_type || '';
+        SearchableSelect.setValue('#subCategoryCategory', subCategory?.category_id || '');
+        SearchableSelect.setValue('#subCategoryType', subCategory?.item_type || '');
         document.getElementById('subCategoryDescription').value = subCategory?.description || '';
         document.getElementById('subCategoryOrder').value = subCategory?.display_order || 0;
         document.getElementById('subCategoryActive').checked = subCategory?.is_active !== false;

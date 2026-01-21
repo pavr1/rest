@@ -151,6 +151,11 @@
     function populateMenuItemFilter() {
         const options = menuItems.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
         document.getElementById('menuItemFilter').innerHTML = '<option value="">All Menu Items</option>' + options;
+        
+        // Initialize searchable select for menu items (can be a large list)
+        SearchableSelect.refresh('#menuItemFilter', {
+            searchPlaceholderValue: 'Search menu items...'
+        });
     }
     
     function filterAndRender() {

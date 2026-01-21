@@ -122,8 +122,13 @@
     let subCategories = [];
     let modal = null;
     let editingId = null;
-
     let categories = [];
+
+    // Choices instances for cleanup
+    let categoryFilterChoice = null;
+    let subCategoryFilterChoice = null;
+    let itemCategoryChoice = null;
+    let itemSubCategoryChoice = null;
 
     function init() {
         console.log('Initializing inventory variants page...');
@@ -132,6 +137,28 @@
         loadCategories();
         // Don't load sub-categories or data at init - wait for category selection
         showSelectCategory();
+    }
+
+    function initSearchableSelects() {
+        // Initialize filter dropdowns
+        categoryFilterChoice = SearchableSelect.init('#categoryFilter', {
+            searchPlaceholderValue: 'Search categories...',
+            placeholderValue: 'Select a Category'
+        });
+        subCategoryFilterChoice = SearchableSelect.init('#subCategoryFilter', {
+            searchPlaceholderValue: 'Search sub-categories...',
+            placeholderValue: 'Select a category first'
+        });
+        
+        // Initialize modal dropdowns  
+        itemCategoryChoice = SearchableSelect.init('#itemCategory', {
+            searchPlaceholderValue: 'Search categories...',
+            placeholderValue: 'Select Category'
+        });
+        itemSubCategoryChoice = SearchableSelect.init('#itemSubCategory', {
+            searchPlaceholderValue: 'Search sub-categories...',
+            placeholderValue: 'Select a category first'
+        });
     }
 
     function setupEventListeners() {
@@ -153,6 +180,11 @@
                 subCatSelect.innerHTML = '<option value="">Select a category first</option>';
                 subCatSelect.disabled = true;
                 subCategories = [];
+                // Refresh and disable the searchable select
+                subCategoryFilterChoice = SearchableSelect.refresh('#subCategoryFilter', {
+                    searchPlaceholderValue: 'Select a category first'
+                });
+                SearchableSelect.setEnabled('#subCategoryFilter', false);
                 showSelectCategory();
             }
         });
@@ -196,6 +228,9 @@
             });
 
             console.log('Categories dropdown populated');
+            
+            // Initialize searchable selects after populating
+            initSearchableSelects();
         } catch (e) {
             console.error('Failed to load categories:', e);
         }
@@ -225,6 +260,12 @@
                 select.innerHTML += `<option value="${subCat.id}">${escapeHtml(subCat.name)}</option>`;
             });
             
+            // Refresh the searchable select
+            subCategoryFilterChoice = SearchableSelect.refresh('#subCategoryFilter', {
+                searchPlaceholderValue: 'Search sub-categories...'
+            });
+            SearchableSelect.setEnabled('#subCategoryFilter', true);
+            
             // Load all variants for this category (no sub-category filter yet)
             loadData();
         } catch (e) {
@@ -238,9 +279,15 @@
 
         // Clear sub-category dropdown immediately when category changes
         subCategorySelect.innerHTML = '<option value="">Loading sub-categories...</option>';
+        itemSubCategoryChoice = SearchableSelect.refresh('#itemSubCategory', {
+            searchPlaceholderValue: 'Loading...'
+        });
 
         if (!categoryId) {
             subCategorySelect.innerHTML = '<option value="">Select a category first</option>';
+            itemSubCategoryChoice = SearchableSelect.refresh('#itemSubCategory', {
+                searchPlaceholderValue: 'Select a category first'
+            });
             return;
         }
 
@@ -254,6 +301,7 @@
             if (!resp.ok) {
                 console.error('Failed to fetch sub-categories for category');
                 subCategorySelect.innerHTML = '<option value="">Failed to load sub-categories</option>';
+                itemSubCategoryChoice = SearchableSelect.refresh('#itemSubCategory');
                 return;
             }
 
@@ -271,9 +319,15 @@
                     subCategorySelect.innerHTML += `<option value="${subCat.id}">${escapeHtml(subCat.name)}</option>`;
                 });
             }
+            
+            // Refresh searchable select
+            itemSubCategoryChoice = SearchableSelect.refresh('#itemSubCategory', {
+                searchPlaceholderValue: 'Search sub-categories...'
+            });
         } catch (e) {
             console.error('Failed to load sub-categories for category:', e);
             subCategorySelect.innerHTML = '<option value="">Error loading sub-categories</option>';
+            itemSubCategoryChoice = SearchableSelect.refresh('#itemSubCategory');
         }
     }
 
@@ -373,18 +427,21 @@
         if (item?.stock_sub_category_id) {
             const subCategory = subCategories.find(sc => sc.id === item.stock_sub_category_id);
             if (subCategory) {
-                document.getElementById('itemCategory').value = subCategory.stock_category_id || '';
+                // Set category value using Choices
+                SearchableSelect.setValue('#itemCategory', subCategory.stock_category_id || '');
                 // Load sub-categories for this category, then set the selected one
                 loadSubCategoriesForCategory().then(() => {
-                    document.getElementById('itemSubCategory').value = item.stock_sub_category_id;
+                    SearchableSelect.setValue('#itemSubCategory', item.stock_sub_category_id);
                 });
             } else {
-                document.getElementById('itemCategory').value = '';
+                SearchableSelect.setValue('#itemCategory', '');
                 document.getElementById('itemSubCategory').innerHTML = '<option value="">Select a category first</option>';
+                itemSubCategoryChoice = SearchableSelect.refresh('#itemSubCategory');
             }
         } else {
-            document.getElementById('itemCategory').value = '';
+            SearchableSelect.setValue('#itemCategory', '');
             document.getElementById('itemSubCategory').innerHTML = '<option value="">Select a category first</option>';
+            itemSubCategoryChoice = SearchableSelect.refresh('#itemSubCategory');
         }
 
         document.getElementById('itemDescription').value = item?.description || '';
