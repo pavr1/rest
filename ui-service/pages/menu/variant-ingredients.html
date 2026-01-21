@@ -1,0 +1,465 @@
+<!-- Variant Ingredients Page Partial -->
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .page-title { font-family: Arial, sans-serif; font-size: 1.75rem; margin: 0; }
+    .variant-name { color: var(--primary-color); }
+    .data-card { background: white; border-radius: var(--border-radius); box-shadow: var(--shadow-light); overflow: hidden; margin-bottom: 1.5rem; }
+    .data-card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center; }
+    .data-table { width: 100%; margin: 0; }
+    .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
+    .data-table td { padding: 0.75rem 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
+    .data-table tbody tr:hover { background: #f8f9fa; }
+    .action-btns { display: flex; gap: 0.5rem; }
+    .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
+    .empty-state, .loading-state { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); }
+    .empty-state i { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.5; }
+    .filter-section { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius); }
+    .qty-input { width: 70px; text-align: center; }
+    .ingredient-badge { background: #d4edda; color: #155724; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+    .optional-badge { background: #fff3cd; color: #856404; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem; }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ingredients for <span class="variant-name" id="variantNameTitle">Loading...</span></h1>
+    </div>
+    <div>
+        <button class="btn btn-outline-primary" id="backBtn"><i class="fas fa-arrow-left me-2"></i>Back to Menu Variants</button>
+    </div>
+</div>
+
+
+<!-- Available Inventory Section -->
+<div class="data-card">
+    <div class="data-card-header">
+        <h5 class="mb-0"><i class="fas fa-boxes text-info me-2"></i>Available Inventory</h5>
+    </div>
+    
+    <div class="filter-section">
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Filter by Category</label>
+                <select class="form-select" id="categoryFilter">
+                    <option value="">Select a Category</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Filter by Sub-Category</label>
+                <select class="form-select" id="subCategoryFilter" disabled>
+                    <option value="">Select a category first</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search by Name</label>
+                <input type="text" class="form-control" id="nameFilter" placeholder="Type to search...">
+            </div>
+        </div>
+    </div>
+    
+    <div id="inventoryContainer">
+        <div class="loading-state d-none" id="inventoryLoading">
+            <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+            <p class="mb-0">Loading inventory...</p>
+        </div>
+        <div class="empty-state" id="selectCategoryState">
+            <i class="fas fa-filter"></i>
+            <h6>Select a category to view inventory</h6>
+            <p class="mb-0 small">Use the filters above to browse inventory variants.</p>
+        </div>
+        <div class="empty-state d-none" id="inventoryEmpty">
+            <i class="fas fa-boxes"></i>
+            <h6>No inventory variants found</h6>
+            <p class="mb-0 small">Try a different filter.</p>
+        </div>
+        <table class="data-table d-none" id="inventoryTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Sub-Category</th>
+                    <th width="90">Quantity</th>
+                    <th width="80">Optional</th>
+                    <th width="80">Action</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Added Ingredients Section -->
+<div class="data-card">
+    <div class="data-card-header">
+        <h5 class="mb-0"><i class="fas fa-check-circle text-success me-2"></i>Added Ingredients</h5>
+        <span class="badge bg-primary" id="ingredientCount">0</span>
+    </div>
+    <div id="ingredientsContainer">
+        <div class="loading-state d-none" id="ingredientsLoading">
+            <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+            <p class="mb-0">Loading ingredients...</p>
+        </div>
+        <div class="empty-state" id="ingredientsEmpty">
+            <i class="fas fa-inbox"></i>
+            <h6>No ingredients added yet</h6>
+            <p class="mb-0 small">Use the table below to add ingredients.</p>
+        </div>
+        <table class="data-table d-none" id="ingredientsTable">
+            <thead>
+                <tr>
+                    <th>Inventory Variant</th>
+                    <th>Quantity</th>
+                    <th>Optional</th>
+                    <th width="80">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ingredientsBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+(function() {
+    let menuVariantId = null;
+    let menuVariantName = null;
+    let ingredients = [];
+    let inventoryVariants = [];
+    let subCategories = [];
+    let categories = [];
+
+    async function init() {
+        // Get menu variant info from sessionStorage
+        menuVariantId = sessionStorage.getItem('menuVariantId');
+        menuVariantName = sessionStorage.getItem('menuVariantName');
+        const menuVariantSubCategory = sessionStorage.getItem('menuVariantSubCategory');
+
+        if (!menuVariantId) {
+            Swal.fire('Error', 'No menu variant selected', 'error');
+            window.app.navigateTo('menu-variants');
+            return;
+        }
+
+        // Build full name with sub-category
+        const fullName = menuVariantSubCategory 
+            ? `${menuVariantSubCategory} ${menuVariantName}` 
+            : menuVariantName || 'Unknown';
+        document.getElementById('variantNameTitle').textContent = fullName;
+        
+        setupEventListeners();
+        await loadCategories();
+        await loadIngredients();
+    }
+
+    function setupEventListeners() {
+        document.getElementById('backBtn')?.addEventListener('click', () => {
+            sessionStorage.removeItem('menuVariantId');
+            sessionStorage.removeItem('menuVariantName');
+            window.app.navigateTo('menu-variants');
+        });
+
+        document.getElementById('categoryFilter')?.addEventListener('change', () => {
+            const categoryId = document.getElementById('categoryFilter')?.value;
+            document.getElementById('nameFilter').value = '';
+            if (categoryId) {
+                loadSubCategories();
+            } else {
+                subCategories = [];
+                SearchableSelect.setChoices('#subCategoryFilter', [{ value: '', label: 'Select a category first', selected: true }]);
+                SearchableSelect.setEnabled('#subCategoryFilter', false);
+                showSelectCategory();
+            }
+        });
+
+        document.getElementById('subCategoryFilter')?.addEventListener('change', () => {
+            document.getElementById('nameFilter').value = '';
+            loadInventory();
+        });
+
+        let nameFilterTimeout = null;
+        document.getElementById('nameFilter')?.addEventListener('input', () => {
+            clearTimeout(nameFilterTimeout);
+            nameFilterTimeout = setTimeout(() => renderInventoryTable(), 300);
+        });
+    }
+
+    function initSearchableSelects() {
+        SearchableSelect.init('#categoryFilter', {
+            searchPlaceholderValue: 'Search categories...'
+        });
+        SearchableSelect.init('#subCategoryFilter', {
+            searchPlaceholderValue: 'Search sub-categories...',
+            placeholderValue: 'Select a category first'
+        });
+    }
+
+    async function loadCategories() {
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.MENU.inventoryCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) return;
+            const result = await resp.json();
+            categories = result.data?.categories || result.data?.items || result.data || [];
+
+            const select = document.getElementById('categoryFilter');
+            select.innerHTML = '<option value="">Select a Category</option>';
+            categories.forEach(cat => {
+                select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            });
+
+            initSearchableSelects();
+        } catch (e) {
+            console.error('Failed to load categories:', e);
+        }
+    }
+
+    async function loadSubCategories() {
+        const categoryId = document.getElementById('categoryFilter').value;
+        if (!categoryId) return;
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) return;
+            const result = await resp.json();
+            subCategories = result.data?.sub_categories || result.data?.items || result.data || [];
+
+            const choices = [{ value: '', label: 'All Sub-Categories', selected: true }];
+            subCategories.forEach(sc => {
+                choices.push({ value: sc.id, label: sc.name });
+            });
+
+            SearchableSelect.setChoices('#subCategoryFilter', choices);
+            SearchableSelect.setEnabled('#subCategoryFilter', true);
+
+            loadInventory();
+        } catch (e) {
+            console.error('Failed to load sub-categories:', e);
+        }
+    }
+
+    async function loadInventory() {
+        const categoryId = document.getElementById('categoryFilter').value;
+        const subCategoryId = document.getElementById('subCategoryFilter').value;
+
+        if (!categoryId) {
+            showSelectCategory();
+            return;
+        }
+
+        showInventoryLoading();
+
+        try {
+            const token = window.authService.getToken();
+            const params = new URLSearchParams();
+            if (subCategoryId) {
+                params.append('sub_category_id', subCategoryId);
+            } else {
+                params.append('category_id', categoryId);
+            }
+
+            const resp = await fetch(`${CONFIG.MENU.inventoryVariants}?${params}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed');
+            const result = await resp.json();
+            inventoryVariants = result.data?.variants || result.data?.items || result.data || [];
+            renderInventoryTable();
+        } catch (e) {
+            console.error('Failed to load inventory:', e);
+            showInventoryEmpty();
+        }
+    }
+
+    async function loadIngredients() {
+        showIngredientsLoading();
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(CONFIG.MENU.ingredientsByVariant(menuVariantId), { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) throw new Error('Failed');
+            const result = await resp.json();
+            ingredients = result.data?.ingredients || [];
+            renderIngredientsTable();
+        } catch (e) {
+            console.error('Failed to load ingredients:', e);
+            ingredients = [];
+            renderIngredientsTable();
+        }
+    }
+
+    function renderIngredientsTable() {
+        const tbody = document.getElementById('ingredientsBody');
+        const table = document.getElementById('ingredientsTable');
+        const empty = document.getElementById('ingredientsEmpty');
+        const count = document.getElementById('ingredientCount');
+        document.getElementById('ingredientsLoading').classList.add('d-none');
+
+        count.textContent = ingredients.length;
+
+        if (!ingredients.length) {
+            table.classList.add('d-none');
+            empty.classList.remove('d-none');
+            return;
+        }
+
+        empty.classList.add('d-none');
+        table.classList.remove('d-none');
+
+        tbody.innerHTML = ingredients.map(ing => `
+            <tr>
+                <td><strong>${escapeHtml(ing.stock_variant_name || 'Unknown')}</strong></td>
+                <td>${ing.quantity}</td>
+                <td>${ing.is_optional ? '<span class="optional-badge">Optional</span>' : '-'}</td>
+                <td>
+                    <button class="btn btn-outline-danger btn-action" onclick="window.variantIngredientsPage.remove('${ing.id}')" title="Remove">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderInventoryTable() {
+        const tbody = document.getElementById('inventoryBody');
+        const table = document.getElementById('inventoryTable');
+        const empty = document.getElementById('inventoryEmpty');
+        document.getElementById('inventoryLoading').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.add('d-none');
+
+        // Filter by name
+        const nameFilter = document.getElementById('nameFilter').value.toLowerCase().trim();
+        let filtered = inventoryVariants;
+        if (nameFilter) {
+            filtered = inventoryVariants.filter(v => v.name.toLowerCase().includes(nameFilter));
+        }
+
+        // Exclude already added ingredients
+        const addedIds = new Set(ingredients.map(i => i.stock_variant_id));
+        filtered = filtered.filter(v => !addedIds.has(v.id));
+
+        if (!filtered.length) {
+            table.classList.add('d-none');
+            empty.classList.remove('d-none');
+            return;
+        }
+
+        empty.classList.add('d-none');
+        table.classList.remove('d-none');
+
+        tbody.innerHTML = filtered.map(variant => {
+            const subCat = subCategories.find(sc => sc.id === variant.stock_sub_category_id);
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(variant.name)}</strong></td>
+                    <td>${subCat ? escapeHtml(subCat.name) : '-'}</td>
+                    <td><input type="number" class="form-control form-control-sm qty-input" id="qty_${variant.id}" value="1" min="1" step="1"></td>
+                    <td><input type="checkbox" class="form-check-input" id="opt_${variant.id}"></td>
+                    <td>
+                        <button class="btn btn-success btn-action" onclick="window.variantIngredientsPage.add('${variant.id}')" title="Add">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function showIngredientsLoading() {
+        document.getElementById('ingredientsLoading').classList.remove('d-none');
+        document.getElementById('ingredientsEmpty').classList.add('d-none');
+        document.getElementById('ingredientsTable').classList.add('d-none');
+    }
+
+    function showInventoryLoading() {
+        document.getElementById('inventoryLoading').classList.remove('d-none');
+        document.getElementById('selectCategoryState').classList.add('d-none');
+        document.getElementById('inventoryEmpty').classList.add('d-none');
+        document.getElementById('inventoryTable').classList.add('d-none');
+    }
+
+    function showInventoryEmpty() {
+        document.getElementById('inventoryLoading').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.add('d-none');
+        document.getElementById('inventoryEmpty').classList.remove('d-none');
+        document.getElementById('inventoryTable').classList.add('d-none');
+    }
+
+    function showSelectCategory() {
+        document.getElementById('inventoryLoading').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.remove('d-none');
+        document.getElementById('inventoryEmpty').classList.add('d-none');
+        document.getElementById('inventoryTable').classList.add('d-none');
+    }
+
+    async function addIngredient(stockVariantId) {
+        const qtyInput = document.getElementById(`qty_${stockVariantId}`);
+        const optInput = document.getElementById(`opt_${stockVariantId}`);
+        
+        const quantity = parseInt(qtyInput.value) || 1;
+        const isOptional = optInput.checked;
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.ingredients}?menu_variant_id=${menuVariantId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    stock_variant_id: stockVariantId,
+                    quantity: quantity,
+                    is_optional: isOptional
+                })
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.message || 'Failed to add ingredient');
+            }
+
+            Swal.fire({ icon: 'success', title: 'Added!', timer: 1000, showConfirmButton: false });
+            await loadIngredients();
+            renderInventoryTable(); // Re-render to hide added item
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    }
+
+    async function removeIngredient(ingredientId) {
+        const result = await Swal.fire({
+            title: 'Remove?',
+            text: 'Remove this ingredient?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Remove'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.ingredients}/${ingredientId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!resp.ok) throw new Error('Failed to remove ingredient');
+
+            Swal.fire({ icon: 'success', title: 'Removed!', timer: 1000, showConfirmButton: false });
+            await loadIngredients();
+            renderInventoryTable(); // Re-render to show removed item
+        } catch (e) {
+            Swal.fire('Error', e.message, 'error');
+        }
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    window.variantIngredientsPage = {
+        add: addIngredient,
+        remove: removeIngredient
+    };
+
+    init();
+})();
+</script>

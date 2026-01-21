@@ -26,13 +26,13 @@ class AppRouter {
             'menu-sub-categories': { title: 'Sub-Categories', icon: 'fa-layer-group', partial: 'pages/menu/sub-categories.html' },
             'menu-variants': { title: 'Variants', icon: 'fa-hamburger', partial: 'pages/menu/variants.html' },
             'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
+            'variant-ingredients': { title: 'Variant Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/variant-ingredients.html' },
             
             // Inventory
             'inventory-categories': { title: 'Inventory Categories', icon: 'fa-layer-group', partial: 'pages/inventory/categories.html' },
             'inventory-sub-categories': { title: 'Inventory Sub-Categories', icon: 'fa-list', partial: 'pages/inventory/sub-categories.html' },
             'inventory-variants': { title: 'Inventory Variants', icon: 'fa-boxes', partial: 'pages/inventory/variants.html' },
             'stock-count': { title: 'Stock Count', icon: 'fa-warehouse', partial: 'pages/inventory/stock-count.html' },
-            'menu-ingredients': { title: 'Ingredients', icon: 'fa-list-ul', partial: 'pages/menu/ingredients.html' },
             'suppliers': { title: 'Suppliers', icon: 'fa-truck', partial: 'pages/inventory/suppliers.html' },
 
             // Invoices

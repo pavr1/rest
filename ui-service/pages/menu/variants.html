@@ -619,21 +619,19 @@
     }
     
     // === INGREDIENTS MANAGEMENT ===
-    async function openIngredientsModal(menuVariantId) {
+    function openIngredientsModal(menuVariantId) {
         const variant = variants.find(v => v.id === menuVariantId);
         if (!variant) return;
 
-        document.getElementById('ingredientMenuVariantId').value = menuVariantId;
-        document.getElementById('ingredientVariantName').textContent = variant.name;
-        document.getElementById('newIngredientStockSubCategory').value = '';
-        document.getElementById('newIngredientQty').value = '';
-        document.getElementById('newIngredientOptional').checked = false;
-        document.getElementById('newIngredientNotes').value = '';
+        // Get sub-category name
+        const subCategory = subCategories.find(sc => sc.id === variant.sub_category_id);
+        const subCategoryName = variant.sub_category_name || subCategory?.name || '';
 
-        ingredientsModal.show();
-        await loadStockVariants();
-        populateStockVariantsDropdown();
-        await loadIngredients(menuVariantId);
+        // Store variant info and navigate to dedicated ingredients page
+        sessionStorage.setItem('menuVariantId', menuVariantId);
+        sessionStorage.setItem('menuVariantName', variant.name);
+        sessionStorage.setItem('menuVariantSubCategory', subCategoryName);
+        window.app.navigateTo('variant-ingredients');
     }
     
     async function loadIngredients(menuVariantId) {

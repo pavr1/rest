@@ -83,10 +83,6 @@
                 <div class="modal-body">
                     <input type="hidden" id="itemId">
                     <div class="mb-3">
-                        <label class="form-label">Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="itemName" required>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Category <span class="text-danger">*</span></label>
                         <select class="form-select" id="itemCategory" required>
                             <option value="">Select Category</option>
@@ -97,6 +93,10 @@
                         <select class="form-select" id="itemSubCategory" required>
                             <option value="">Select a category first</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="itemName" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -505,7 +505,7 @@
     function goToStockCount(variantId) {
         // Store variant filter and navigate to stock count page
         sessionStorage.setItem('stockCountVariantId', variantId);
-        window.router.navigateTo('stock-count');
+        window.app.navigateTo('stock-count');
     }
 
     window.inventoryVarPage = {

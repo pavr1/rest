@@ -182,7 +182,7 @@
 
     function setupEventListeners() {
         document.getElementById('backToVariantsBtn')?.addEventListener('click', () => {
-            window.router.navigateTo('inventory-variants');
+            window.app.navigateTo('inventory-variants');
         });
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
         document.getElementById('variantFilter')?.addEventListener('change', () => loadData());

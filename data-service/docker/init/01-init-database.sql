@@ -722,11 +722,23 @@ SELECT 'Piña', 'Piña fresca', id FROM stock_sub_categories WHERE name = 'Fruta
 INSERT INTO stock_variants (name, description, stock_sub_category_id)
 SELECT 'Fresa', 'Fresa fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
 INSERT INTO stock_variants (name, description, stock_sub_category_id)
-SELECT 'Plátano', 'Plátano fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
-INSERT INTO stock_variants (name, description, stock_sub_category_id)
 SELECT 'Aguacate', 'Aguacate fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
 INSERT INTO stock_variants (name, description, stock_sub_category_id)
 SELECT 'Tomate', 'Tomate fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Plátano Maduro', 'Platano maduro fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Plátano Verde', 'Platano verde fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Banano', 'Banano fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Manzana', 'Manzana fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pera', 'Pera fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Naranja', 'Naranja fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Uva', 'Uva fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
 
 -- 2. Frutas y Verduras - Verduras
 INSERT INTO stock_variants (name, description, stock_sub_category_id)
