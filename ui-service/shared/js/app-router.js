@@ -130,11 +130,30 @@ class AppRouter {
             toggle.addEventListener('click', () => {
                 const targetId = toggle.dataset.target;
                 const submenu = document.getElementById(targetId);
+                const isExpanding = !toggle.classList.contains('expanded');
                 
-                toggle.classList.toggle('expanded');
-                submenu.classList.toggle('expanded');
-                
-                this.saveMenuState();
+                // Collapse all other menus first, then expand selected after a short delay
+                if (isExpanding) {
+                    document.querySelectorAll('.nav-toggle.expanded').forEach(otherToggle => {
+                        if (otherToggle !== toggle) {
+                            otherToggle.classList.remove('expanded');
+                            const otherSubmenu = document.getElementById(otherToggle.dataset.target);
+                            if (otherSubmenu) otherSubmenu.classList.remove('expanded');
+                        }
+                    });
+                    
+                    // Small delay to let close animation finish before opening
+                    setTimeout(() => {
+                        toggle.classList.add('expanded');
+                        submenu.classList.add('expanded');
+                        this.saveMenuState();
+                    }, 150);
+                } else {
+                    // Just collapse if already expanded
+                    toggle.classList.remove('expanded');
+                    submenu.classList.remove('expanded');
+                    this.saveMenuState();
+                }
             });
         });
         
