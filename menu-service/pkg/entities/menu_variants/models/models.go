@@ -69,11 +69,12 @@ type MenuVariantAvailabilityRequest struct {
 
 // MenuVariantListRequest represents filter parameters for listing menu items
 type MenuVariantListRequest struct {
-	MenuType    *string `json:"menu_type,omitempty"`
-	SubCategoryID   *string `json:"sub_category_id,omitempty"`
-	IsAvailable *bool   `json:"is_available,omitempty"`
-	Page        int     `json:"page"`
-	Limit       int     `json:"limit"`
+	MenuType      *string `json:"menu_type,omitempty"`
+	CategoryID    *string `json:"category_id,omitempty"`
+	SubCategoryID *string `json:"sub_category_id,omitempty"`
+	IsAvailable   *bool   `json:"is_available,omitempty"`
+	Page          int     `json:"page"`
+	Limit         int     `json:"limit"`
 }
 
 // MenuVariantListResponse represents a paginated list of menu items

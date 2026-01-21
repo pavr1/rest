@@ -35,9 +35,15 @@
 <div class="filter-section">
     <div class="row">
         <div class="col-md-4">
+            <label class="form-label">Filter by Category</label>
+            <select class="form-select" id="categoryFilter">
+                <option value="">Select a Category</option>
+            </select>
+        </div>
+        <div class="col-md-4">
             <label class="form-label">Filter by Sub-Category</label>
-            <select class="form-select" id="subCategoryFilter">
-                <option value="">All Sub-Categories</option>
+            <select class="form-select" id="subCategoryFilter" disabled>
+                <option value="">Select a category first</option>
             </select>
         </div>
     </div>
@@ -45,9 +51,14 @@
 
 <div class="data-card">
     <div id="tableContainer">
-        <div class="loading-state" id="loadingState">
+        <div class="loading-state d-none" id="loadingState">
             <div class="spinner-border text-primary mb-3"></div>
             <p>Loading menu variants...</p>
+        </div>
+        <div class="empty-state" id="selectCategoryState">
+            <i class="fas fa-filter"></i>
+            <h5>Select a category to view variants</h5>
+            <p>Use the filters above to browse menu variants.</p>
         </div>
         <div class="empty-state d-none" id="emptyState">
             <i class="fas fa-utensils"></i>
@@ -85,10 +96,14 @@
                     <input type="hidden" id="variantId">
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
-                            <select class="form-select" id="variantSubCategory" required><option value="">Select...</option></select>
+                            <label class="form-label">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="variantCategory" required><option value="">Select...</option></select>
                         </div>
-                        <div class="col-md-8 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Sub-Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="variantSubCategory" required><option value="">Select a category first</option></select>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="variantName" required>
                         </div>
@@ -216,8 +231,8 @@
 <script>
 (function() {
     let variants = [];
+    let categories = [];
     let subCategories = [];
-    let inventorySubCategories = [];
     let stockVariants = [];
     let currentIngredients = [];
     let modal = null;
@@ -228,65 +243,149 @@
         modal = new bootstrap.Modal(document.getElementById('variantModal'));
         ingredientsModal = new bootstrap.Modal(document.getElementById('ingredientsModal'));
         setupEventListeners();
-        loadSubCategories();
-        loadVariants();
+        loadCategories();
+        showSelectCategory();
     }
     
     function initSearchableSelects() {
+        SearchableSelect.init('#categoryFilter', {
+            searchPlaceholderValue: 'Search categories...',
+            placeholderValue: 'Select a Category'
+        });
         SearchableSelect.init('#subCategoryFilter', {
-            searchPlaceholderValue: 'Search sub-categories...'
+            searchPlaceholderValue: 'Search sub-categories...',
+            placeholderValue: 'Select a category first'
+        });
+        SearchableSelect.init('#variantCategory', {
+            searchPlaceholderValue: 'Search categories...',
+            placeholderValue: 'Select Category'
         });
         SearchableSelect.init('#variantSubCategory', {
-            searchPlaceholderValue: 'Search sub-categories...'
+            searchPlaceholderValue: 'Search sub-categories...',
+            placeholderValue: 'Select a category first'
         });
     }
 
     function setupEventListeners() {
         document.getElementById('addVariantBtn')?.addEventListener('click', () => openModal());
         document.getElementById('variantForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveVariant(); });
+        document.getElementById('categoryFilter')?.addEventListener('change', () => {
+            const categoryId = document.getElementById('categoryFilter')?.value;
+            if (categoryId) {
+                loadSubCategoriesForFilter();
+            } else {
+                const subCatSelect = document.getElementById('subCategoryFilter');
+                subCatSelect.innerHTML = '<option value="">Select a category first</option>';
+                subCatSelect.disabled = true;
+                subCategories = [];
+                SearchableSelect.refresh('#subCategoryFilter', { searchPlaceholderValue: 'Select a category first' });
+                SearchableSelect.setEnabled('#subCategoryFilter', false);
+                showSelectCategory();
+            }
+        });
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadVariants());
+        document.getElementById('variantCategory')?.addEventListener('change', () => {
+            document.getElementById('variantSubCategory').value = '';
+            loadSubCategoriesForModal();
+        });
         document.getElementById('addIngredientBtn')?.addEventListener('click', addIngredient);
     }
     
-    async function loadSubCategories() {
+    async function loadCategories() {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.subCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            const resp = await fetch(CONFIG.MENU.categories, { headers: { 'Authorization': `Bearer ${token}` } });
             if (resp.ok) {
                 const result = await resp.json();
-                // Response is wrapped in { success, message, data: { sub_categories, total, page, limit } }
-                subCategories = result.data?.sub_categories || result.sub_categories || [];
-                populateSubCategoryDropdowns();
+                categories = result.data?.categories || result.data || [];
+                
+                // Populate filter dropdown
+                const categoryFilter = document.getElementById('categoryFilter');
+                categoryFilter.innerHTML = '<option value="">Select a Category</option>';
+                categories.forEach(cat => {
+                    categoryFilter.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+                });
+                
+                // Populate modal dropdown
+                const categorySelect = document.getElementById('variantCategory');
+                categorySelect.innerHTML = '<option value="">Select...</option>';
+                categories.forEach(cat => {
+                    categorySelect.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+                });
+                
+                initSearchableSelects();
             }
-        } catch (e) { console.error('Error loading sub-categories:', e); }
+        } catch (e) { console.error('Error loading categories:', e); }
     }
     
-    async function loadStockVariants() {
+    async function loadSubCategoriesForFilter() {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.stockVariants, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (resp.ok) {
-                const result = await resp.json();
-                stockVariants = result.data?.variants || result.data || [];
-                // Stock variants loaded for ingredient creation
-            }
-        } catch (e) { console.error('Error loading stock variants:', e); }
+            const categoryId = document.getElementById('categoryFilter')?.value;
+            if (!categoryId) return;
+            
+            const url = `${CONFIG.MENU.subCategories}?category_id=${categoryId}`;
+            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) return;
+            
+            const result = await resp.json();
+            subCategories = result.data?.sub_categories || result.sub_categories || [];
+            
+            const select = document.getElementById('subCategoryFilter');
+            select.innerHTML = '<option value="">All Sub-Categories</option>';
+            select.disabled = false;
+            
+            subCategories.forEach(sc => {
+                select.innerHTML += `<option value="${sc.id}">${escapeHtml(sc.name)}</option>`;
+            });
+            
+            SearchableSelect.refresh('#subCategoryFilter', { searchPlaceholderValue: 'Search sub-categories...' });
+            SearchableSelect.setEnabled('#subCategoryFilter', true);
+            
+            loadVariants();
+        } catch (e) { console.error('Error loading sub-categories for filter:', e); }
     }
     
-    function populateSubCategoryDropdowns() {
-        const filterSelect = document.getElementById('subCategoryFilter');
-        const modalSelect = document.getElementById('variantSubCategory');
-        filterSelect.innerHTML = '<option value="">All Sub-Categories</option>';
-        modalSelect.innerHTML = '<option value="">Select...</option>';
-
-        subCategories.forEach(sc => {
-            const optionText = escapeHtml(sc.name);
-            filterSelect.innerHTML += `<option value="${sc.id}">${optionText}</option>`;
-            modalSelect.innerHTML += `<option value="${sc.id}">${optionText}</option>`;
-        });
+    async function loadSubCategoriesForModal() {
+        const categoryId = document.getElementById('variantCategory').value;
+        const subCategorySelect = document.getElementById('variantSubCategory');
         
-        // Initialize searchable selects after populating
-        initSearchableSelects();
+        subCategorySelect.innerHTML = '<option value="">Loading...</option>';
+        SearchableSelect.refresh('#variantSubCategory', { searchPlaceholderValue: 'Loading...' });
+        
+        if (!categoryId) {
+            subCategorySelect.innerHTML = '<option value="">Select a category first</option>';
+            SearchableSelect.refresh('#variantSubCategory', { searchPlaceholderValue: 'Select a category first' });
+            return;
+        }
+        
+        try {
+            const token = window.authService.getToken();
+            const resp = await fetch(`${CONFIG.MENU.subCategories}?category_id=${categoryId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!resp.ok) {
+                subCategorySelect.innerHTML = '<option value="">Failed to load</option>';
+                SearchableSelect.refresh('#variantSubCategory');
+                return;
+            }
+            
+            const result = await resp.json();
+            const modalSubCategories = result.data?.sub_categories || result.sub_categories || [];
+            
+            subCategorySelect.innerHTML = '<option value="">Select...</option>';
+            if (modalSubCategories.length === 0) {
+                subCategorySelect.innerHTML = '<option value="">No sub-categories available</option>';
+            } else {
+                modalSubCategories.forEach(sc => {
+                    subCategorySelect.innerHTML += `<option value="${sc.id}">${escapeHtml(sc.name)}</option>`;
+                });
+            }
+            
+            SearchableSelect.refresh('#variantSubCategory', { searchPlaceholderValue: 'Search sub-categories...' });
+        } catch (e) {
+            console.error('Error loading sub-categories for modal:', e);
+            subCategorySelect.innerHTML = '<option value="">Error loading</option>';
+            SearchableSelect.refresh('#variantSubCategory');
+        }
     }
     
     async function loadStockVariants() {
@@ -316,38 +415,40 @@
     }
     
     async function loadVariants() {
-        console.log('Loading variants...');
+        const categoryId = document.getElementById('categoryFilter').value;
+        const subCategoryId = document.getElementById('subCategoryFilter').value;
+        
+        // Don't load if no category is selected
+        if (!categoryId) {
+            showSelectCategory();
+            return;
+        }
+        
         showLoading();
         try {
             const token = window.authService.getToken();
-            console.log('Token:', token ? 'Present' : 'Missing');
-
             if (!token) {
                 throw new Error('No authentication token found');
             }
 
             const params = new URLSearchParams();
-            const subCategoryId = document.getElementById('subCategoryFilter').value;
-            if (subCategoryId) params.append('sub_category_id', subCategoryId);
+            if (subCategoryId) {
+                params.append('sub_category_id', subCategoryId);
+            } else {
+                // If no sub-category selected, filter by category (get all sub-categories for this category)
+                params.append('category_id', categoryId);
+            }
 
             const url = CONFIG.MENU.variants + (params.toString() ? `?${params}` : '');
-            console.log('Fetching from URL:', url);
-
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-            console.log('Response status:', resp.status);
 
             if (!resp.ok) {
                 const errorText = await resp.text();
-                console.error('Response error:', errorText);
                 throw new Error(`HTTP ${resp.status}: ${errorText}`);
             }
 
             const result = await resp.json();
-            console.log('Response data:', result);
-
             variants = result.data?.items || result.data || [];
-            console.log('Parsed variants:', variants);
-
             renderTable();
         } catch (e) {
             console.error('Error loading variants:', e);
@@ -361,6 +462,7 @@
         const table = document.getElementById('dataTable');
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.add('d-none');
         
         if (!variants.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
         
@@ -397,11 +499,26 @@
         }).join('');
     }
     
-    function showLoading() { document.getElementById('loadingState').classList.remove('d-none'); document.getElementById('emptyState').classList.add('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
-    function showEmpty() { document.getElementById('loadingState').classList.add('d-none'); document.getElementById('emptyState').classList.remove('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
+    function showLoading() {
+        document.getElementById('loadingState').classList.remove('d-none');
+        document.getElementById('selectCategoryState').classList.add('d-none');
+        document.getElementById('emptyState').classList.add('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
+    function showEmpty() {
+        document.getElementById('loadingState').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.add('d-none');
+        document.getElementById('emptyState').classList.remove('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
+    function showSelectCategory() {
+        document.getElementById('loadingState').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.remove('d-none');
+        document.getElementById('emptyState').classList.add('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
     
-    function openModal(variant = null) {
-        console.log('Opening modal for variant:', variant?.id);
+    async function openModal(variant = null) {
         editingId = variant?.id || null;
 
         // Safely set modal title
@@ -421,13 +538,31 @@
 
         setValue('variantId', variant?.id);
         setValue('variantName', variant?.name);
-        SearchableSelect.setValue('#variantSubCategory', variant?.sub_category_id || '');
         setValue('variantDescription', variant?.description);
         setValue('variantPrice', variant?.price);
         setValue('variantPrepTime', variant?.preparation_time);
         setValue('variantDisplayOrder', variant?.display_order || 0);
         setChecked('variantAvailable', variant?.is_available !== false);
         setChecked('variantAlcoholic', variant?.is_alcoholic || false);
+
+        // Handle category and sub-category
+        if (variant?.sub_category_id) {
+            // Find the sub-category to get its category_id
+            const subCat = subCategories.find(sc => sc.id === variant.sub_category_id);
+            if (subCat?.category_id) {
+                SearchableSelect.setValue('#variantCategory', subCat.category_id);
+                await loadSubCategoriesForModal();
+                SearchableSelect.setValue('#variantSubCategory', variant.sub_category_id);
+            } else {
+                SearchableSelect.setValue('#variantCategory', '');
+                document.getElementById('variantSubCategory').innerHTML = '<option value="">Select a category first</option>';
+                SearchableSelect.refresh('#variantSubCategory');
+            }
+        } else {
+            SearchableSelect.setValue('#variantCategory', '');
+            document.getElementById('variantSubCategory').innerHTML = '<option value="">Select a category first</option>';
+            SearchableSelect.refresh('#variantSubCategory');
+        }
 
         // Parse menu_types JSON
         let menuTypes = [];

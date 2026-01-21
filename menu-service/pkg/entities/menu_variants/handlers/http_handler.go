@@ -40,6 +40,10 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 		Limit: limit,
 	}
 
+	if categoryID := r.URL.Query().Get("category_id"); categoryID != "" {
+		req.CategoryID = &categoryID
+	}
+
 	if subMenuID := r.URL.Query().Get("sub_category_id"); subMenuID != "" {
 		req.SubCategoryID = &subMenuID
 	}

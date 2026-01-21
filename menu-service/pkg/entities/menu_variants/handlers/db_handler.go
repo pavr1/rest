@@ -48,7 +48,7 @@ func (h *DBHandler) List(req *models.MenuVariantListRequest) (*models.MenuVarian
 	}
 
 	var total int
-	if err := h.db.QueryRow(countQuery, req.SubCategoryID, req.IsAvailable, menuTypesJSON).Scan(&total); err != nil {
+	if err := h.db.QueryRow(countQuery, req.CategoryID, req.SubCategoryID, req.IsAvailable, menuTypesJSON).Scan(&total); err != nil {
 		return nil, fmt.Errorf("failed to count menu items: %w", err)
 	}
 
@@ -57,7 +57,7 @@ func (h *DBHandler) List(req *models.MenuVariantListRequest) (*models.MenuVarian
 		return nil, fmt.Errorf("failed to get list query: %w", err)
 	}
 
-	rows, err := h.db.Query(listQuery, req.SubCategoryID, req.IsAvailable, menuTypesJSON, req.Limit, offset)
+	rows, err := h.db.Query(listQuery, req.CategoryID, req.SubCategoryID, req.IsAvailable, menuTypesJSON, req.Limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list menu items: %w", err)
 	}
