@@ -40,14 +40,6 @@
                 <option value="">All Sub-Categories</option>
             </select>
         </div>
-        <div class="col-md-3">
-            <label class="form-label">Filter by Status</label>
-            <select class="form-select" id="availabilityFilter">
-                <option value="">All Status</option>
-                <option value="true">Available</option>
-                <option value="false">Unavailable</option>
-            </select>
-        </div>
     </div>
 </div>
 
@@ -244,9 +236,6 @@
         SearchableSelect.init('#subCategoryFilter', {
             searchPlaceholderValue: 'Search sub-categories...'
         });
-        SearchableSelect.init('#availabilityFilter', {
-            searchEnabled: false // Simple yes/no, no search needed
-        });
         SearchableSelect.init('#variantSubCategory', {
             searchPlaceholderValue: 'Search sub-categories...'
         });
@@ -256,7 +245,6 @@
         document.getElementById('addVariantBtn')?.addEventListener('click', () => openModal());
         document.getElementById('variantForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveVariant(); });
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadVariants());
-        document.getElementById('availabilityFilter')?.addEventListener('change', () => loadVariants());
         document.getElementById('addIngredientBtn')?.addEventListener('click', addIngredient);
     }
     
@@ -340,9 +328,7 @@
 
             const params = new URLSearchParams();
             const subCategoryId = document.getElementById('subCategoryFilter').value;
-            const avail = document.getElementById('availabilityFilter').value;
             if (subCategoryId) params.append('sub_category_id', subCategoryId);
-            if (avail) params.append('is_available', avail);
 
             const url = CONFIG.MENU.variants + (params.toString() ? `?${params}` : '');
             console.log('Fetching from URL:', url);
@@ -392,6 +378,7 @@
                     <td><span class="type-badge ${itemType}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
                     <td>${variant.sub_category_name || subCategory?.name || '-'}</td>
                     <td class="price">$${(variant.price || 0).toFixed(2)}</td>
+                    <td>$${(variant.cost || 0).toFixed(2)}</td>
                     <td><span class="status-badge ${variant.is_available ? 'available' : 'unavailable'}">${variant.is_available ? 'Available' : 'Unavailable'}</span></td>
                     <td>
                         <div class="action-btns">
