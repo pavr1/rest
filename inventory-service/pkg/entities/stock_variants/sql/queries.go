@@ -50,11 +50,15 @@ func (q *Queries) Get(name string) (string, error) {
 
 // SQL query constants
 const (
-	ListStockVariantsQuery           = "list_stock_variants"
-	CountStockVariantsQuery          = "count_stock_variants"
-	GetStockVariantByIDQuery         = "get_stock_variant_by_id"
-	CreateStockVariantQuery          = "create_stock_variant"
-	UpdateStockVariantQuery          = "update_stock_variant"
-	DeleteStockVariantQuery          = "delete_stock_variant"
-	CheckStockVariantDependenciesQuery = "check_stock_variant_dependencies"
+	ListStockVariantsQuery               = "list_stock_variants"
+	ListStockVariantsBySubCategoryQuery  = "list_stock_variants_by_sub_category"
+	ListStockVariantsByCategoryQuery     = "list_stock_variants_by_category"
+	CountStockVariantsQuery              = "count_stock_variants"
+	CountStockVariantsBySubCategoryQuery = "count_stock_variants_by_sub_category"
+	CountStockVariantsByCategoryQuery    = "count_stock_variants_by_category"
+	GetStockVariantByIDQuery             = "get_stock_variant_by_id"
+	CreateStockVariantQuery              = "create_stock_variant"
+	UpdateStockVariantQuery              = "update_stock_variant"
+	DeleteStockVariantQuery              = "delete_stock_variant"
+	CheckStockVariantDependenciesQuery   = "check_stock_variant_dependencies"
 )

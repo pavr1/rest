@@ -75,6 +75,94 @@ func (h *DBHandler) List(page, limit int) (*models.StockVariantListResponse, err
 	}, nil
 }
 
+// ListByCategory returns a paginated list of stock variants filtered by category
+func (h *DBHandler) ListByCategory(categoryID string, page, limit int) (*models.StockVariantListResponse, error) {
+	offset := (page - 1) * limit
+
+	countQuery, err := h.queries.Get(stockVariantSQL.CountStockVariantsByCategoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get count query: %w", err)
+	}
+
+	var total int
+	if err := h.db.QueryRow(countQuery, categoryID).Scan(&total); err != nil {
+		return nil, fmt.Errorf("failed to count stock variants: %w", err)
+	}
+
+	listQuery, err := h.queries.Get(stockVariantSQL.ListStockVariantsByCategoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list query: %w", err)
+	}
+
+	rows, err := h.db.Query(listQuery, categoryID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list stock variants: %w", err)
+	}
+	defer rows.Close()
+
+	var variants []models.StockVariant
+	for rows.Next() {
+		var variant models.StockVariant
+
+		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan stock variant: %w", err)
+		}
+
+		variants = append(variants, variant)
+	}
+
+	return &models.StockVariantListResponse{
+		Variants: variants,
+		Total:    total,
+		Page:     page,
+		Limit:    limit,
+	}, nil
+}
+
+// ListBySubCategory returns a paginated list of stock variants filtered by sub-category
+func (h *DBHandler) ListBySubCategory(subCategoryID string, page, limit int) (*models.StockVariantListResponse, error) {
+	offset := (page - 1) * limit
+
+	countQuery, err := h.queries.Get(stockVariantSQL.CountStockVariantsBySubCategoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get count query: %w", err)
+	}
+
+	var total int
+	if err := h.db.QueryRow(countQuery, subCategoryID).Scan(&total); err != nil {
+		return nil, fmt.Errorf("failed to count stock variants: %w", err)
+	}
+
+	listQuery, err := h.queries.Get(stockVariantSQL.ListStockVariantsBySubCategoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list query: %w", err)
+	}
+
+	rows, err := h.db.Query(listQuery, subCategoryID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list stock variants: %w", err)
+	}
+	defer rows.Close()
+
+	var variants []models.StockVariant
+	for rows.Next() {
+		var variant models.StockVariant
+
+		if err := rows.Scan(&variant.ID, &variant.Name, &variant.Description, &variant.StockSubCategoryID, &variant.IsActive, &variant.CreatedAt, &variant.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan stock variant: %w", err)
+		}
+
+		variants = append(variants, variant)
+	}
+
+	return &models.StockVariantListResponse{
+		Variants: variants,
+		Total:    total,
+		Page:     page,
+		Limit:    limit,
+	}, nil
+}
+
 // GetByID returns a stock variant by ID
 func (h *DBHandler) GetByID(id string) (*models.StockVariant, error) {
 	query, err := h.queries.Get(stockVariantSQL.GetStockVariantByIDQuery)

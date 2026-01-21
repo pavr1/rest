@@ -199,7 +199,7 @@
         empty.classList.add('d-none');
         table.classList.remove('d-none');
         tbody.innerHTML = items.map(item => {
-            const category = categories.find(c => c.id === item.category_id);
+            const category = categories.find(c => c.id === item.stock_category_id);
             return `
                 <tr>
                     <td><strong>${escapeHtml(item.name)}</strong></td>
@@ -225,7 +225,7 @@
         document.getElementById('modalTitle').textContent = item ? 'Edit Inventory Sub-Category' : 'Add Inventory Sub-Category';
         document.getElementById('itemId').value = item?.id || '';
         document.getElementById('itemName').value = item?.name || '';
-        document.getElementById('itemCategory').value = item?.category_id || '';
+        document.getElementById('itemCategory').value = item?.stock_category_id || '';
         document.getElementById('itemDescription').value = item?.description || '';
         modal.show();
     }

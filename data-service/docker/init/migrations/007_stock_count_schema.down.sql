@@ -1,15 +1,23 @@
 -- Migration 007: Rollback Stock Count Schema Changes
 
--- Remove comments on deprecated columns
-COMMENT ON COLUMN invoice_items.inventory_category_id IS NULL;
-COMMENT ON COLUMN invoice_items.inventory_sub_category_id IS NULL;
-COMMENT ON COLUMN menu_ingredients.stock_sub_category_id IS NULL;
-
 -- Restore dropped columns on stock_variants
 ALTER TABLE stock_variants ADD COLUMN IF NOT EXISTS invoice_id UUID;
-ALTER TABLE stock_variants ADD COLUMN IF NOT EXISTS unit VARCHAR(50) NOT NULL DEFAULT 'Unit';
-ALTER TABLE stock_variants ADD COLUMN IF NOT EXISTS number_of_units DECIMAL(10,2) NOT NULL DEFAULT 1;
-ALTER TABLE stock_variants ADD CONSTRAINT stock_variants_number_of_units_check CHECK (number_of_units > 0);
+ALTER TABLE stock_variants ADD COLUMN IF NOT EXISTS unit VARCHAR(50);
+ALTER TABLE stock_variants ADD COLUMN IF NOT EXISTS number_of_units DECIMAL(10,2);
+
+-- Set defaults for restored columns
+UPDATE stock_variants SET unit = 'Unit' WHERE unit IS NULL;
+UPDATE stock_variants SET number_of_units = 1 WHERE number_of_units IS NULL;
+
+-- Add constraints back
+ALTER TABLE stock_variants ALTER COLUMN unit SET NOT NULL;
+ALTER TABLE stock_variants ALTER COLUMN number_of_units SET NOT NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'stock_variants_number_of_units_check') THEN
+        ALTER TABLE stock_variants ADD CONSTRAINT stock_variants_number_of_units_check CHECK (number_of_units > 0);
+    END IF;
+END $$;
 
 -- Drop new columns
 ALTER TABLE menu_ingredients DROP COLUMN IF EXISTS stock_variant_id;

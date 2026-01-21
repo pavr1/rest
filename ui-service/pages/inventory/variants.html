@@ -23,9 +23,15 @@
 <div class="filter-section">
     <div class="row">
         <div class="col-md-4">
+            <label class="form-label">Filter by Category</label>
+            <select class="form-select" id="categoryFilter">
+                <option value="">Select a Category</option>
+            </select>
+        </div>
+        <div class="col-md-4">
             <label class="form-label">Filter by Sub-Category</label>
-            <select class="form-select" id="subCategoryFilter">
-                <option value="">All Sub-Categories</option>
+            <select class="form-select" id="subCategoryFilter" disabled>
+                <option value="">Select a category first</option>
             </select>
         </div>
     </div>
@@ -37,9 +43,14 @@
         <button class="btn btn-outline-secondary btn-sm" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
     </div>
     <div id="tableContainer">
-        <div class="loading-state" id="loadingState">
+        <div class="loading-state d-none" id="loadingState">
             <div class="spinner-border text-primary mb-3"></div>
             <p>Loading variants...</p>
+        </div>
+        <div class="empty-state" id="selectCategoryState">
+            <i class="fas fa-filter"></i>
+            <h5>Select a category to view variants</h5>
+            <p>Use the filters above to browse inventory variants.</p>
         </div>
         <div class="empty-state d-none" id="emptyState">
             <i class="fas fa-boxes"></i>
@@ -112,18 +123,39 @@
     let modal = null;
     let editingId = null;
 
+    let categories = [];
+
     function init() {
         console.log('Initializing inventory variants page...');
         modal = new bootstrap.Modal(document.getElementById('formModal'));
         setupEventListeners();
         loadCategories();
-        loadSubCategoriesForFilter();
-        loadData();
+        // Don't load sub-categories or data at init - wait for category selection
+        showSelectCategory();
     }
 
     function setupEventListeners() {
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
-        document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
+        document.getElementById('refreshBtn')?.addEventListener('click', () => {
+            const categoryId = document.getElementById('categoryFilter')?.value;
+            if (categoryId) {
+                loadData();
+            }
+        });
+        document.getElementById('categoryFilter')?.addEventListener('change', () => {
+            const categoryId = document.getElementById('categoryFilter')?.value;
+            if (categoryId) {
+                // When category is selected, load sub-categories and load all variants for that category
+                loadSubCategoriesForFilter();
+            } else {
+                // Category deselected - reset sub-category dropdown and show select message
+                const subCatSelect = document.getElementById('subCategoryFilter');
+                subCatSelect.innerHTML = '<option value="">Select a category first</option>';
+                subCatSelect.disabled = true;
+                subCategories = [];
+                showSelectCategory();
+            }
+        });
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => loadData());
         document.getElementById('itemCategory')?.addEventListener('change', () => {
             // Clear any previously selected sub-category when category changes
@@ -149,9 +181,16 @@
             categories = result.data?.categories || result.data?.items || result.data || [];
             console.log('Loaded categories:', categories);
 
+            // Populate category filter
+            const categoryFilter = document.getElementById('categoryFilter');
+            categoryFilter.innerHTML = '<option value="">Select a Category</option>';
+            categories.forEach(cat => {
+                categoryFilter.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            });
+
+            // Populate modal category select
             const categorySelect = document.getElementById('itemCategory');
             categorySelect.innerHTML = '<option value="">Select Category</option>';
-
             categories.forEach(cat => {
                 categorySelect.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
             });
@@ -165,17 +204,29 @@
     async function loadSubCategoriesForFilter() {
         try {
             const token = window.authService.getToken();
-            const resp = await fetch(CONFIG.MENU.inventorySubCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+            const categoryId = document.getElementById('categoryFilter')?.value;
+            
+            if (!categoryId) {
+                return;
+            }
+            
+            const url = `${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`;
+            
+            const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) return;
             const result = await resp.json();
             subCategories = result.data?.sub_categories || result.data?.items || result.data || [];
 
             const select = document.getElementById('subCategoryFilter');
             select.innerHTML = '<option value="">All Sub-Categories</option>';
+            select.disabled = false;
 
             subCategories.forEach(subCat => {
                 select.innerHTML += `<option value="${subCat.id}">${escapeHtml(subCat.name)}</option>`;
             });
+            
+            // Load all variants for this category (no sub-category filter yet)
+            loadData();
         } catch (e) {
             console.error('Failed to load sub-categories for filter:', e);
         }
@@ -227,13 +278,26 @@
     }
 
     async function loadData() {
+        const categoryId = document.getElementById('categoryFilter').value;
+        const subCategoryId = document.getElementById('subCategoryFilter').value;
+        
+        // Don't load if no category is selected
+        if (!categoryId) {
+            showSelectCategory();
+            return;
+        }
+        
         showLoading();
         try {
             const token = window.authService.getToken();
-            const subCategoryId = document.getElementById('subCategoryFilter').value;
             let url = CONFIG.MENU.inventoryVariants;
+            
             if (subCategoryId) {
+                // Filter by specific sub-category
                 url += `?sub_category_id=${subCategoryId}`;
+            } else {
+                // Filter by category (all sub-categories for this category)
+                url += `?category_id=${categoryId}`;
             }
 
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -252,6 +316,7 @@
         const table = document.getElementById('dataTable');
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.add('d-none');
 
         if (!items.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
 
@@ -279,8 +344,24 @@
         }).join('');
     }
 
-    function showLoading() { document.getElementById('loadingState').classList.remove('d-none'); document.getElementById('emptyState').classList.add('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
-    function showEmpty() { document.getElementById('loadingState').classList.add('d-none'); document.getElementById('emptyState').classList.remove('d-none'); document.getElementById('dataTable').classList.add('d-none'); }
+    function showLoading() { 
+        document.getElementById('loadingState').classList.remove('d-none'); 
+        document.getElementById('selectCategoryState').classList.add('d-none');
+        document.getElementById('emptyState').classList.add('d-none'); 
+        document.getElementById('dataTable').classList.add('d-none'); 
+    }
+    function showEmpty() { 
+        document.getElementById('loadingState').classList.add('d-none'); 
+        document.getElementById('selectCategoryState').classList.add('d-none');
+        document.getElementById('emptyState').classList.remove('d-none'); 
+        document.getElementById('dataTable').classList.add('d-none'); 
+    }
+    function showSelectCategory() {
+        document.getElementById('loadingState').classList.add('d-none');
+        document.getElementById('selectCategoryState').classList.remove('d-none');
+        document.getElementById('emptyState').classList.add('d-none');
+        document.getElementById('dataTable').classList.add('d-none');
+    }
 
     function openModal(item = null) {
         editingId = item?.id || null;
@@ -292,7 +373,7 @@
         if (item?.stock_sub_category_id) {
             const subCategory = subCategories.find(sc => sc.id === item.stock_sub_category_id);
             if (subCategory) {
-                document.getElementById('itemCategory').value = subCategory.category_id || '';
+                document.getElementById('itemCategory').value = subCategory.stock_category_id || '';
                 // Load sub-categories for this category, then set the selected one
                 loadSubCategoriesForCategory().then(() => {
                     document.getElementById('itemSubCategory').value = item.stock_sub_category_id;

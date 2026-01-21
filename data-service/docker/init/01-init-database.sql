@@ -105,30 +105,31 @@ CREATE TABLE stock_sub_categories (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 11. Stock Variants
+-- 11. Stock Variants (simplified - actual counts are tracked in stock_count table)
 CREATE TABLE stock_variants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
+    description TEXT,
     stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE CASCADE,
-    invoice_id UUID,  -- FK to outcome_invoices added after that table is created
-    unit VARCHAR(50) NOT NULL,
-    number_of_units DECIMAL(10,2) NOT NULL CHECK (number_of_units > 0),
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 12. Menu Ingredients
+-- 12. Menu Ingredients (links menu items to stock variants they require)
 CREATE TABLE menu_ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     menu_variant_id UUID NOT NULL REFERENCES menu_variants(id) ON DELETE CASCADE,
-    stock_sub_category_id UUID NOT NULL REFERENCES stock_sub_categories(id) ON DELETE RESTRICT,
+    stock_variant_id UUID REFERENCES stock_variants(id) ON DELETE RESTRICT,
     quantity DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
     is_optional BOOLEAN NOT NULL DEFAULT false,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Menu Ingredients index
+CREATE INDEX idx_menu_ingredients_stock_variant ON menu_ingredients(stock_variant_id);
 
 -- 13. Suppliers
 CREATE TABLE suppliers (
@@ -160,16 +161,29 @@ CREATE TABLE outcome_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Add FK constraint to stock_variants now that outcome_invoices exists
-ALTER TABLE stock_variants ADD CONSTRAINT fk_stock_variants_invoice
-    FOREIGN KEY (invoice_id) REFERENCES outcome_invoices(id) ON DELETE SET NULL;
+-- 15. Stock Count (inventory tracking - links stock variants to purchases)
+CREATE TABLE stock_count (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    stock_variant_id UUID NOT NULL REFERENCES stock_variants(id) ON DELETE CASCADE,
+    invoice_id UUID NOT NULL REFERENCES outcome_invoices(id) ON DELETE CASCADE,
+    count DECIMAL(10,2) NOT NULL CHECK (count > 0),
+    unit VARCHAR(50) NOT NULL,
+    purchased_at TIMESTAMP NOT NULL,
+    is_out BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- 15. Invoice Items
+-- Stock Count indexes
+CREATE INDEX idx_stock_count_variant ON stock_count(stock_variant_id);
+CREATE INDEX idx_stock_count_invoice ON stock_count(invoice_id);
+CREATE INDEX idx_stock_count_is_out ON stock_count(stock_variant_id, is_out);
+
+-- 16. Invoice Items
 CREATE TABLE invoice_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_id UUID NOT NULL,
-    inventory_category_id UUID REFERENCES stock_categories(id) ON DELETE SET NULL,
-    inventory_sub_category_id UUID REFERENCES stock_sub_categories(id) ON DELETE SET NULL,
+    stock_variant_id UUID REFERENCES stock_variants(id) ON DELETE SET NULL,
     detail TEXT,
     count DECIMAL(10,2) NOT NULL CHECK (count > 0),
     unit_type VARCHAR(50) NOT NULL,
@@ -181,8 +195,11 @@ CREATE TABLE invoice_items (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Invoice Items index
+CREATE INDEX idx_invoice_items_stock_variant ON invoice_items(stock_variant_id);
 
--- 16. Customer Favorites
+
+-- 17. Customer Favorites
 CREATE TABLE customer_favorites (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
@@ -195,7 +212,7 @@ CREATE TABLE customer_favorites (
 -- BUSINESS LOGIC ENTITIES
 -- =============================================================================
 
--- 17. Staff
+-- 18. Staff
 CREATE TABLE staff (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -515,7 +532,583 @@ INSERT INTO stock_categories (name, description, display_order) VALUES
 ('Limpieza', 'Productos de limpieza', 8),
 ('Envases', 'Platos, vasos, servilletas', 9);
 
+-- Insertar sub-categorías de inventario por defecto
+-- 1. Carnes
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Res', 'Carne de res', id, 1 FROM stock_categories WHERE name = 'Carnes';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Pollo', 'Carne de pollo', id, 2 FROM stock_categories WHERE name = 'Carnes';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Cerdo', 'Carne de cerdo', id, 3 FROM stock_categories WHERE name = 'Carnes';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Pescado', 'Pescados frescos', id, 4 FROM stock_categories WHERE name = 'Carnes';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Mariscos', 'Camarones, pulpo, calamar', id, 5 FROM stock_categories WHERE name = 'Carnes';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Embutidos', 'Jamón, tocino, salchicha', id, 6 FROM stock_categories WHERE name = 'Carnes';
 
+-- 2. Frutas y Verduras
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Frutas', 'Frutas frescas', id, 1 FROM stock_categories WHERE name = 'Frutas y Verduras';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Verduras', 'Verduras frescas', id, 2 FROM stock_categories WHERE name = 'Frutas y Verduras';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Hierbas', 'Hierbas aromáticas', id, 3 FROM stock_categories WHERE name = 'Frutas y Verduras';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Hongos', 'Champiñones y setas', id, 4 FROM stock_categories WHERE name = 'Frutas y Verduras';
+
+-- 3. Bebidas
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Refrescos', 'Bebidas gaseosas', id, 1 FROM stock_categories WHERE name = 'Bebidas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Jugos', 'Jugos naturales y envasados', id, 2 FROM stock_categories WHERE name = 'Bebidas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Cervezas', 'Cervezas nacionales e importadas', id, 3 FROM stock_categories WHERE name = 'Bebidas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Vinos', 'Vinos tintos, blancos y rosados', id, 4 FROM stock_categories WHERE name = 'Bebidas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Licores', 'Destilados y licores', id, 5 FROM stock_categories WHERE name = 'Bebidas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Café y Té', 'Café, té e infusiones', id, 6 FROM stock_categories WHERE name = 'Bebidas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Lácteos', 'Leche y crema', id, 7 FROM stock_categories WHERE name = 'Bebidas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Agua', 'Agua natural y mineral', id, 8 FROM stock_categories WHERE name = 'Bebidas';
+
+-- 4. Salsas
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Salsas Picantes', 'Salsas con chile', id, 1 FROM stock_categories WHERE name = 'Salsas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Aderezos', 'Mayonesa, mostaza, etc.', id, 2 FROM stock_categories WHERE name = 'Salsas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Salsas Base', 'Salsas para cocinar', id, 3 FROM stock_categories WHERE name = 'Salsas';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Aceites y Vinagres', 'Aceites y vinagres', id, 4 FROM stock_categories WHERE name = 'Salsas';
+
+-- 5. Congelados
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Postres Congelados', 'Helados y postres congelados', id, 1 FROM stock_categories WHERE name = 'Congelados';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Precosidos', 'Alimentos precocidos listos para freír', id, 2 FROM stock_categories WHERE name = 'Congelados';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Hielo', 'Hielo para bebidas', id, 3 FROM stock_categories WHERE name = 'Congelados';
+
+-- 6. Alacena
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Granos', 'Arroz, frijoles, lentejas', id, 1 FROM stock_categories WHERE name = 'Alacena';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Pastas', 'Pastas secas', id, 2 FROM stock_categories WHERE name = 'Alacena';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Harinas', 'Harinas y almidones', id, 3 FROM stock_categories WHERE name = 'Alacena';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Enlatados', 'Productos en lata', id, 4 FROM stock_categories WHERE name = 'Alacena';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Especias', 'Especias y condimentos', id, 5 FROM stock_categories WHERE name = 'Alacena';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Azúcares', 'Azúcar y endulzantes', id, 6 FROM stock_categories WHERE name = 'Alacena';
+
+-- 7. Repostería
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Postres', 'Pasteles y postres preparados', id, 1 FROM stock_categories WHERE name = 'Repostería';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Helados', 'Helados y toppings', id, 2 FROM stock_categories WHERE name = 'Repostería';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Chocolates', 'Chocolates y coberturas', id, 3 FROM stock_categories WHERE name = 'Repostería';
+
+-- 8. Limpieza
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Detergentes', 'Jabones y detergentes', id, 1 FROM stock_categories WHERE name = 'Limpieza';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Desinfectantes', 'Cloro y desinfectantes', id, 2 FROM stock_categories WHERE name = 'Limpieza';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Utensilios Limpieza', 'Esponjas, trapos, etc.', id, 3 FROM stock_categories WHERE name = 'Limpieza';
+
+-- 9. Envases
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Desechables', 'Platos y vasos desechables', id, 1 FROM stock_categories WHERE name = 'Envases';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Papel', 'Servilletas, papel, etc.', id, 2 FROM stock_categories WHERE name = 'Envases';
+INSERT INTO stock_sub_categories (name, description, stock_category_id, display_order)
+SELECT 'Bolsas', 'Bolsas para llevar', id, 3 FROM stock_categories WHERE name = 'Envases';
+
+-- Insertar variantes de inventario por defecto
+-- 1. Carnes - Res
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Filete', 'Filete de res', id FROM stock_sub_categories WHERE name = 'Res';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Bistec', 'Bistec de res', id FROM stock_sub_categories WHERE name = 'Res';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Molida', 'Carne molida de res', id FROM stock_sub_categories WHERE name = 'Res';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Costilla', 'Costilla de res', id FROM stock_sub_categories WHERE name = 'Res';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Arrachera', 'Arrachera de res', id FROM stock_sub_categories WHERE name = 'Res';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pulpa', 'Pulpa de res', id FROM stock_sub_categories WHERE name = 'Res';
+
+-- 1. Carnes - Pollo
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pechuga', 'Pechuga de pollo', id FROM stock_sub_categories WHERE name = 'Pollo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Muslo', 'Muslo de pollo', id FROM stock_sub_categories WHERE name = 'Pollo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Ala', 'Ala de pollo', id FROM stock_sub_categories WHERE name = 'Pollo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pierna', 'Pierna de pollo', id FROM stock_sub_categories WHERE name = 'Pollo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Cuarto', 'Cuarto de pollo', id FROM stock_sub_categories WHERE name = 'Pollo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Entero', 'Pollo entero', id FROM stock_sub_categories WHERE name = 'Pollo';
+
+-- 1. Carnes - Cerdo
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Costilla Cerdo', 'Costilla de cerdo', id FROM stock_sub_categories WHERE name = 'Cerdo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chuleta', 'Chuleta de cerdo', id FROM stock_sub_categories WHERE name = 'Cerdo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pierna Cerdo', 'Pierna de cerdo', id FROM stock_sub_categories WHERE name = 'Cerdo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Lomo', 'Lomo de cerdo', id FROM stock_sub_categories WHERE name = 'Cerdo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Posta', 'Posta de cerdo', id FROM stock_sub_categories WHERE name = 'Cerdo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chicharrón', 'Chicharrón de cerdo', id FROM stock_sub_categories WHERE name = 'Cerdo';
+
+-- 1. Carnes - Pescado
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Tilapia', 'Tilapia fresca', id FROM stock_sub_categories WHERE name = 'Pescado';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salmón', 'Salmón fresco', id FROM stock_sub_categories WHERE name = 'Pescado';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Mero', 'Mero fresco', id FROM stock_sub_categories WHERE name = 'Pescado';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Trucha', 'Trucha fresca', id FROM stock_sub_categories WHERE name = 'Pescado';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Corvina', 'Corvina fresca', id FROM stock_sub_categories WHERE name = 'Pescado';
+
+-- 1. Carnes - Mariscos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Camarón', 'Camarón fresco', id FROM stock_sub_categories WHERE name = 'Mariscos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pulpo', 'Pulpo fresco', id FROM stock_sub_categories WHERE name = 'Mariscos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Calamar', 'Calamar fresco', id FROM stock_sub_categories WHERE name = 'Mariscos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Mejillón', 'Mejillón fresco', id FROM stock_sub_categories WHERE name = 'Mariscos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Almeja', 'Almeja fresca', id FROM stock_sub_categories WHERE name = 'Mariscos';
+
+-- 1. Carnes - Embutidos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jamón', 'Jamón de cerdo', id FROM stock_sub_categories WHERE name = 'Embutidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Tocino', 'Tocino de cerdo', id FROM stock_sub_categories WHERE name = 'Embutidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salchicha', 'Salchicha', id FROM stock_sub_categories WHERE name = 'Embutidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chorizo', 'Chorizo', id FROM stock_sub_categories WHERE name = 'Embutidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Longaniza', 'Longaniza', id FROM stock_sub_categories WHERE name = 'Embutidos';
+
+-- 2. Frutas y Verduras - Frutas
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Limón', 'Limón fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Naranja', 'Naranja fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Mango', 'Mango fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Piña', 'Piña fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Fresa', 'Fresa fresca', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Plátano', 'Plátano fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Aguacate', 'Aguacate fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Tomate', 'Tomate fresco', id FROM stock_sub_categories WHERE name = 'Frutas';
+
+-- 2. Frutas y Verduras - Verduras
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Cebolla', 'Cebolla fresca', id FROM stock_sub_categories WHERE name = 'Verduras';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Ajo', 'Ajo fresco', id FROM stock_sub_categories WHERE name = 'Verduras';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chile', 'Chile fresco', id FROM stock_sub_categories WHERE name = 'Verduras';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Lechuga', 'Lechuga fresca', id FROM stock_sub_categories WHERE name = 'Verduras';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Zanahoria', 'Zanahoria fresca', id FROM stock_sub_categories WHERE name = 'Verduras';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Papa', 'Papa fresca', id FROM stock_sub_categories WHERE name = 'Verduras';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pepino', 'Pepino fresco', id FROM stock_sub_categories WHERE name = 'Verduras';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Brócoli', 'Brócoli fresco', id FROM stock_sub_categories WHERE name = 'Verduras';
+
+-- 2. Frutas y Verduras - Hierbas
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Cilantro', 'Cilantro fresco', id FROM stock_sub_categories WHERE name = 'Hierbas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Perejil', 'Perejil fresco', id FROM stock_sub_categories WHERE name = 'Hierbas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Orégano', 'Orégano fresco', id FROM stock_sub_categories WHERE name = 'Hierbas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Romero', 'Romero fresco', id FROM stock_sub_categories WHERE name = 'Hierbas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Albahaca', 'Albahaca fresca', id FROM stock_sub_categories WHERE name = 'Hierbas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Menta', 'Menta fresca', id FROM stock_sub_categories WHERE name = 'Hierbas';
+
+-- 2. Frutas y Verduras - Hongos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Champiñón', 'Champiñón fresco', id FROM stock_sub_categories WHERE name = 'Hongos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Portobello', 'Portobello fresco', id FROM stock_sub_categories WHERE name = 'Hongos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Shiitake', 'Shiitake fresco', id FROM stock_sub_categories WHERE name = 'Hongos';
+
+-- 3. Bebidas - Refrescos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Coca-Cola', 'Coca-Cola', id FROM stock_sub_categories WHERE name = 'Refrescos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Sprite', 'Sprite', id FROM stock_sub_categories WHERE name = 'Refrescos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Fanta', 'Fanta naranja', id FROM stock_sub_categories WHERE name = 'Refrescos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Fresca', 'Fresca toronja', id FROM stock_sub_categories WHERE name = 'Refrescos';
+
+-- 3. Bebidas - Jugos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jugo Naranja', 'Jugo de naranja', id FROM stock_sub_categories WHERE name = 'Jugos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jugo Manzana', 'Jugo de manzana', id FROM stock_sub_categories WHERE name = 'Jugos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jugo Uva', 'Jugo de uva', id FROM stock_sub_categories WHERE name = 'Jugos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jugo Toronja', 'Jugo de toronja', id FROM stock_sub_categories WHERE name = 'Jugos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jugo Arándano', 'Jugo de arándano', id FROM stock_sub_categories WHERE name = 'Jugos';
+
+-- 3. Bebidas - Cervezas (Costa Rican beers)
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Imperial', 'Cerveza Imperial', id FROM stock_sub_categories WHERE name = 'Cervezas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pilsen', 'Cerveza Pilsen', id FROM stock_sub_categories WHERE name = 'Cervezas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Bavaria', 'Cerveza Bavaria', id FROM stock_sub_categories WHERE name = 'Cervezas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Rock Ice', 'Cerveza Rock Ice', id FROM stock_sub_categories WHERE name = 'Cervezas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Libertas', 'Cerveza Libertas', id FROM stock_sub_categories WHERE name = 'Cervezas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Corona', 'Cerveza Corona', id FROM stock_sub_categories WHERE name = 'Cervezas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Heineken', 'Cerveza Heineken', id FROM stock_sub_categories WHERE name = 'Cervezas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Stella Artois', 'Cerveza Stella Artois', id FROM stock_sub_categories WHERE name = 'Cervezas';
+
+-- 3. Bebidas - Vinos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vino Tinto Casa', 'Vino tinto de la casa', id FROM stock_sub_categories WHERE name = 'Vinos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vino Blanco Casa', 'Vino blanco de la casa', id FROM stock_sub_categories WHERE name = 'Vinos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vino Rosado', 'Vino rosado', id FROM stock_sub_categories WHERE name = 'Vinos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vino Espumoso', 'Vino espumoso', id FROM stock_sub_categories WHERE name = 'Vinos';
+
+-- 3. Bebidas - Licores
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Tequila', 'Tequila', id FROM stock_sub_categories WHERE name = 'Licores';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Ron', 'Ron', id FROM stock_sub_categories WHERE name = 'Licores';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vodka', 'Vodka', id FROM stock_sub_categories WHERE name = 'Licores';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Whisky', 'Whisky', id FROM stock_sub_categories WHERE name = 'Licores';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Ginebra', 'Ginebra', id FROM stock_sub_categories WHERE name = 'Licores';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Guaro', 'Guaro Cacique', id FROM stock_sub_categories WHERE name = 'Licores';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Brandy', 'Brandy', id FROM stock_sub_categories WHERE name = 'Licores';
+
+-- 3. Bebidas - Café y Té
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Café Molido', 'Café molido', id FROM stock_sub_categories WHERE name = 'Café y Té';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Café Grano', 'Café en grano', id FROM stock_sub_categories WHERE name = 'Café y Té';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Té Negro', 'Té negro', id FROM stock_sub_categories WHERE name = 'Café y Té';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Té Verde', 'Té verde', id FROM stock_sub_categories WHERE name = 'Café y Té';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Manzanilla', 'Té de manzanilla', id FROM stock_sub_categories WHERE name = 'Café y Té';
+
+-- 3. Bebidas - Lácteos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Leche Entera', 'Leche entera', id FROM stock_sub_categories WHERE name = 'Lácteos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Leche Deslactosada', 'Leche deslactosada', id FROM stock_sub_categories WHERE name = 'Lácteos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Leche Semi Descremada', 'Leche semi descremada', id FROM stock_sub_categories WHERE name = 'Lácteos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Natilla', 'Natilla', id FROM stock_sub_categories WHERE name = 'Lácteos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Queso Crema', 'Queso crema', id FROM stock_sub_categories WHERE name = 'Lácteos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Queso', 'Queso', id FROM stock_sub_categories WHERE name = 'Lácteos';
+
+-- 3. Bebidas - Agua
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Agua Natural', 'Agua natural', id FROM stock_sub_categories WHERE name = 'Agua';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Agua Mineral', 'Agua mineral con gas', id FROM stock_sub_categories WHERE name = 'Agua';
+
+-- 4. Salsas - Salsas Picantes
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salsa Lizano', 'Salsa Lizano', id FROM stock_sub_categories WHERE name = 'Salsas Picantes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Tabasco', 'Salsa Tabasco', id FROM stock_sub_categories WHERE name = 'Salsas Picantes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Sriracha', 'Salsa Sriracha', id FROM stock_sub_categories WHERE name = 'Salsas Picantes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chilero', 'Chilero', id FROM stock_sub_categories WHERE name = 'Salsas Picantes';
+
+-- 4. Salsas - Aderezos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Mayonesa', 'Mayonesa', id FROM stock_sub_categories WHERE name = 'Aderezos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Mostaza', 'Mostaza', id FROM stock_sub_categories WHERE name = 'Aderezos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Ketchup', 'Ketchup', id FROM stock_sub_categories WHERE name = 'Aderezos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Ranch', 'Aderezo Ranch', id FROM stock_sub_categories WHERE name = 'Aderezos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vinagreta', 'Vinagreta', id FROM stock_sub_categories WHERE name = 'Aderezos';
+
+-- 4. Salsas - Salsas Base
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salsa Soya', 'Salsa de soya', id FROM stock_sub_categories WHERE name = 'Salsas Base';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salsa Inglesa', 'Salsa inglesa', id FROM stock_sub_categories WHERE name = 'Salsas Base';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salsa Teriyaki', 'Salsa teriyaki', id FROM stock_sub_categories WHERE name = 'Salsas Base';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salsa BBQ', 'Salsa BBQ', id FROM stock_sub_categories WHERE name = 'Salsas Base';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Salsa Búfalo', 'Salsa búfalo', id FROM stock_sub_categories WHERE name = 'Salsas Base';
+
+-- 4. Salsas - Aceites y Vinagres
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Aceite Oliva', 'Aceite de oliva', id FROM stock_sub_categories WHERE name = 'Aceites y Vinagres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Aceite Vegetal', 'Aceite vegetal', id FROM stock_sub_categories WHERE name = 'Aceites y Vinagres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vinagre Blanco', 'Vinagre blanco', id FROM stock_sub_categories WHERE name = 'Aceites y Vinagres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vinagre Balsámico', 'Vinagre balsámico', id FROM stock_sub_categories WHERE name = 'Aceites y Vinagres';
+
+-- 5. Congelados - Postres Congelados
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Helado Vainilla', 'Helado de vainilla', id FROM stock_sub_categories WHERE name = 'Postres Congelados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Helado Chocolate', 'Helado de chocolate', id FROM stock_sub_categories WHERE name = 'Postres Congelados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Helado Fresa', 'Helado de fresa', id FROM stock_sub_categories WHERE name = 'Postres Congelados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Paletas', 'Paletas de hielo', id FROM stock_sub_categories WHERE name = 'Postres Congelados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Churros Congelados', 'Churros congelados', id FROM stock_sub_categories WHERE name = 'Postres Congelados';
+
+-- 5. Congelados - Precosidos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Papas Fritas', 'Papas fritas congeladas', id FROM stock_sub_categories WHERE name = 'Precosidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Nuggets', 'Nuggets de pollo', id FROM stock_sub_categories WHERE name = 'Precosidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Dedos de Pollo', 'Dedos de pollo empanizados', id FROM stock_sub_categories WHERE name = 'Precosidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Dedos de Queso', 'Dedos de queso', id FROM stock_sub_categories WHERE name = 'Precosidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Aros de Cebolla', 'Aros de cebolla congelados', id FROM stock_sub_categories WHERE name = 'Precosidos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jalapeño Poppers', 'Jalapeño poppers', id FROM stock_sub_categories WHERE name = 'Precosidos';
+
+-- 5. Congelados - Hielo
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Hielo Cubo', 'Hielo en cubos', id FROM stock_sub_categories WHERE name = 'Hielo';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Hielo Frappe', 'Hielo para frappe', id FROM stock_sub_categories WHERE name = 'Hielo';
+
+-- 6. Alacena - Granos
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Arroz Blanco', 'Arroz blanco', id FROM stock_sub_categories WHERE name = 'Granos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Arroz Integral', 'Arroz integral', id FROM stock_sub_categories WHERE name = 'Granos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Frijol Negro', 'Frijol negro', id FROM stock_sub_categories WHERE name = 'Granos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Frijol Rojo', 'Frijol rojo', id FROM stock_sub_categories WHERE name = 'Granos';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Lenteja', 'Lenteja', id FROM stock_sub_categories WHERE name = 'Granos';
+
+-- 6. Alacena - Pastas
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Spaghetti', 'Pasta spaghetti', id FROM stock_sub_categories WHERE name = 'Pastas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Penne', 'Pasta penne', id FROM stock_sub_categories WHERE name = 'Pastas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Macarrón', 'Pasta macarrón', id FROM stock_sub_categories WHERE name = 'Pastas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Lasaña', 'Pasta para lasaña', id FROM stock_sub_categories WHERE name = 'Pastas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Fideo', 'Fideo', id FROM stock_sub_categories WHERE name = 'Pastas';
+
+-- 6. Alacena - Harinas
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Harina Trigo', 'Harina de trigo', id FROM stock_sub_categories WHERE name = 'Harinas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Maicena', 'Maicena', id FROM stock_sub_categories WHERE name = 'Harinas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pan Molido', 'Pan molido', id FROM stock_sub_categories WHERE name = 'Harinas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Harina Hotcakes', 'Harina para hotcakes', id FROM stock_sub_categories WHERE name = 'Harinas';
+
+-- 6. Alacena - Enlatados
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Atún', 'Atún enlatado', id FROM stock_sub_categories WHERE name = 'Enlatados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Sardina', 'Sardina enlatada', id FROM stock_sub_categories WHERE name = 'Enlatados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Elote Enlatado', 'Elote enlatado', id FROM stock_sub_categories WHERE name = 'Enlatados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Champiñones Enlatados', 'Champiñones enlatados', id FROM stock_sub_categories WHERE name = 'Enlatados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chiles Enlatados', 'Chiles enlatados', id FROM stock_sub_categories WHERE name = 'Enlatados';
+
+-- 6. Alacena - Especias
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Sal', 'Sal de mesa', id FROM stock_sub_categories WHERE name = 'Especias';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pimienta', 'Pimienta negra', id FROM stock_sub_categories WHERE name = 'Especias';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Comino', 'Comino', id FROM stock_sub_categories WHERE name = 'Especias';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Paprika', 'Paprika', id FROM stock_sub_categories WHERE name = 'Especias';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Canela', 'Canela', id FROM stock_sub_categories WHERE name = 'Especias';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Consomé', 'Consomé de pollo', id FROM stock_sub_categories WHERE name = 'Especias';
+
+-- 6. Alacena - Azúcares
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Azúcar', 'Azúcar blanca', id FROM stock_sub_categories WHERE name = 'Azúcares';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Miel', 'Miel de abeja', id FROM stock_sub_categories WHERE name = 'Azúcares';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jarabe', 'Jarabe de maple', id FROM stock_sub_categories WHERE name = 'Azúcares';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Splenda', 'Endulzante Splenda', id FROM stock_sub_categories WHERE name = 'Azúcares';
+
+-- 7. Repostería - Postres
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pastel Chocolate', 'Pastel de chocolate', id FROM stock_sub_categories WHERE name = 'Postres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pastel Tres Leches', 'Pastel tres leches', id FROM stock_sub_categories WHERE name = 'Postres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Cheesecake', 'Cheesecake', id FROM stock_sub_categories WHERE name = 'Postres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Flan', 'Flan', id FROM stock_sub_categories WHERE name = 'Postres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Churros', 'Churros', id FROM stock_sub_categories WHERE name = 'Postres';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Brownie', 'Brownie', id FROM stock_sub_categories WHERE name = 'Postres';
+
+-- 7. Repostería - Helados
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Helado Vainilla Repos', 'Helado de vainilla', id FROM stock_sub_categories WHERE name = 'Helados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Helado Chocolate Repos', 'Helado de chocolate', id FROM stock_sub_categories WHERE name = 'Helados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Helado Fresa Repos', 'Helado de fresa', id FROM stock_sub_categories WHERE name = 'Helados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Helado Cookies', 'Helado cookies and cream', id FROM stock_sub_categories WHERE name = 'Helados';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Sorbete', 'Sorbete de frutas', id FROM stock_sub_categories WHERE name = 'Helados';
+
+-- 7. Repostería - Chocolates
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chocolate Amargo', 'Chocolate amargo', id FROM stock_sub_categories WHERE name = 'Chocolates';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chocolate Leche', 'Chocolate con leche', id FROM stock_sub_categories WHERE name = 'Chocolates';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Cocoa', 'Cocoa en polvo', id FROM stock_sub_categories WHERE name = 'Chocolates';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Nutella', 'Nutella', id FROM stock_sub_categories WHERE name = 'Chocolates';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Chispas Chocolate', 'Chispas de chocolate', id FROM stock_sub_categories WHERE name = 'Chocolates';
+
+-- 8. Limpieza - Detergentes
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Lavatrastes', 'Jabón lavatrastes', id FROM stock_sub_categories WHERE name = 'Detergentes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Jabón Manos', 'Jabón para manos', id FROM stock_sub_categories WHERE name = 'Detergentes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Detergente Multiusos', 'Detergente multiusos', id FROM stock_sub_categories WHERE name = 'Detergentes';
+
+-- 8. Limpieza - Desinfectantes
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Cloro', 'Cloro', id FROM stock_sub_categories WHERE name = 'Desinfectantes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Pino', 'Desinfectante de pino', id FROM stock_sub_categories WHERE name = 'Desinfectantes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Antibacterial', 'Antibacterial', id FROM stock_sub_categories WHERE name = 'Desinfectantes';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Sanitizante', 'Sanitizante', id FROM stock_sub_categories WHERE name = 'Desinfectantes';
+
+-- 8. Limpieza - Utensilios Limpieza
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Esponja', 'Esponja para trastes', id FROM stock_sub_categories WHERE name = 'Utensilios Limpieza';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Fibra', 'Fibra para limpiar', id FROM stock_sub_categories WHERE name = 'Utensilios Limpieza';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Trapo', 'Trapo de limpieza', id FROM stock_sub_categories WHERE name = 'Utensilios Limpieza';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Guantes', 'Guantes de limpieza', id FROM stock_sub_categories WHERE name = 'Utensilios Limpieza';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Bolsa Basura', 'Bolsa para basura', id FROM stock_sub_categories WHERE name = 'Utensilios Limpieza';
+
+-- 9. Envases - Desechables
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Plato Foam', 'Plato de foam', id FROM stock_sub_categories WHERE name = 'Desechables';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Vaso Foam', 'Vaso de foam', id FROM stock_sub_categories WHERE name = 'Desechables';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Contenedor', 'Contenedor para llevar', id FROM stock_sub_categories WHERE name = 'Desechables';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Cubiertos Desechables', 'Cubiertos desechables', id FROM stock_sub_categories WHERE name = 'Desechables';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Popote', 'Popote', id FROM stock_sub_categories WHERE name = 'Desechables';
+
+-- 9. Envases - Papel
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Servilleta', 'Servilletas', id FROM stock_sub_categories WHERE name = 'Papel';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Papel Aluminio', 'Papel aluminio', id FROM stock_sub_categories WHERE name = 'Papel';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Papel Encerado', 'Papel encerado', id FROM stock_sub_categories WHERE name = 'Papel';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Film Plástico', 'Film plástico', id FROM stock_sub_categories WHERE name = 'Papel';
+
+-- 9. Envases - Bolsas
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Bolsa Llevar', 'Bolsa para llevar', id FROM stock_sub_categories WHERE name = 'Bolsas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Bolsa Basura Grande', 'Bolsa de basura grande', id FROM stock_sub_categories WHERE name = 'Bolsas';
+INSERT INTO stock_variants (name, description, stock_sub_category_id)
+SELECT 'Bolsa Basura Chica', 'Bolsa de basura chica', id FROM stock_sub_categories WHERE name = 'Bolsas';
 
 -- Insertar mesas de ejemplo
 INSERT INTO tables (table_number, capacity, status) VALUES
@@ -627,6 +1220,9 @@ CREATE TRIGGER update_stock_sub_categories_updated_at BEFORE UPDATE ON stock_sub
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_stock_variants_updated_at BEFORE UPDATE ON stock_variants
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_stock_count_updated_at BEFORE UPDATE ON stock_count
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers

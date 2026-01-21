@@ -50,11 +50,13 @@ func (q *Queries) Get(name string) (string, error) {
 
 // SQL query constants
 const (
-	ListStockSubCategoriesQuery           = "list_stock_sub_categories"
-	CountStockSubCategoriesQuery          = "count_stock_sub_categories"
-	GetStockSubCategoryByIDQuery          = "get_stock_sub_category_by_id"
-	CreateStockSubCategoryQuery           = "create_stock_sub_category"
-	UpdateStockSubCategoryQuery           = "update_stock_sub_category"
-	DeleteStockSubCategoryQuery           = "delete_stock_sub_category"
-	CheckStockSubCategoryDependenciesQuery = "check_stock_sub_category_dependencies"
+	ListStockSubCategoriesQuery             = "list_stock_sub_categories"
+	ListStockSubCategoriesByCategoryQuery   = "list_stock_sub_categories_by_category"
+	CountStockSubCategoriesQuery            = "count_stock_sub_categories"
+	CountStockSubCategoriesByCategoryQuery  = "count_stock_sub_categories_by_category"
+	GetStockSubCategoryByIDQuery            = "get_stock_sub_category_by_id"
+	CreateStockSubCategoryQuery             = "create_stock_sub_category"
+	UpdateStockSubCategoryQuery             = "update_stock_sub_category"
+	DeleteStockSubCategoryQuery             = "delete_stock_sub_category"
+	CheckStockSubCategoryDependenciesQuery  = "check_stock_sub_category_dependencies"
 )

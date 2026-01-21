@@ -32,10 +32,24 @@ func (h *HTTPHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	if limit < 1 || limit > 100 {
-		limit = 20
+		limit = 100
 	}
 
-	response, err := h.dbHandler.List(page, limit)
+	// Check if filtering by sub-category or category
+	subCategoryID := r.URL.Query().Get("sub_category_id")
+	categoryID := r.URL.Query().Get("category_id")
+
+	var response *models.StockVariantListResponse
+	var err error
+
+	if subCategoryID != "" {
+		response, err = h.dbHandler.ListBySubCategory(subCategoryID, page, limit)
+	} else if categoryID != "" {
+		response, err = h.dbHandler.ListByCategory(categoryID, page, limit)
+	} else {
+		response, err = h.dbHandler.List(page, limit)
+	}
+
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to list stock variants")
 		sharedHttp.SendErrorResponse(w, http.StatusInternalServerError, "Failed to list stock variants")

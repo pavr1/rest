@@ -79,6 +79,54 @@ func (h *DBHandler) List(page, limit int) (*models.StockSubCategoryListResponse,
 	}, nil
 }
 
+// ListByCategory returns a paginated list of stock sub-categories filtered by category
+func (h *DBHandler) ListByCategory(categoryID string, page, limit int) (*models.StockSubCategoryListResponse, error) {
+	offset := (page - 1) * limit
+
+	countQuery, err := h.queries.Get(stockSubCategorySQL.CountStockSubCategoriesByCategoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get count query: %w", err)
+	}
+
+	var total int
+	if err := h.db.QueryRow(countQuery, categoryID).Scan(&total); err != nil {
+		return nil, fmt.Errorf("failed to count stock sub-categories: %w", err)
+	}
+
+	listQuery, err := h.queries.Get(stockSubCategorySQL.ListStockSubCategoriesByCategoryQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get list query: %w", err)
+	}
+
+	rows, err := h.db.Query(listQuery, categoryID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list stock sub-categories: %w", err)
+	}
+	defer rows.Close()
+
+	var subCategories []models.StockSubCategory
+	for rows.Next() {
+		var subCat models.StockSubCategory
+		var description sql.NullString
+
+		if err := rows.Scan(&subCat.ID, &subCat.Name, &description, &subCat.StockCategoryID, &subCat.DisplayOrder, &subCat.IsActive, &subCat.CreatedAt, &subCat.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan stock sub-category: %w", err)
+		}
+
+		if description.Valid {
+			subCat.Description = &description.String
+		}
+		subCategories = append(subCategories, subCat)
+	}
+
+	return &models.StockSubCategoryListResponse{
+		SubCategories: subCategories,
+		Total:         total,
+		Page:          page,
+		Limit:         limit,
+	}, nil
+}
+
 // GetByID returns a stock sub-category by ID
 func (h *DBHandler) GetByID(id string) (*models.StockSubCategory, error) {
 	query, err := h.queries.Get(stockSubCategorySQL.GetStockSubCategoryByIDQuery)
