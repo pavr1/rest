@@ -382,13 +382,12 @@
     function populateInvoiceItems(items) {
         const container = document.getElementById('invoiceItemsContainer');
         
-        // Destroy all existing Choices instances
-        itemChoicesInstances.forEach(c => {
-            if (c.instance) {
-                try { c.instance.destroy(); } catch (e) { /* ignore */ }
+        // Destroy all existing Choices instances for stock variant selects
+        container.querySelectorAll('.item-stock-variant').forEach(select => {
+            if (select.id) {
+                SearchableSelect.destroy('#' + select.id);
             }
         });
-        itemChoicesInstances = [];
         
         container.innerHTML = '';
 
