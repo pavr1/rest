@@ -183,10 +183,18 @@
                     <th>Type</th>
                     <th>Name</th>
                     <th>Qty</th>
+                    <th>Portion Cost</th>
                     <th width="50"></th>
                 </tr>
             </thead>
             <tbody id="ingredientsBody"></tbody>
+            <tfoot id="ingredientsFooter" class="d-none">
+                <tr class="table-light fw-bold">
+                    <td colspan="3" class="text-end">Total (stock ingredients):</td>
+                    <td id="ingredientsTotalCost">0</td>
+                    <td></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 </div>
@@ -472,6 +480,7 @@
         empty.classList.add('d-none');
         table.classList.remove('d-none');
 
+        let totalCost = 0;
         tbody.innerHTML = ingredients.map(ing => {
             const isStock = ing.stock_variant_id != null;
             const typeIcon = isStock 
@@ -479,12 +488,19 @@
                 : '<i class="fas fa-utensils text-warning" title="Menu"></i>';
             const name = isStock ? ing.stock_variant_name : ing.menu_sub_category_name;
             const optionalBadge = ing.is_optional ? ' <span class="optional-badge">Opt</span>' : '';
-            
+            const avgCost = isStock && ing.stock_variant_avg_cost != null && ing.stock_variant_avg_cost > 0
+                ? ing.stock_variant_avg_cost
+                : null;
+            const portionCostDisplay = avgCost != null ? `₡${Number(avgCost).toFixed(2)}` : '-';
+            if (avgCost != null) {
+                totalCost += avgCost * ing.quantity;
+            }
             return `
                 <tr>
                     <td>${typeIcon}</td>
                     <td><strong>${escapeHtml(name || 'Unknown')}</strong>${optionalBadge}</td>
                     <td>${ing.quantity}</td>
+                    <td>${portionCostDisplay}</td>
                     <td>
                         <button class="btn btn-outline-danger btn-action btn-sm" onclick="window.variantIngredientsPage.remove('${ing.id}')" title="Remove">
                             <i class="fas fa-times"></i>
@@ -493,6 +509,15 @@
                 </tr>
             `;
         }).join('');
+
+        const footer = document.getElementById('ingredientsFooter');
+        const totalEl = document.getElementById('ingredientsTotalCost');
+        if (ingredients.length > 0 && totalEl) {
+            totalEl.textContent = `₡${totalCost.toFixed(2)}`;
+            if (footer) footer.classList.remove('d-none');
+        } else if (footer) {
+            footer.classList.add('d-none');
+        }
 
         // Re-render the appropriate table to update available items
         if (isMenuMode) {

@@ -11,6 +11,7 @@ type MenuIngredient struct {
 	MenuVariantID         string    `json:"menu_variant_id"`
 	StockVariantID        *string   `json:"stock_variant_id,omitempty"`
 	StockVariantName      string    `json:"stock_variant_name,omitempty"`
+	StockVariantAvgCost   *float64  `json:"stock_variant_avg_cost,omitempty"` // from stock_variants.avg_cost (cost per portion)
 	MenuSubCategoryID     *string   `json:"menu_sub_category_id,omitempty"`
 	MenuSubCategoryName   string    `json:"menu_sub_category_name,omitempty"`
 	Quantity              float64   `json:"quantity"`

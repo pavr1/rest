@@ -1,9 +1,10 @@
--- Get ingredients for a specific menu variant
+-- Get ingredients for a specific menu variant (includes stock_variants.avg_cost for portion cost)
 SELECT
     mi.id,
     mi.menu_variant_id,
     mi.stock_variant_id,
     sv.name as stock_variant_name,
+    sv.avg_cost as stock_variant_avg_cost,
     mi.menu_sub_category_id,
     msc.name as menu_sub_category_name,
     mi.quantity,

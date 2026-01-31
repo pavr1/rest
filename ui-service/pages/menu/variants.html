@@ -112,17 +112,23 @@
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Price <span class="text-danger">*</span></label>
-                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="variantPrice" step="0.01" min="0" required></div>
+                            <label class="form-label">Price</label>
+                            <div id="variantPriceDisplay" class="form-control-plaintext text-muted small">Add ingredients to calculate</div>
+                            <input type="hidden" id="variantPrice" value="0">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Prep Time (min)</label>
                             <input type="number" class="form-control" id="variantPrepTime" min="0">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-3 d-none" id="variantDisplayOrderWrap">
                             <label class="form-label">Display Order</label>
                             <input type="number" class="form-control" id="variantDisplayOrder" value="0" min="0">
                         </div>
+                    </div>
+                    <div class="mb-3" id="addIngredientsRow">
+                        <button type="button" class="btn btn-outline-success" id="addIngredientsBtn" disabled title="Save variant first to add ingredients">
+                            <i class="fas fa-list-ul me-2"></i>Add ingredients
+                        </button>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Menu Types <span class="text-danger">*</span></label>
@@ -263,6 +269,12 @@
     function setupEventListeners() {
         document.getElementById('addVariantBtn')?.addEventListener('click', () => openModal());
         document.getElementById('variantForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveVariant(); });
+        document.getElementById('addIngredientsBtn')?.addEventListener('click', () => {
+            if (editingId) {
+                openIngredientsModal(editingId);
+                if (modal) modal.hide();
+            }
+        });
         document.getElementById('categoryFilter')?.addEventListener('change', () => {
             const categoryId = document.getElementById('categoryFilter')?.value;
             document.getElementById('nameFilter').value = '';
@@ -507,9 +519,14 @@
         setValue('variantId', variant?.id);
         setValue('variantName', variant?.name);
         setValue('variantDescription', variant?.description);
-        setValue('variantPrice', variant?.price);
+        const priceVal = variant?.price != null && variant.price > 0 ? variant.price : 0;
+        setValue('variantPrice', priceVal);
+        const priceDisplayEl = document.getElementById('variantPriceDisplay');
+        if (priceDisplayEl) priceDisplayEl.textContent = priceVal > 0 ? `₡${Number(priceVal).toFixed(2)} (from ingredients)` : 'Add ingredients to calculate';
         setValue('variantPrepTime', variant?.preparation_time);
         setValue('variantDisplayOrder', variant?.display_order || 0);
+        const addIngredientsBtn = document.getElementById('addIngredientsBtn');
+        if (addIngredientsBtn) addIngredientsBtn.disabled = !variant?.id;
         setChecked('variantAvailable', variant?.is_available !== false);
         setChecked('variantAlcoholic', variant?.is_alcoholic || false);
 

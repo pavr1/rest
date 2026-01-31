@@ -267,12 +267,14 @@ func (h *DBHandler) GetByMenuVariant(menuVariantID string) ([]models.MenuIngredi
 	for rows.Next() {
 		var ingredient models.MenuIngredient
 		var notes, stockVariantID, stockVariantName, menuSubCategoryID, menuSubCategoryName sql.NullString
+		var stockVariantAvgCost sql.NullFloat64
 
 		err := rows.Scan(
 			&ingredient.ID,
 			&ingredient.MenuVariantID,
 			&stockVariantID,
 			&stockVariantName,
+			&stockVariantAvgCost,
 			&menuSubCategoryID,
 			&menuSubCategoryName,
 			&ingredient.Quantity,
@@ -291,6 +293,9 @@ func (h *DBHandler) GetByMenuVariant(menuVariantID string) ([]models.MenuIngredi
 		if stockVariantID.Valid {
 			ingredient.StockVariantID = &stockVariantID.String
 			ingredient.StockVariantName = stockVariantName.String
+			if stockVariantAvgCost.Valid {
+				ingredient.StockVariantAvgCost = &stockVariantAvgCost.Float64
+			}
 		}
 		if menuSubCategoryID.Valid {
 			ingredient.MenuSubCategoryID = &menuSubCategoryID.String
