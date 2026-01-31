@@ -272,6 +272,9 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("DB_NAME", "barrest_db")
 		config.Set("DB_SSL_MODE", "disable")
 		config.Set("LOG_LEVEL", "info")
+		// Cost calculation settings
+		config.Set("DEFAULT_PORTION_GRAMS", "120")   // Default portion size in grams for cost calculation
+		config.Set("DEFAULT_EARNING_MARGIN", "30.0") // Default earning margin percentage (30%)
 	case "inventory":
 		config.Set("SERVER_PORT", "8084")
 		config.Set("SERVER_HOST", "0.0.0.0")

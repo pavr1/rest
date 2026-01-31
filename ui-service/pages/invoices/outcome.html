@@ -243,12 +243,13 @@
 
     function populateStockVariantDropdown(itemDiv, uniqueId) {
         const variantSelect = itemDiv.querySelector('.item-stock-variant');
+        const detailInput = itemDiv.querySelector('.item-detail');
         variantSelect.innerHTML = '<option value="">Select Stock Variant</option>';
 
         stockVariants.forEach(variant => {
             const option = document.createElement('option');
             option.value = variant.id;
-            option.textContent = variant.name + (variant.description ? ` - ${variant.description}` : '');
+            option.textContent = variant.name;
             variantSelect.appendChild(option);
         });
         
@@ -256,6 +257,17 @@
         SearchableSelect.init('#' + uniqueId, {
             searchPlaceholderValue: 'Search stock variants...',
             allowHTML: true
+        });
+        
+        // Add change event to populate detail with description
+        variantSelect.addEventListener('change', (e) => {
+            const selectedId = e.target.value;
+            if (selectedId) {
+                const variant = stockVariants.find(v => v.id === selectedId);
+                if (variant && variant.description && !detailInput.value) {
+                    detailInput.value = variant.description;
+                }
+            }
         });
     }
 

@@ -52,7 +52,7 @@ func NewHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPH
 	}
 
 	// Create outcome invoice handlers
-	outcomeInvoiceDBHandler, err := outcomeInvoiceHandlers.NewDBHandler(db, logger)
+	outcomeInvoiceDBHandler, err := outcomeInvoiceHandlers.NewDBHandler(db, cfg, logger)
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("failed to create outcome invoice handler: %w", err)

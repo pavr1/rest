@@ -63,6 +63,7 @@
                     <th>Name</th>
                     <th>Description</th>
                     <th>Sub-Category</th>
+                    <th>Avg Cost</th>
                     <th>Status</th>
                     <th width="120">Actions</th>
                 </tr>
@@ -371,11 +372,15 @@
             const statusBadge = item.is_active !== false 
                 ? '<span class="badge bg-success">Active</span>' 
                 : '<span class="badge bg-secondary">Inactive</span>';
+            const avgCost = item.avg_cost != null && item.avg_cost > 0 
+                ? `$${item.avg_cost.toFixed(2)}` 
+                : '-';
             return `
                 <tr>
                     <td><strong>${escapeHtml(item.name)}</strong></td>
                     <td>${escapeHtml(item.description || '-')}</td>
                     <td>${subCategory ? escapeHtml(subCategory.name) : '-'}</td>
+                    <td>${avgCost}</td>
                     <td>${statusBadge}</td>
                     <td>
                         <div class="action-btns">

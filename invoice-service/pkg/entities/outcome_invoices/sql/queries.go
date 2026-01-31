@@ -57,4 +57,5 @@ const (
 	ListOutcomeInvoices  = "list_outcome_invoices"
 	CountOutcomeInvoices = "count_outcome_invoices"
 	CreateStockCount     = "create_stock_count"
+	UpdateAvgCost        = "update_avg_cost"
 )
