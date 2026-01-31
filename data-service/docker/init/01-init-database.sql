@@ -529,6 +529,7 @@ INSERT INTO menu_categories (name, display_order, description) VALUES
 ('Postres', 3, 'Dulces y postres'),
 ('Bebidas', 4, 'Cervezas, cocteles, vinos y refrescos'),
 ('Bocadillos', 5, 'Snacks de bar');
+('Ensaladas', 6, 'Ensaladas y ensaladas'),
 
 -- Insertar categorías de inventario por defecto
 INSERT INTO stock_categories (name, description, display_order) VALUES
