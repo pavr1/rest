@@ -53,8 +53,8 @@
         <table class="data-table d-none" id="dataTable">
             <thead>
                 <tr>
-                    <th>Name</th>
                     <th>Category</th>
+                    <th>Name</th>
                     <th>Description</th>
                     <th>Variants</th>
                     <th width="120">Actions</th>
@@ -233,8 +233,8 @@
             const category = categories.find(c => c.id === item.stock_category_id);
             return `
                 <tr>
-                    <td><strong>${escapeHtml(item.name)}</strong></td>
                     <td>${category ? escapeHtml(category.name) : '-'}</td>
+                    <td><strong>${escapeHtml(item.name)}</strong></td>
                     <td>${escapeHtml(item.description || '-')}</td>
                     <td>${item.variant_count || 0}</td>
                     <td>
