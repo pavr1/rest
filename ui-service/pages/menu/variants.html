@@ -448,7 +448,7 @@
                     <td>${escapeHtml(variant.sub_category_name || subCategory?.name || '-')}</td>
                     <td><strong>${escapeHtml(variant.name)}</strong></td>
                     <td class="price">$${(variant.price || 0).toFixed(2)}</td>
-                    <td>$${(variant.cost || 0).toFixed(2)}</td>
+                    <td>${variant.item_cost != null ? '$' + Number(variant.item_cost).toFixed(2) : '—'}</td>
                     <td><span class="status-badge ${variant.is_available ? 'available' : 'unavailable'}">${variant.is_available ? 'Available' : 'Unavailable'}</span></td>
                     <td>
                         <div class="action-btns">
