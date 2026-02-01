@@ -12,11 +12,21 @@
     .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
     .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .filter-section { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius); }
 </style>
 
 <div class="page-header">
     <h1 class="page-title">Inventory Categories</h1>
     <button class="btn btn-primary" id="addBtn"><i class="fas fa-plus me-2"></i>Add Category</button>
+</div>
+
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label">Search by Name</label>
+            <input type="text" class="form-control" id="nameFilter" placeholder="Type to search...">
+        </div>
+    </div>
 </div>
 
 <div class="data-card">
@@ -93,6 +103,11 @@
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
         document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
         document.getElementById('dataForm')?.addEventListener('submit', (e) => { e.preventDefault(); save(); });
+        let nameFilterTimeout = null;
+        document.getElementById('nameFilter')?.addEventListener('input', () => {
+            clearTimeout(nameFilterTimeout);
+            nameFilterTimeout = setTimeout(() => renderTable(), 300);
+        });
     }
     
     async function loadData() {
@@ -126,13 +141,18 @@
         const table = document.getElementById('dataTable');
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
-        
-        if (!items.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
-        
+
+        const nameFilter = (document.getElementById('nameFilter')?.value || '').toLowerCase().trim();
+        const filtered = nameFilter
+            ? items.filter(item => (item.name || '').toLowerCase().includes(nameFilter))
+            : items;
+
+        if (!filtered.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+
         empty.classList.add('d-none');
         table.classList.remove('d-none');
         // pvillalobos - fetch number of sub-categories and rename column to sub-categories
-        tbody.innerHTML = items.map(item => `
+        tbody.innerHTML = filtered.map(item => `
             <tr>
                 <td><strong>${escapeHtml(item.name)}</strong></td>
                 <td>${escapeHtml(item.description || '-')}</td>
