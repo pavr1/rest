@@ -136,19 +136,19 @@
         modal = new bootstrap.Modal(document.getElementById('formModal'));
         setupEventListeners();
         loadCategories();
-        // Don't load sub-categories or data at init - wait for category selection
-        showSelectCategory();
+        loadSubCategoriesForFilter();
+        loadData();
     }
 
     function initSearchableSelects() {
         // Initialize filter dropdowns
         categoryFilterChoice = SearchableSelect.init('#categoryFilter', {
             searchPlaceholderValue: 'Search categories...',
-            placeholderValue: 'Select a Category'
+            placeholderValue: 'All Categories'
         });
         subCategoryFilterChoice = SearchableSelect.init('#subCategoryFilter', {
             searchPlaceholderValue: 'Search sub-categories...',
-            placeholderValue: 'Select a category first'
+            placeholderValue: 'All Sub-Categories'
         });
         
         // Initialize modal dropdowns  
@@ -164,25 +164,10 @@
 
     function setupEventListeners() {
         document.getElementById('addBtn')?.addEventListener('click', () => openModal());
-        document.getElementById('refreshBtn')?.addEventListener('click', () => {
-            const categoryId = document.getElementById('categoryFilter')?.value;
-            if (categoryId) {
-                loadData();
-            }
-        });
+        document.getElementById('refreshBtn')?.addEventListener('click', () => loadData());
         document.getElementById('categoryFilter')?.addEventListener('change', () => {
-            const categoryId = document.getElementById('categoryFilter')?.value;
-            document.getElementById('nameFilter').value = ''; // Clear name filter
-            if (categoryId) {
-                // When category is selected, load sub-categories and load all variants for that category
-                loadSubCategoriesForFilter();
-            } else {
-                // Category deselected - reset sub-category dropdown and show select message
-                subCategories = [];
-                SearchableSelect.setChoices('#subCategoryFilter', [{ value: '', label: 'Select a category first', selected: true }]);
-                SearchableSelect.setEnabled('#subCategoryFilter', false);
-                showSelectCategory();
-            }
+            document.getElementById('nameFilter').value = '';
+            loadSubCategoriesForFilter();
         });
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => {
             document.getElementById('nameFilter').value = ''; // Clear name filter
@@ -220,9 +205,9 @@
             categories = result.data?.categories || result.data?.items || result.data || [];
             console.log('Loaded categories:', categories);
 
-            // Populate category filter
+            // Populate category filter (default: All Categories)
             const categoryFilter = document.getElementById('categoryFilter');
-            categoryFilter.innerHTML = '<option value="">Select a Category</option>';
+            categoryFilter.innerHTML = '<option value="">All Categories</option>';
             categories.forEach(cat => {
                 categoryFilter.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
             });
@@ -247,28 +232,22 @@
         try {
             const token = window.authService.getToken();
             const categoryId = document.getElementById('categoryFilter')?.value;
-            
-            if (!categoryId) {
-                return;
+            let url = CONFIG.MENU.inventorySubCategories;
+            if (categoryId) {
+                url += `?category_id=${encodeURIComponent(categoryId)}`;
             }
-            
-            const url = `${CONFIG.MENU.inventorySubCategories}?category_id=${categoryId}`;
-            
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!resp.ok) return;
             const result = await resp.json();
             subCategories = result.data?.sub_categories || result.data?.items || result.data || [];
 
-            // Build choices array for Choices.js
             const choices = [{ value: '', label: 'All Sub-Categories', selected: true }];
             subCategories.forEach(subCat => {
                 choices.push({ value: subCat.id, label: subCat.name });
             });
-            
             SearchableSelect.setChoices('#subCategoryFilter', choices);
             SearchableSelect.setEnabled('#subCategoryFilter', true);
-            
-            // Load all variants for this category (no sub-category filter yet)
+
             loadData();
         } catch (e) {
             console.error('Failed to load sub-categories for filter:', e);
@@ -319,24 +298,19 @@
     async function loadData() {
         const categoryId = document.getElementById('categoryFilter').value;
         const subCategoryId = document.getElementById('subCategoryFilter').value;
-        
-        // Don't load if no category is selected
-        if (!categoryId) {
-            showSelectCategory();
-            return;
-        }
-        
+
         showLoading();
         try {
             const token = window.authService.getToken();
             let url = CONFIG.MENU.inventoryVariants;
-            
+            const params = [];
             if (subCategoryId) {
-                // Filter by specific sub-category
-                url += `?sub_category_id=${subCategoryId}`;
-            } else {
-                // Filter by category (all sub-categories for this category)
-                url += `?category_id=${categoryId}`;
+                params.push(`sub_category_id=${encodeURIComponent(subCategoryId)}`);
+            } else if (categoryId) {
+                params.push(`category_id=${encodeURIComponent(categoryId)}`);
+            }
+            if (params.length) {
+                url += `?${params.join('&')}`;
             }
 
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });

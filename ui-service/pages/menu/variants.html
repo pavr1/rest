@@ -248,13 +248,13 @@
         ingredientsModal = new bootstrap.Modal(document.getElementById('ingredientsModal'));
         setupEventListeners();
         loadCategories();
-        showSelectCategory();
+        loadVariants();
     }
     
     function initSearchableSelects() {
         SearchableSelect.init('#categoryFilter', {
             searchPlaceholderValue: 'Search categories...',
-            placeholderValue: 'Select a Category'
+            placeholderValue: 'All Categories'
         });
         SearchableSelect.init('#variantCategory', {
             searchPlaceholderValue: 'Search categories...',
@@ -276,14 +276,8 @@
             }
         });
         document.getElementById('categoryFilter')?.addEventListener('change', () => {
-            const categoryId = document.getElementById('categoryFilter')?.value;
             document.getElementById('nameFilter').value = '';
-            if (categoryId) {
-                loadVariants();
-            } else {
-                subCategories = [];
-                showSelectCategory();
-            }
+            loadVariants();
         });
         // Debounce name filter
         let nameFilterTimeout = null;
@@ -306,9 +300,9 @@
                 const result = await resp.json();
                 categories = result.data?.categories || result.data || [];
                 
-                // Populate filter dropdown
+                // Populate filter dropdown (default: All Categories)
                 const categoryFilter = document.getElementById('categoryFilter');
-                categoryFilter.innerHTML = '<option value="">Select a Category</option>';
+                categoryFilter.innerHTML = '<option value="">All Categories</option>';
                 categories.forEach(cat => {
                     categoryFilter.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
                 });
@@ -396,13 +390,7 @@
     
     async function loadVariants() {
         const categoryId = document.getElementById('categoryFilter').value;
-        
-        // Don't load if no category is selected
-        if (!categoryId) {
-            showSelectCategory();
-            return;
-        }
-        
+
         showLoading();
         try {
             const token = window.authService.getToken();
@@ -410,10 +398,11 @@
                 throw new Error('No authentication token found');
             }
 
-            const params = new URLSearchParams();
-            params.append('category_id', categoryId);
+            let url = CONFIG.MENU.variants;
+            if (categoryId) {
+                url += `?category_id=${encodeURIComponent(categoryId)}`;
+            }
 
-            const url = CONFIG.MENU.variants + `?${params}`;
             const resp = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
 
             if (!resp.ok) {

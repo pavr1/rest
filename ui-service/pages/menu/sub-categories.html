@@ -35,6 +35,10 @@
                 <option value="">All Categories</option>
             </select>
         </div>
+        <div class="col-md-4">
+            <label class="form-label">Search by Name</label>
+            <input type="text" class="form-control" id="nameFilter" placeholder="Type to search...">
+        </div>
     </div>
 </div>
 
@@ -145,6 +149,11 @@
         document.getElementById('addSubCategoryBtn')?.addEventListener('click', () => openModal());
         document.getElementById('subCategoryForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveSubCategory(); });
         document.getElementById('categoryFilter')?.addEventListener('change', () => loadSubCategories());
+        let nameFilterTimeout = null;
+        document.getElementById('nameFilter')?.addEventListener('input', () => {
+            clearTimeout(nameFilterTimeout);
+            nameFilterTimeout = setTimeout(() => renderTable(), 300);
+        });
     }
     
     async function loadCategories() {
@@ -204,11 +213,16 @@
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
 
-        if (!subCategories.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+        const nameFilter = (document.getElementById('nameFilter')?.value || '').toLowerCase().trim();
+        const filtered = nameFilter
+            ? subCategories.filter(sc => (sc.name || '').toLowerCase().includes(nameFilter))
+            : subCategories;
+
+        if (!filtered.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
 
         empty.classList.add('d-none');
         table.classList.remove('d-none');
-        tbody.innerHTML = subCategories.map(sc => {
+        tbody.innerHTML = filtered.map(sc => {
             const cat = categories.find(c => c.id === sc.category_id);
             const typeIcon = sc.item_type === 'bar' ? 'fa-cocktail' : 'fa-utensils';
             const typeLabel = sc.item_type === 'bar' ? 'Bar' : 'Kitchen';

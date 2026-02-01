@@ -15,6 +15,7 @@
     .status-badge { padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 500; }
     .status-badge.active { background: #d4edda; color: #155724; }
     .status-badge.inactive { background: #f8d7da; color: #721c24; }
+    .filter-section { margin-bottom: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius); }
 </style>
 
 <div class="page-header">
@@ -22,6 +23,15 @@
     <button class="btn btn-primary" id="addCategoryBtn">
         <i class="fas fa-plus me-2"></i>Add Category
     </button>
+</div>
+
+<div class="filter-section">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label">Search by Name</label>
+            <input type="text" class="form-control" id="nameFilter" placeholder="Type to search...">
+        </div>
+    </div>
 </div>
 
 <div class="data-card">
@@ -97,8 +107,12 @@
     
     function setupEventListeners() {
         document.getElementById('addCategoryBtn')?.addEventListener('click', () => openModal());
-        document.getElementById('refreshBtn')?.addEventListener('click', () => loadCategories());
         document.getElementById('categoryForm')?.addEventListener('submit', (e) => { e.preventDefault(); saveCategory(); });
+        let nameFilterTimeout = null;
+        document.getElementById('nameFilter')?.addEventListener('input', () => {
+            clearTimeout(nameFilterTimeout);
+            nameFilterTimeout = setTimeout(() => renderTable(), 300);
+        });
     }
     
     async function loadCategories() {
@@ -122,14 +136,19 @@
         const table = document.getElementById('dataTable');
         const empty = document.getElementById('emptyState');
         document.getElementById('loadingState').classList.add('d-none');
-        
-        if (!categories.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
-        
+
+        const nameFilter = (document.getElementById('nameFilter')?.value || '').toLowerCase().trim();
+        const filtered = nameFilter
+            ? categories.filter(cat => (cat.name || '').toLowerCase().includes(nameFilter))
+            : categories;
+
+        if (!filtered.length) { table.classList.add('d-none'); empty.classList.remove('d-none'); return; }
+
         empty.classList.add('d-none');
         table.classList.remove('d-none');
         // pvillalobos - delete display order
         // pvillalobos - fetch number of sub-categories and rename column to sub-categories
-        tbody.innerHTML = categories.map(cat => `
+        tbody.innerHTML = filtered.map(cat => `
             <tr>
                 <td><strong>${escapeHtml(cat.name)}</strong></td>
                 <td>${escapeHtml(cat.description || '-')}</td>
