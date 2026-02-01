@@ -631,11 +631,13 @@
 
         tbody.innerHTML = filtered.map(subCat => {
             const category = menuCategories.find(c => c.id === subCat.category_id);
+            const itemCost = subCat.item_cost != null && subCat.item_cost > 0 ? subCat.item_cost : null;
+            const portionCostDisplay = itemCost != null ? `₡${Number(itemCost).toFixed(2)}` : '-';
             return `
                 <tr>
                     <td><strong>${escapeHtml(subCat.name)}</strong></td>
                     <td>${category ? escapeHtml(category.name) : '-'}</td>
-                    <td>-</td>
+                    <td>${portionCostDisplay}</td>
                     <td><input type="number" class="form-control form-control-sm qty-input" id="menu_qty_${subCat.id}" value="1" min="1" step="1"></td>
                     <td><input type="checkbox" class="form-check-input" id="menu_opt_${subCat.id}"></td>
                     <td>

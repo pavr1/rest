@@ -3,6 +3,8 @@ package sql
 import (
 	"embed"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
 )
 
 //go:embed scripts/*.sql
@@ -10,24 +12,28 @@ var sqlScripts embed.FS
 
 // Query names
 const (
-	ListMenuIngredientsQuery          = "list_menu_ingredients"
-	GetMenuIngredientByIDQuery        = "get_menu_ingredient_by_id"
-	CreateMenuIngredientQuery         = "create_menu_ingredient"
-	UpdateMenuIngredientQuery         = "update_menu_ingredient"
-	DeleteMenuIngredientQuery         = "delete_menu_ingredient"
-	GetIngredientsByMenuVariantQuery       = "get_ingredients_by_menu_variant"
-	RecalculateMenuVariantItemCostQuery   = "recalculate_menu_variant_item_cost"
+	ListMenuIngredientsQuery                         = "list_menu_ingredients"
+	GetMenuIngredientByIDQuery                       = "get_menu_ingredient_by_id"
+	CreateMenuIngredientQuery                        = "create_menu_ingredient"
+	UpdateMenuIngredientQuery                        = "update_menu_ingredient"
+	DeleteMenuIngredientQuery                        = "delete_menu_ingredient"
+	GetIngredientsByMenuVariantQuery                 = "get_ingredients_by_menu_variant"
+	RecalculateMenuVariantItemCostQuery              = "recalculate_menu_variant_item_cost"
+	RecalculateMenuSubCategoryItemCostByVariantQuery = "recalculate_menu_sub_category_item_cost_by_variant"
+	GetMenuVariantIDsByStockVariantQuery             = "get_menu_variant_ids_by_stock_variant"
 )
 
 // Queries holds all loaded SQL queries
 type Queries struct {
 	queries map[string]string
+	logger  *logrus.Logger
 }
 
 // LoadQueries loads all SQL queries from embedded files
-func LoadQueries() (*Queries, error) {
+func LoadQueries(logger *logrus.Logger) (*Queries, error) {
 	q := &Queries{
 		queries: make(map[string]string),
+		logger:  logger,
 	}
 
 	files := []string{
@@ -38,6 +44,8 @@ func LoadQueries() (*Queries, error) {
 		"delete_menu_ingredient.sql",
 		"get_ingredients_by_menu_variant.sql",
 		"recalculate_menu_variant_item_cost.sql",
+		"recalculate_menu_sub_category_item_cost_by_variant.sql",
+		"get_menu_variant_ids_by_stock_variant.sql",
 	}
 
 	for _, file := range files {
@@ -57,6 +65,7 @@ func LoadQueries() (*Queries, error) {
 func (q *Queries) Get(name string) (string, error) {
 	query, ok := q.queries[name]
 	if !ok {
+		q.logger.WithError(fmt.Errorf("query not found: %s", name)).Error("Query not found")
 		return "", fmt.Errorf("query not found: %s", name)
 	}
 	return query, nil

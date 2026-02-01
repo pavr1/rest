@@ -13,6 +13,7 @@ type MenuSubCategory struct {
 	CategoryName string    `json:"category_name,omitempty"`
 	ItemType     string    `json:"item_type"`
 	DisplayOrder int       `json:"display_order"`
+	ItemCost     float64   `json:"item_cost"`
 	IsActive     bool      `json:"is_active"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`

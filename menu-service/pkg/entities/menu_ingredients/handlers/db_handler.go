@@ -21,7 +21,7 @@ type DBHandler struct {
 
 // NewDBHandler creates a new menu ingredient database handler
 func NewDBHandler(db *sharedDb.DbHandler, logger *logrus.Logger) (*DBHandler, error) {
-	queries, err := menuIngredientSQL.LoadQueries()
+	queries, err := menuIngredientSQL.LoadQueries(logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load SQL queries: %w", err)
 	}
@@ -188,6 +188,9 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 	if err := h.updateMenuVariantItemCostTx(tx, menuVariantID); err != nil {
 		return nil, fmt.Errorf("failed to update menu variant item cost: %w", err)
 	}
+	if err := h.updateMenuSubCategoryItemCostByVariantTx(tx, menuVariantID); err != nil {
+		return nil, fmt.Errorf("failed to update menu sub-category item cost: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -241,6 +244,9 @@ func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*
 	if err := h.updateMenuVariantItemCostTx(tx, ingredient.MenuVariantID); err != nil {
 		return nil, fmt.Errorf("failed to update menu variant item cost: %w", err)
 	}
+	if err := h.updateMenuSubCategoryItemCostByVariantTx(tx, ingredient.MenuVariantID); err != nil {
+		return nil, fmt.Errorf("failed to update menu sub-category item cost: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -272,6 +278,9 @@ func (h *DBHandler) Delete(id string) error {
 	if err := h.updateMenuVariantItemCostTx(tx, menuVariantID); err != nil {
 		return fmt.Errorf("failed to update menu variant item cost: %w", err)
 	}
+	if err := h.updateMenuSubCategoryItemCostByVariantTx(tx, menuVariantID); err != nil {
+		return fmt.Errorf("failed to update menu sub-category item cost: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
@@ -286,6 +295,67 @@ func (h *DBHandler) updateMenuVariantItemCostTx(tx *sql.Tx, menuVariantID string
 	}
 	_, err = tx.Exec(query, menuVariantID)
 	return err
+}
+
+// updateMenuSubCategoryItemCostByVariantTx recalculates menu_sub_categories.item_cost (AVG of variants in that sub_category) within tx
+func (h *DBHandler) updateMenuSubCategoryItemCostByVariantTx(tx *sql.Tx, menuVariantID string) error {
+	query, err := h.queries.Get(menuIngredientSQL.RecalculateMenuSubCategoryItemCostByVariantQuery)
+	if err != nil {
+		return fmt.Errorf("failed to get recalculate sub-category cost query: %w", err)
+	}
+	_, err = tx.Exec(query, menuVariantID)
+	return err
+}
+
+// RecalculateCostsByStockVariantID recalculates menu_variant.item_cost and menu_sub_category.item_cost for all menu variants that use the given stock variant (e.g. after outcome invoice updates avg_cost).
+func (h *DBHandler) RecalculateCostsByStockVariantID(stockVariantID string) error {
+	query, err := h.queries.Get(menuIngredientSQL.GetMenuVariantIDsByStockVariantQuery)
+	if err != nil {
+		return fmt.Errorf("failed to get menu variant ids query: %w", err)
+	}
+	rows, err := h.db.Query(query, stockVariantID)
+	if err != nil {
+		h.logger.WithError(err).Error("failed to list menu variants by stock variant")
+		return fmt.Errorf("failed to list menu variants by stock variant: %w", err)
+	}
+	defer rows.Close()
+
+	var variantIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			h.logger.WithError(err).Error("failed to scan menu variant id")
+			return fmt.Errorf("failed to scan menu variant id: %w", err)
+		}
+		variantIDs = append(variantIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		h.logger.WithError(err).Error("failed to iterate menu variant ids")
+		return fmt.Errorf("error iterating menu variant ids: %w", err)
+	}
+
+	if len(variantIDs) == 0 {
+		h.logger.WithField("stock_variant_id", stockVariantID).Info("no menu variants found for stock variant")
+		return nil
+	}
+
+	tx, err := h.db.BeginTx(context.Background())
+	if err != nil {
+		h.logger.WithError(err).Error("failed to begin transaction")
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	for _, menuVariantID := range variantIDs {
+		if err := h.updateMenuVariantItemCostTx(tx, menuVariantID); err != nil {
+			return fmt.Errorf("failed to update menu variant item cost for %s: %w", menuVariantID, err)
+		}
+		if err := h.updateMenuSubCategoryItemCostByVariantTx(tx, menuVariantID); err != nil {
+			return fmt.Errorf("failed to update menu sub-category item cost for variant %s: %w", menuVariantID, err)
+		}
+	}
+
+	return tx.Commit()
 }
 
 // GetByMenuVariant retrieves all ingredients for a specific menu variant

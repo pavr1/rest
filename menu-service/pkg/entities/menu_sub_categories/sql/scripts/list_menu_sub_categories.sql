@@ -6,6 +6,7 @@ SELECT
     mc.name as category_name,
     sm.item_type,
     sm.display_order,
+    COALESCE(sm.item_cost, 0) as item_cost,
     sm.is_active,
     sm.created_at,
     sm.updated_at

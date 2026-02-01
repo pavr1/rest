@@ -431,8 +431,59 @@ func (h *DBHandler) createStockCount(tx *sql.Tx, stockVariantID, invoiceID strin
 	// Update avg_cost for the stock variant
 	if err := h.updateAvgCost(tx, stockVariantID); err != nil {
 		h.logger.WithError(err).WithField("stock_variant_id", stockVariantID).Error("[COST_CALC] Failed to update avg_cost for stock variant")
+		return fmt.Errorf("failed to update avg_cost: %w", err)
 	}
 
+	// Recalculate menu_variant.item_cost and menu_sub_categories.item_cost for all menu variants that use this stock (same tx)
+	if err := h.recalcMenuCostsForStockVariantTx(tx, stockVariantID); err != nil {
+		h.logger.WithError(err).WithField("stock_variant_id", stockVariantID).Error("[COST_CALC] Failed to recalc menu costs")
+		return fmt.Errorf("failed to recalc menu costs for stock variant: %w", err)
+	}
+
+	return nil
+}
+
+// recalcMenuCostsForStockVariantTx recalculates menu_variant.item_cost and menu_sub_category.item_cost for all menu variants that use this stock_variant_id (same transaction).
+func (h *DBHandler) recalcMenuCostsForStockVariantTx(tx *sql.Tx, stockVariantID string) error {
+	q, err := h.queries.Get(outcomesql.GetMenuVariantIDsByStockVariant)
+	if err != nil {
+		return fmt.Errorf("get menu variant ids query: %w", err)
+	}
+	rows, err := tx.Query(q, stockVariantID)
+	if err != nil {
+		return fmt.Errorf("query menu variant ids: %w", err)
+	}
+	defer rows.Close()
+
+	var variantIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return fmt.Errorf("scan menu variant id: %w", err)
+		}
+		variantIDs = append(variantIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iter menu variant ids: %w", err)
+	}
+
+	qVariant, err := h.queries.Get(outcomesql.RecalculateMenuVariantItemCost)
+	if err != nil {
+		return fmt.Errorf("get recalc variant query: %w", err)
+	}
+	qSubCat, err := h.queries.Get(outcomesql.RecalculateMenuSubCategoryItemCostByVariant)
+	if err != nil {
+		return fmt.Errorf("get recalc sub_category query: %w", err)
+	}
+
+	for _, menuVariantID := range variantIDs {
+		if _, err := tx.Exec(qVariant, menuVariantID); err != nil {
+			return fmt.Errorf("recalc menu_variant %s: %w", menuVariantID, err)
+		}
+		if _, err := tx.Exec(qSubCat, menuVariantID); err != nil {
+			return fmt.Errorf("recalc menu_sub_category for variant %s: %w", menuVariantID, err)
+		}
+	}
 	return nil
 }
 

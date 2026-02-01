@@ -58,4 +58,8 @@ const (
 	CountOutcomeInvoices = "count_outcome_invoices"
 	CreateStockCount     = "create_stock_count"
 	UpdateAvgCost        = "update_avg_cost"
+	// Menu cost recalculation (same DB, run in same tx after avg_cost update)
+	GetMenuVariantIDsByStockVariant           = "get_menu_variant_ids_by_stock_variant"
+	RecalculateMenuVariantItemCost           = "recalculate_menu_variant_item_cost"
+	RecalculateMenuSubCategoryItemCostByVariant = "recalculate_menu_sub_category_item_cost_by_variant"
 )

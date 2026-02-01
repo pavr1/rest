@@ -56,6 +56,7 @@ CREATE TABLE menu_sub_categories (
     category_id UUID NOT NULL REFERENCES menu_categories(id) ON DELETE RESTRICT,
     item_type VARCHAR(20) NOT NULL CHECK (item_type IN ('kitchen', 'bar')),
     display_order INTEGER NOT NULL DEFAULT 0,
+    item_cost DECIMAL(10,2) DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

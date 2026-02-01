@@ -157,7 +157,7 @@ func (h *DBHandler) scanMenuSubCategory(rows *sql.Rows) (*models.MenuSubCategory
 
 	err := rows.Scan(
 		&subMenu.ID, &subMenu.Name, &description, &subMenu.CategoryID, &categoryName,
-		&subMenu.ItemType, &subMenu.DisplayOrder, &subMenu.IsActive,
+		&subMenu.ItemType, &subMenu.DisplayOrder, &subMenu.ItemCost, &subMenu.IsActive,
 		&subMenu.CreatedAt, &subMenu.UpdatedAt,
 	)
 	if err != nil {
@@ -180,7 +180,7 @@ func (h *DBHandler) scanMenuSubCategoryRow(row *sql.Row) (*models.MenuSubCategor
 
 	err := row.Scan(
 		&subMenu.ID, &subMenu.Name, &description, &subMenu.CategoryID, &categoryName,
-		&subMenu.ItemType, &subMenu.DisplayOrder, &subMenu.IsActive,
+		&subMenu.ItemType, &subMenu.DisplayOrder, &subMenu.ItemCost, &subMenu.IsActive,
 		&subMenu.CreatedAt, &subMenu.UpdatedAt,
 	)
 	if err != nil {
@@ -206,7 +206,7 @@ func (h *DBHandler) scanMenuSubCategoryRowWithoutCategory(row *sql.Row) (*models
 
 	err := row.Scan(
 		&subMenu.ID, &subMenu.Name, &description, &subMenu.CategoryID,
-		&subMenu.ItemType, &subMenu.DisplayOrder, &subMenu.IsActive,
+		&subMenu.ItemType, &subMenu.DisplayOrder, &subMenu.ItemCost, &subMenu.IsActive,
 		&subMenu.CreatedAt, &subMenu.UpdatedAt,
 	)
 	if err != nil {
