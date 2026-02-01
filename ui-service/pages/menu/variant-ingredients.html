@@ -40,7 +40,7 @@
 
 <div class="page-header">
     <div>
-        <h1 class="page-title">Ingredients for <span class="variant-name" id="variantNameTitle">Loading...</span></h1>
+        <h1 class="page-title"><span class="variant-name" id="variantNameTitle">Loading...</span></h1>
     </div>
     <div>
         <button class="btn btn-outline-primary" id="backBtn"><i class="fas fa-arrow-left me-2"></i>Back to Menu Variants</button>
@@ -118,6 +118,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Sub-Category</th>
+                    <th width="100">Portion Cost</th>
                     <th width="90">Quantity</th>
                     <th width="80">Optional</th>
                     <th width="80">Action</th>
@@ -148,6 +149,7 @@
                 <tr>
                     <th>Menu Sub-Category</th>
                     <th>Category</th>
+                    <th width="100">Portion Cost</th>
                     <th width="90">Quantity</th>
                     <th width="80">Optional</th>
                     <th width="80">Action</th>
@@ -220,7 +222,8 @@
         // Get menu variant info from sessionStorage
         menuVariantId = sessionStorage.getItem('menuVariantId');
         menuVariantName = sessionStorage.getItem('menuVariantName');
-        const menuVariantSubCategory = sessionStorage.getItem('menuVariantSubCategory');
+        const menuVariantCategory = sessionStorage.getItem('menuVariantCategory') || '';
+        const menuVariantSubCategory = sessionStorage.getItem('menuVariantSubCategory') || '';
         currentMenuSubCategoryId = sessionStorage.getItem('menuVariantSubCategoryId');
 
         if (!menuVariantId) {
@@ -229,11 +232,12 @@
             return;
         }
 
-        // Build full name with sub-category
-        const fullName = menuVariantSubCategory 
-            ? `${menuVariantSubCategory} ${menuVariantName}` 
-            : menuVariantName || 'Unknown';
-        document.getElementById('variantNameTitle').textContent = fullName;
+        const variantName = menuVariantName || 'Unknown';
+        const parts = [menuVariantCategory, menuVariantSubCategory].filter(Boolean);
+        const titleText = parts.length
+            ? `Ingredients for ${parts.join(' ')} of ${variantName}`
+            : `Ingredients for ${variantName}`;
+        document.getElementById('variantNameTitle').textContent = titleText;
         
         setupEventListeners();
         await loadCategories();
@@ -245,6 +249,8 @@
         document.getElementById('backBtn')?.addEventListener('click', () => {
             sessionStorage.removeItem('menuVariantId');
             sessionStorage.removeItem('menuVariantName');
+            sessionStorage.removeItem('menuVariantCategory');
+            sessionStorage.removeItem('menuVariantSubCategory');
             sessionStorage.removeItem('menuVariantSubCategoryId');
             window.app.navigateTo('menu-variants');
         });
@@ -263,15 +269,18 @@
                 loadSubCategories();
             } else {
                 subCategories = [];
-                SearchableSelect.setChoices('#subCategoryFilter', [{ value: '', label: 'Select a category first', selected: true }]);
-                SearchableSelect.setEnabled('#subCategoryFilter', false);
-                showSelectCategory();
+                loadInventory();
             }
         });
 
         document.getElementById('subCategoryFilter')?.addEventListener('change', () => {
             document.getElementById('nameFilter').value = '';
-            loadInventory();
+            const categoryId = document.getElementById('categoryFilter').value;
+            if (categoryId) {
+                loadInventory();
+            } else {
+                renderInventoryTable();
+            }
         });
 
         let nameFilterTimeout = null;
@@ -311,7 +320,7 @@
             document.getElementById('menuFilters').classList.add('d-none');
             document.getElementById('inventoryContainer').classList.remove('d-none');
             document.getElementById('menuContainer').classList.add('d-none');
-            showSelectCategory();
+            loadInventory();
         }
     }
 
@@ -337,12 +346,13 @@
             categories = result.data?.categories || result.data?.items || result.data || [];
 
             const select = document.getElementById('categoryFilter');
-            select.innerHTML = '<option value="">Select a Category</option>';
+            select.innerHTML = '<option value="">All Categories</option>';
             categories.forEach(cat => {
                 select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
             });
 
             initSearchableSelects();
+            await loadInventory();
         } catch (e) {
             console.error('Failed to load categories:', e);
         }
@@ -418,26 +428,38 @@
         const categoryId = document.getElementById('categoryFilter').value;
         const subCategoryId = document.getElementById('subCategoryFilter').value;
 
-        if (!categoryId) {
-            showSelectCategory();
-            return;
-        }
-
         showInventoryLoading();
 
         try {
             const token = window.authService.getToken();
-            const params = new URLSearchParams();
-            if (subCategoryId) {
-                params.append('sub_category_id', subCategoryId);
-            } else {
-                params.append('category_id', categoryId);
-            }
+            if (!categoryId) {
+                // All Categories: load all sub-categories (for table column and filter), then all variants
+                const subResp = await fetch(CONFIG.MENU.inventorySubCategories, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!subResp.ok) throw new Error('Failed to load sub-categories');
+                const subResult = await subResp.json();
+                subCategories = subResult.data?.sub_categories || subResult.data?.items || subResult.data || [];
+                const choices = [{ value: '', label: 'All Sub-Categories', selected: true }];
+                subCategories.forEach(sc => { choices.push({ value: sc.id, label: sc.name }); });
+                SearchableSelect.setChoices('#subCategoryFilter', choices);
+                SearchableSelect.setEnabled('#subCategoryFilter', true);
 
-            const resp = await fetch(`${CONFIG.MENU.inventoryVariants}?${params}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!resp.ok) throw new Error('Failed');
-            const result = await resp.json();
-            inventoryVariants = result.data?.variants || result.data?.items || result.data || [];
+                const resp = await fetch(CONFIG.MENU.inventoryVariants, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!resp.ok) throw new Error('Failed');
+                const result = await resp.json();
+                inventoryVariants = result.data?.variants || result.data?.items || result.data || [];
+            } else {
+                // Single category: use existing sub-categories from loadSubCategories, filter by category/sub-category
+                const params = new URLSearchParams();
+                if (subCategoryId) {
+                    params.append('sub_category_id', subCategoryId);
+                } else {
+                    params.append('category_id', categoryId);
+                }
+                const resp = await fetch(`${CONFIG.MENU.inventoryVariants}?${params}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!resp.ok) throw new Error('Failed');
+                const result = await resp.json();
+                inventoryVariants = result.data?.variants || result.data?.items || result.data || [];
+            }
             renderInventoryTable();
         } catch (e) {
             console.error('Failed to load inventory:', e);
@@ -536,9 +558,14 @@
 
         // Filter by name
         const nameFilter = document.getElementById('nameFilter').value.toLowerCase().trim();
+        const categoryId = document.getElementById('categoryFilter').value;
+        const subCategoryId = document.getElementById('subCategoryFilter').value;
         let filtered = inventoryVariants;
         if (nameFilter) {
-            filtered = inventoryVariants.filter(v => v.name.toLowerCase().includes(nameFilter));
+            filtered = filtered.filter(v => v.name.toLowerCase().includes(nameFilter));
+        }
+        if (!categoryId && subCategoryId) {
+            filtered = filtered.filter(v => v.stock_sub_category_id === subCategoryId);
         }
 
         // Exclude already added stock ingredients
@@ -556,10 +583,13 @@
 
         tbody.innerHTML = filtered.map(variant => {
             const subCat = subCategories.find(sc => sc.id === variant.stock_sub_category_id);
+            const avgCost = variant.avg_cost != null && variant.avg_cost > 0 ? variant.avg_cost : null;
+            const portionCostDisplay = avgCost != null ? `₡${Number(avgCost).toFixed(2)}` : '-';
             return `
                 <tr>
                     <td><strong>${escapeHtml(variant.name)}</strong></td>
                     <td>${subCat ? escapeHtml(subCat.name) : '-'}</td>
+                    <td>${portionCostDisplay}</td>
                     <td><input type="number" class="form-control form-control-sm qty-input" id="qty_${variant.id}" value="1" min="1" step="1"></td>
                     <td><input type="checkbox" class="form-check-input" id="opt_${variant.id}"></td>
                     <td>
@@ -605,6 +635,7 @@
                 <tr>
                     <td><strong>${escapeHtml(subCat.name)}</strong></td>
                     <td>${category ? escapeHtml(category.name) : '-'}</td>
+                    <td>-</td>
                     <td><input type="number" class="form-control form-control-sm qty-input" id="menu_qty_${subCat.id}" value="1" min="1" step="1"></td>
                     <td><input type="checkbox" class="form-check-input" id="menu_opt_${subCat.id}"></td>
                     <td>
