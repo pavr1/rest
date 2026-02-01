@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"menu-service/pkg/entities/menu_ingredients/models"
@@ -137,8 +138,14 @@ func (h *DBHandler) GetByID(id string) (*models.MenuIngredient, error) {
 	return &ingredient, nil
 }
 
-// Create creates a new menu ingredient
+// Create creates a new menu ingredient and updates menu_variant.item_cost in the same transaction
 func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID string) (*models.MenuIngredient, error) {
+	tx, err := h.db.BeginTx(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	query, err := h.queries.Get("create_menu_ingredient")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query: %w", err)
@@ -147,7 +154,7 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 	var ingredient models.MenuIngredient
 	var notes, stockVariantID, menuSubCategoryID sql.NullString
 
-	err = h.db.QueryRow(query, menuVariantID, req.StockVariantID, req.MenuSubCategoryID, req.Quantity, req.IsOptional, req.Notes).Scan(
+	err = tx.QueryRow(query, menuVariantID, req.StockVariantID, req.MenuSubCategoryID, req.Quantity, req.IsOptional, req.Notes).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
 		&stockVariantID,
@@ -158,13 +165,10 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 		&ingredient.CreatedAt,
 		&ingredient.UpdatedAt,
 	)
-
 	if err != nil {
-		// Check for unique constraint violation
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
 			return nil, fmt.Errorf("menu ingredient already exists for this menu variant")
 		}
-		// Check for check constraint violation
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23514" {
 			return nil, fmt.Errorf("must specify either stock_variant_id or menu_sub_category_id, but not both")
 		}
@@ -181,11 +185,23 @@ func (h *DBHandler) Create(req models.MenuIngredientCreateRequest, menuVariantID
 		ingredient.MenuSubCategoryID = &menuSubCategoryID.String
 	}
 
+	if err := h.updateMenuVariantItemCostTx(tx, menuVariantID); err != nil {
+		return nil, fmt.Errorf("failed to update menu variant item cost: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
 	return &ingredient, nil
 }
 
-// Update updates a menu ingredient
+// Update updates a menu ingredient and updates menu_variant.item_cost in the same transaction
 func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*models.MenuIngredient, error) {
+	tx, err := h.db.BeginTx(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	query, err := h.queries.Get("update_menu_ingredient")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get query: %w", err)
@@ -194,7 +210,7 @@ func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*
 	var ingredient models.MenuIngredient
 	var notes, stockVariantID, menuSubCategoryID sql.NullString
 
-	err = h.db.QueryRow(query, id, req.Quantity, req.IsOptional, req.Notes).Scan(
+	err = tx.QueryRow(query, id, req.Quantity, req.IsOptional, req.Notes).Scan(
 		&ingredient.ID,
 		&ingredient.MenuVariantID,
 		&stockVariantID,
@@ -205,7 +221,6 @@ func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*
 		&ingredient.CreatedAt,
 		&ingredient.UpdatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("menu ingredient not found")
@@ -223,31 +238,54 @@ func (h *DBHandler) Update(id string, req models.MenuIngredientUpdateRequest) (*
 		ingredient.MenuSubCategoryID = &menuSubCategoryID.String
 	}
 
+	if err := h.updateMenuVariantItemCostTx(tx, ingredient.MenuVariantID); err != nil {
+		return nil, fmt.Errorf("failed to update menu variant item cost: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
 	return &ingredient, nil
 }
 
-// Delete deletes a menu ingredient
+// Delete deletes a menu ingredient and updates menu_variant.item_cost in the same transaction
 func (h *DBHandler) Delete(id string) error {
+	tx, err := h.db.BeginTx(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	query, err := h.queries.Get("delete_menu_ingredient")
 	if err != nil {
 		return fmt.Errorf("failed to get query: %w", err)
 	}
 
-	result, err := h.db.Exec(query, id)
+	var menuVariantID string
+	err = tx.QueryRow(query, id).Scan(&menuVariantID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("menu ingredient not found")
+		}
 		return fmt.Errorf("failed to delete menu ingredient: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+	if err := h.updateMenuVariantItemCostTx(tx, menuVariantID); err != nil {
+		return fmt.Errorf("failed to update menu variant item cost: %w", err)
 	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("menu ingredient not found")
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
-
 	return nil
+}
+
+// updateMenuVariantItemCostTx recalculates menu_variant.item_cost from ingredients (quantity * stock_variants.avg_cost) within tx
+func (h *DBHandler) updateMenuVariantItemCostTx(tx *sql.Tx, menuVariantID string) error {
+	query, err := h.queries.Get(menuIngredientSQL.RecalculateMenuVariantItemCostQuery)
+	if err != nil {
+		return fmt.Errorf("failed to get recalculate query: %w", err)
+	}
+	_, err = tx.Exec(query, menuVariantID)
+	return err
 }
 
 // GetByMenuVariant retrieves all ingredients for a specific menu variant

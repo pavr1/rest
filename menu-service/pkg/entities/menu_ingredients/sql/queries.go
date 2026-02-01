@@ -15,7 +15,8 @@ const (
 	CreateMenuIngredientQuery         = "create_menu_ingredient"
 	UpdateMenuIngredientQuery         = "update_menu_ingredient"
 	DeleteMenuIngredientQuery         = "delete_menu_ingredient"
-	GetIngredientsByMenuVariantQuery  = "get_ingredients_by_menu_variant"
+	GetIngredientsByMenuVariantQuery       = "get_ingredients_by_menu_variant"
+	RecalculateMenuVariantItemCostQuery   = "recalculate_menu_variant_item_cost"
 )
 
 // Queries holds all loaded SQL queries
@@ -36,6 +37,7 @@ func LoadQueries() (*Queries, error) {
 		"update_menu_ingredient.sql",
 		"delete_menu_ingredient.sql",
 		"get_ingredients_by_menu_variant.sql",
+		"recalculate_menu_variant_item_cost.sql",
 	}
 
 	for _, file := range files {
