@@ -207,13 +207,14 @@ func (h *DBHandler) UpdateCost(id string, cost float64) (*models.MenuVariant, er
 // Helper functions for scanning
 func (h *DBHandler) scanMenuVariant(rows *sql.Rows) (*models.MenuVariant, error) {
 	var item models.MenuVariant
-	var description, subMenuName, itemType, imageURL sql.NullString
+	var description, subMenuName, categoryName, itemType, imageURL sql.NullString
 	var itemCost, happyHourPrice sql.NullFloat64
 	var preparationTime sql.NullInt32
 	var dietaryTags, allergens []byte
 
 	err := rows.Scan(
 		&item.ID, &item.Name, &description, &item.SubCategoryID, &subMenuName,
+		&item.CategoryID, &categoryName,
 		&itemType, &item.Price, &itemCost, &happyHourPrice, &imageURL, &item.IsAvailable,
 		&preparationTime, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
 		&item.DisplayOrder, &item.CreatedAt, &item.UpdatedAt,
@@ -227,6 +228,9 @@ func (h *DBHandler) scanMenuVariant(rows *sql.Rows) (*models.MenuVariant, error)
 	}
 	if subMenuName.Valid {
 		item.SubCategoryName = subMenuName.String
+	}
+	if categoryName.Valid {
+		item.CategoryName = categoryName.String
 	}
 	if itemType.Valid {
 		item.ItemType = itemType.String
@@ -256,13 +260,14 @@ func (h *DBHandler) scanMenuVariant(rows *sql.Rows) (*models.MenuVariant, error)
 
 func (h *DBHandler) scanMenuVariantRow(row *sql.Row) (*models.MenuVariant, error) {
 	var item models.MenuVariant
-	var description, subMenuName, itemType, imageURL sql.NullString
+	var description, subMenuName, categoryName, itemType, imageURL sql.NullString
 	var itemCost, happyHourPrice sql.NullFloat64
 	var preparationTime sql.NullInt32
 	var dietaryTags, allergens []byte
 
 	err := row.Scan(
 		&item.ID, &item.Name, &description, &item.SubCategoryID, &subMenuName,
+		&item.CategoryID, &categoryName,
 		&itemType, &item.Price, &itemCost, &happyHourPrice, &imageURL, &item.IsAvailable,
 		&preparationTime, &item.MenuTypes, &dietaryTags, &allergens, &item.IsAlcoholic,
 		&item.DisplayOrder, &item.CreatedAt, &item.UpdatedAt,
@@ -279,6 +284,9 @@ func (h *DBHandler) scanMenuVariantRow(row *sql.Row) (*models.MenuVariant, error
 	}
 	if subMenuName.Valid {
 		item.SubCategoryName = subMenuName.String
+	}
+	if categoryName.Valid {
+		item.CategoryName = categoryName.String
 	}
 	if itemType.Valid {
 		item.ItemType = itemType.String

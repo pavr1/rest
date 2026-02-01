@@ -8,8 +8,8 @@
     .data-table th { background: #f8f9fa; padding: 0.75rem 1rem; font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; border-bottom: 2px solid #e9ecef; }
     .data-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #e9ecef; }
     .data-table tbody tr:hover { background: #f8f9fa; }
-    .action-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .btn-action { width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 0.85rem; }
+    .action-btns { display: flex; gap: 0.25rem; flex-wrap: nowrap; align-items: center; }
+    .btn-action { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 5px; font-size: 0.75rem; }
     .empty-state, .loading-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
     .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
     .status-badge { padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.75rem; font-weight: 500; }
@@ -66,14 +66,14 @@
         <table class="data-table d-none" id="dataTable">
             <thead>
                 <tr>
-                    <th>Image</th>
+                    <th></th>
+                    <th>Category</th>
+                    <th>Sub-Category</th>
                     <th>Name</th>
-                    <th>Type</th>
-                    <th>Sub Menu</th>
                     <th>Price</th>
                     <th>Cost</th>
                     <th>Status</th>
-                    <th width="180">Actions</th>
+                    <th width="140">Actions</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -441,13 +441,12 @@
             const subCategory = subCategories.find(sc => sc.id === variant.sub_category_id);
             const itemType = variant.item_type || subCategory?.item_type || 'kitchen';
             const typeIcon = itemType === 'bar' ? 'fa-cocktail' : 'fa-utensils';
-            const typeLabel = itemType === 'bar' ? 'Bar' : 'Kitchen';
             return `
                 <tr>
                     <td><div class="item-image-placeholder"><i class="fas ${typeIcon}"></i></div></td>
+                    <td>${escapeHtml(variant.category_name || '-')}</td>
+                    <td>${escapeHtml(variant.sub_category_name || subCategory?.name || '-')}</td>
                     <td><strong>${escapeHtml(variant.name)}</strong></td>
-                    <td><span class="type-badge ${itemType}"><i class="fas ${typeIcon} me-1"></i>${typeLabel}</span></td>
-                    <td>${variant.sub_category_name || subCategory?.name || '-'}</td>
                     <td class="price">$${(variant.price || 0).toFixed(2)}</td>
                     <td>$${(variant.cost || 0).toFixed(2)}</td>
                     <td><span class="status-badge ${variant.is_available ? 'available' : 'unavailable'}">${variant.is_available ? 'Available' : 'Unavailable'}</span></td>

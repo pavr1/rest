@@ -12,6 +12,8 @@ type MenuVariant struct {
 	Description       *string         `json:"description,omitempty"`
 	SubCategoryID     string          `json:"sub_category_id"`
 	SubCategoryName   string          `json:"sub_category_name,omitempty"`
+	CategoryID        string          `json:"category_id,omitempty"`
+	CategoryName      string          `json:"category_name,omitempty"`
 	ItemType          string          `json:"item_type,omitempty"` // Inherited from sub_category
 	Price             float64         `json:"price"`
 	ItemCost          *float64        `json:"item_cost,omitempty"`

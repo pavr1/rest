@@ -525,12 +525,12 @@ INSERT INTO staff (username, email, password_hash, first_name, last_name, role) 
 
 -- Insertar categorías del menú por defecto
 INSERT INTO menu_categories (name, display_order, description) VALUES
-('Entradas', 1, 'Aperitivos y entradas'),
-('Platos Fuertes', 2, 'Platos principales'),
-('Postres', 3, 'Dulces y postres'),
-('Bebidas', 4, 'Cervezas, cocteles, vinos y refrescos'),
-('Bocadillos', 5, 'Snacks de bar'),
-('Ensaladas', 6, 'Ensaladas y ensaladas');
+('Entrada', 1, 'Aperitivos y entradas'),
+('Platos Fuerte', 2, 'Platos principales'),
+('Postre', 3, 'Dulces y postres'),
+('Bebida', 4, 'Cervezas, cocteles, vinos y refrescos'),
+('Bocadillo', 5, 'Snacks de bar'),
+('Ensalada', 6, 'Ensaladas y ensaladas');
 
 -- Insertar categorías de inventario por defecto
 INSERT INTO stock_categories (name, description, display_order) VALUES
