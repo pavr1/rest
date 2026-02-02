@@ -1,9 +1,828 @@
-<!-- Table Map Page Partial -->
-<div class="text-center py-5">
-    <i class="fas fa-map fa-4x text-warning mb-4"></i>
-    <h2 class="mb-3" style="font-family: Arial, sans-serif;">Table Map</h2>
-    <p class="text-muted mb-4">This feature is currently under development.</p>
-    <button class="btn btn-primary" onclick="app.navigateTo('dashboard')">
-        <i class="fas fa-home me-2"></i>Back to Dashboard
-    </button>
+<!-- Table Map Page Partial - Client-side interactive floor plan -->
+<style>
+    .table-map-page { padding: 1rem; max-width: 1400px; margin: 0 auto; }
+    .table-map-header { display: flex; justify-content: flex-start; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
+    .table-map-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .table-shape-switch { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-start; }
+    .table-shape-switch label { margin: 0; color: #2C1810; font-size: 0.9rem; font-weight: 600; }
+    .table-shape-switch .btn-group .btn {
+        padding: 0.4rem 0.85rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: #2C1810;
+        border: 2px solid #5c4a1a;
+        color: #F5E6D3;
+    }
+    .table-shape-switch .btn-group .btn:hover { background: #3d2818; border-color: #6b5a2d; color: #fff; }
+    .table-shape-switch .btn-group .btn.active { background: #8B6914; border-color: #6b5a2d; color: #fff; }
+    .table-map-controls .btn-primary { background: #5c4a1a; border-color: #6b5a2d; color: #fff; font-weight: 600; }
+    .table-map-controls .btn-primary:hover { background: #6b5a2d; border-color: #5c4a1a; color: #fff; }
+    .floor-plan {
+        position: relative;
+        min-height: 500px;
+        background: linear-gradient(180deg, #f5ebe0 0%, #ede0d4 100%);
+        border-radius: var(--border-radius, 12px);
+        box-shadow: inset 0 2px 20px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.12);
+        border: 2px solid var(--border-color, #D4A574);
+    }
+    .table-unit {
+        position: absolute;
+        width: 110px;
+        height: 110px;
+        cursor: grab;
+        user-select: none;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease;
+    }
+    .table-unit:hover { transform: translate(-50%, -50%) scale(1.03); }
+    .table-unit.dragging { cursor: grabbing; z-index: 1000; transform: translate(-50%, -50%) scale(1.05); }
+    .table-unit .table-chairs { position: absolute; inset: 0; pointer-events: none; }
+    .table-unit .chair {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #7a6a5a 0%, #5c4d3e 100%);
+        border: 2px solid #4a3f35;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .table-unit .chair.n { top: 0; left: 50%; transform: translate(-50%, -50%); }
+    .table-unit .chair.e { right: 0; top: 50%; transform: translate(50%, -50%); }
+    .table-unit .chair.s { bottom: 0; left: 50%; transform: translate(-50%, 50%); }
+    .table-unit .chair.w { left: 0; top: 50%; transform: translate(-50%, -50%); }
+    .table-item {
+        position: relative;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse 120% 120% at 30% 20%, #c4a574 0%, #8B6914 40%, #5c4a1a 100%);
+        color: var(--white, #fff);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 0 #3d3212, 0 6px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+        border: 3px solid #6b5a2d;
+        transition: box-shadow 0.15s ease;
+    }
+    .table-item.table-item--square {
+        border-radius: 10px;
+    }
+    .table-unit:hover .table-item { box-shadow: 0 4px 0 #3d3212, 0 8px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25); }
+    .table-unit.dragging .table-item { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .table-item .table-label {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        opacity: 0.9;
+        margin-bottom: 2px;
+    }
+    .table-item .table-number {
+        font-weight: 800;
+        font-size: 1.5rem;
+        line-height: 1;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .table-item .table-delete {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--danger-color, #dc3545);
+        color: white;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: bold;
+        cursor: pointer;
+        opacity: 0.85;
+        z-index: 2;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        transition: opacity 0.15s, transform 0.15s;
+    }
+    .table-item .table-delete:hover {
+        opacity: 1;
+        background: var(--danger-dark, #c82333);
+        transform: scale(1.1);
+    }
+    .table-map-empty { text-align: center; padding: 3rem 1rem; color: var(--text-secondary, #6c757d); }
+    .table-map-empty i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+
+    /* Bars */
+    .bar-unit {
+        position: absolute;
+        min-width: 80px;
+        height: 36px;
+        cursor: grab;
+        user-select: none;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease;
+    }
+    .bar-unit:hover { transform: translate(-50%, -50%) scale(1.02); }
+    .bar-unit.dragging { cursor: grabbing; z-index: 1000; transform: translate(-50%, -50%) scale(1.03); }
+    .bar-unit.resizing { cursor: ew-resize; }
+    .bar-unit .bar-item {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 36px;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #4a6a8a 0%, #2d4a62 50%, #1e3347 100%);
+        color: var(--white, #fff);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 0 #1a2836, 0 6px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+        border: 2px solid #3d5a75;
+    }
+    .bar-unit .bar-label { font-weight: 700; font-size: 0.9rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .bar-unit .bar-delete {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--danger-color, #dc3545);
+        color: white;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: bold;
+        cursor: pointer;
+        opacity: 0.9;
+        z-index: 2;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .bar-unit .bar-delete:hover { opacity: 1; background: var(--danger-dark, #c82333); }
+    .bar-unit .bar-resize-handle {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 10px;
+        cursor: ew-resize;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bar-unit .bar-resize-handle::after {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: rgba(255,255,255,0.5);
+        border-radius: 2px;
+    }
+    .bar-unit .bar-resize-handle:hover::after { background: rgba(255,255,255,0.9); }
+    .bar-unit .bar-sits { position: absolute; inset: 0; pointer-events: none; }
+    .bar-unit .bar-sits .bar-sit { left: 50%; top: 50%; margin-left: 0; margin-top: 0; }
+    .bar-unit .bar-sit {
+        position: absolute;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #6b5a4a 0%, #4a3f35 100%);
+        border: 2px solid #3d352d;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+        cursor: grab;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white, #fff);
+    }
+    .bar-unit .bar-sit .bar-sit-number {
+        font-weight: 700;
+        font-size: 0.85rem;
+        line-height: 1;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .bar-unit .bar-sit:hover { filter: brightness(1.1); }
+    .bar-unit .bar-sit.dragging { cursor: grabbing; z-index: 100; }
+    .bar-unit .bar-sit .bar-sit-delete {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--danger-color);
+        color: white;
+        border: 1px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        cursor: pointer;
+        opacity: 0;
+    }
+    .bar-unit .bar-sit:hover .bar-sit-delete { opacity: 1; }
+    .add-bar-sit-dropdown .dropdown-menu { max-height: 200px; overflow-y: auto; }
+</style>
+
+<div class="table-map-page">
+    <div class="table-map-header">
+        <div class="table-map-controls">
+            <div class="table-shape-switch">
+                <label>Table shape:</label>
+                <div class="btn-group" id="tableShapeGroup" role="group">
+                    <button type="button" class="btn btn-sm" data-shape="round" id="shapeRound">Round</button>
+                    <button type="button" class="btn btn-sm" data-shape="square" id="shapeSquare">Square</button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="addTableBtn">
+                <i class="fas fa-plus me-2"></i>Add Table
+            </button>
+            <button type="button" class="btn btn-primary" id="addBarBtn">
+                <i class="fas fa-glass-martini-alt me-2"></i>Add Bar
+            </button>
+            <div class="dropdown add-bar-sit-dropdown" id="addBarSitDropdown">
+                <button type="button" class="btn btn-primary dropdown-toggle" id="addBarSitBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-chair me-2"></i>Add Bar Sit
+                </button>
+                <ul class="dropdown-menu" id="addBarSitMenu" aria-labelledby="addBarSitBtn"></ul>
+            </div>
+        </div>
+    </div>
+    <div class="floor-plan" id="floorPlan">
+        <div class="table-map-empty d-none" id="emptyState">
+            <i class="fas fa-map-marked-alt"></i>
+            <h5>No tables or bars yet</h5>
+            <p>Add tables or bars, then add bar sits to bars. Drag to reposition.</p>
+        </div>
+    </div>
 </div>
+
+<script>
+(function() {
+    const STORAGE_KEY = 'barrest_table_map';
+    const SHAPE_KEY = 'barrest_table_shape';
+    const BARS_KEY = 'barrest_bars';
+    const BAR_SITS_KEY = 'barrest_bar_sits';
+    const MAX_SIT_OFFSET_PX = 75;
+    const BAR_MIN_WIDTH = 80;
+    const BAR_MAX_WIDTH = 400;
+    const BAR_DEFAULT_WIDTH = 160;
+    let tables = [];
+    let bars = [];
+    let barSits = [];
+    let dragState = null;
+    let barSitDragState = null;
+    let barResizeState = null;
+    let tableShape = 'round';
+
+    function loadFromStorage() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) tables = parsed;
+            }
+        } catch (_) { tables = []; }
+        try {
+            const raw = localStorage.getItem(BARS_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    bars = parsed.map(b => ({ ...b, width: b.width != null ? Math.max(BAR_MIN_WIDTH, Math.min(BAR_MAX_WIDTH, b.width)) : BAR_DEFAULT_WIDTH }));
+                }
+            }
+        } catch (_) { bars = []; }
+        try {
+            const raw = localStorage.getItem(BAR_SITS_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    barSits = parsed;
+                    assignBarSitNumbers();
+                }
+            }
+        } catch (_) { barSits = []; }
+        try {
+            const shape = localStorage.getItem(SHAPE_KEY);
+            if (shape === 'square' || shape === 'round') tableShape = shape;
+        } catch (_) {}
+    }
+
+    function saveToStorage() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tables));
+            localStorage.setItem(BARS_KEY, JSON.stringify(bars));
+            localStorage.setItem(BAR_SITS_KEY, JSON.stringify(barSits));
+            localStorage.setItem(SHAPE_KEY, tableShape);
+        } catch (_) {}
+    }
+
+    function nextTableNumber() {
+        if (tables.length === 0) return 1;
+        const numbers = tables.map(t => t.number).filter(n => typeof n === 'number');
+        return numbers.length === 0 ? 1 : Math.max(...numbers) + 1;
+    }
+
+    function generateId() {
+        return 't_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    }
+    function generateBarId() {
+        return 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    }
+    function generateBarSitId() {
+        return 's_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    }
+
+    function nextBarNumber() {
+        if (bars.length === 0) return 1;
+        const numbers = bars.map(b => b.number).filter(n => typeof n === 'number');
+        return numbers.length === 0 ? 1 : Math.max(...numbers) + 1;
+    }
+
+    function addTable() {
+        const num = nextTableNumber();
+        const table = {
+            id: generateId(),
+            number: num,
+            x: 15 + (tables.length % 4) * 22,
+            y: 15 + Math.floor(tables.length / 4) * 18
+        };
+        tables.push(table);
+        saveToStorage();
+        renderTables();
+    }
+
+    function deleteTable(id, e) {
+        if (e) e.stopPropagation();
+        tables = tables.filter(t => t.id !== id);
+        saveToStorage();
+        renderAll();
+    }
+
+    function addBar() {
+        const num = nextBarNumber();
+        const bar = {
+            id: generateBarId(),
+            number: num,
+            x: 20 + (bars.length % 3) * 25,
+            y: 60 + Math.floor(bars.length / 3) * 20,
+            width: BAR_DEFAULT_WIDTH
+        };
+        bars.push(bar);
+        saveToStorage();
+        renderAll();
+        updateAddBarSitMenu();
+    }
+
+    function deleteBar(id, e) {
+        if (e) e.stopPropagation();
+        bars = bars.filter(b => b.id !== id);
+        barSits = barSits.filter(s => s.barId !== id);
+        saveToStorage();
+        renderAll();
+        updateAddBarSitMenu();
+    }
+
+    function nextBarSitNumber(barId) {
+        const sitsForBar = barSits.filter(s => s.barId === barId);
+        if (sitsForBar.length === 0) return 1;
+        const numbers = sitsForBar.map(s => s.number).filter(n => typeof n === 'number');
+        return numbers.length === 0 ? 1 : Math.max(...numbers) + 1;
+    }
+
+    function assignBarSitNumbers() {
+        bars.forEach(bar => {
+            const sits = barSits.filter(s => s.barId === bar.id);
+            sits.forEach((sit, idx) => {
+                if (sit.number == null || sit.number < 1) sit.number = idx + 1;
+            });
+        });
+    }
+
+    function reflowBarSitsPositions() {
+        bars.forEach(bar => {
+            const sits = barSits.filter(s => s.barId === bar.id).sort((a, b) => (a.number || 0) - (b.number || 0));
+            const step = BAR_SIT_SIZE + BAR_SIT_GAP;
+            sits.forEach((sit, i) => {
+                const n = sits.length;
+                const offsetX = -((n - 1) * step) / 2 + i * step;
+                sit.offsetX = Math.max(-MAX_SIT_OFFSET_PX, Math.min(MAX_SIT_OFFSET_PX, offsetX));
+                sit.offsetY = 0;
+            });
+        });
+    }
+
+    const BAR_SIT_SIZE = 34;
+    const BAR_SIT_GAP = 10;
+
+    function addBarSit(barId) {
+        const bar = bars.find(b => b.id === barId);
+        if (!bar) return;
+        const sitsForBar = barSits.filter(s => s.barId === barId);
+        const n = sitsForBar.length + 1;
+        const i = sitsForBar.length;
+        const step = BAR_SIT_SIZE + BAR_SIT_GAP;
+        const offsetX = -((n - 1) * step) / 2 + i * step;
+        const offsetY = 0;
+        const sit = {
+            id: generateBarSitId(),
+            barId,
+            number: nextBarSitNumber(barId),
+            offsetX: Math.max(-MAX_SIT_OFFSET_PX, Math.min(MAX_SIT_OFFSET_PX, offsetX)),
+            offsetY: Math.max(-MAX_SIT_OFFSET_PX, Math.min(MAX_SIT_OFFSET_PX, offsetY))
+        };
+        barSits.push(sit);
+        saveToStorage();
+        renderAll();
+    }
+
+    function deleteBarSit(id, e) {
+        if (e) e.stopPropagation();
+        barSits = barSits.filter(s => s.id !== id);
+        saveToStorage();
+        renderAll();
+    }
+
+    function getFloorPlanRect() {
+        const el = document.getElementById('floorPlan');
+        return el ? el.getBoundingClientRect() : null;
+    }
+
+    function pxToPercent(pxX, pxY) {
+        const rect = getFloorPlanRect();
+        if (!rect || rect.width === 0 || rect.height === 0) return null;
+        return {
+            x: Math.max(0, Math.min(100, (pxX - rect.left) / rect.width * 100)),
+            y: Math.max(0, Math.min(100, (pxY - rect.top) / rect.height * 100))
+        };
+    }
+
+    function onPointerDown(e, id) {
+        e.preventDefault();
+        const table = tables.find(t => t.id === id);
+        if (!table) return;
+        const rect = getFloorPlanRect();
+        if (!rect) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const tableLeft = rect.left + (table.x / 100) * rect.width;
+        const tableTop = rect.top + (table.y / 100) * rect.height;
+        dragState = {
+            id,
+            offsetX: clientX - tableLeft,
+            offsetY: clientY - tableTop
+        };
+        const el = document.querySelector('.table-unit[data-table-id="' + id + '"]');
+        if (el) el.classList.add('dragging');
+        document.addEventListener('mousemove', onPointerMove);
+        document.addEventListener('mouseup', onPointerUp);
+        document.addEventListener('touchmove', onPointerMove, { passive: false });
+        document.addEventListener('touchend', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+        if (!dragState) return;
+        e.preventDefault();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const rect = getFloorPlanRect();
+        if (!rect) return;
+        const tableLeft = clientX - dragState.offsetX;
+        const tableTop = clientY - dragState.offsetY;
+        const pct = pxToPercent(tableLeft, tableTop);
+        if (!pct) return;
+        const t = tables.find(x => x.id === dragState.id);
+        if (t) { t.x = pct.x; t.y = pct.y; }
+        const el = document.querySelector('.table-unit[data-table-id="' + dragState.id + '"]');
+        if (el) {
+            el.style.left = pct.x + '%';
+            el.style.top = pct.y + '%';
+        }
+    }
+
+    function onPointerUp() {
+        if (!dragState) return;
+        document.querySelectorAll('.table-unit.dragging').forEach(el => el.classList.remove('dragging'));
+        document.removeEventListener('mousemove', onPointerMove);
+        document.removeEventListener('mouseup', onPointerUp);
+        document.removeEventListener('touchmove', onPointerMove);
+        document.removeEventListener('touchend', onPointerUp);
+        saveToStorage();
+        dragState = null;
+    }
+
+    function onBarPointerDown(e, id) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.target.classList.contains('bar-resize-handle') || e.target.closest('.bar-resize-handle')) return;
+        const bar = bars.find(b => b.id === id);
+        if (!bar) return;
+        const rect = getFloorPlanRect();
+        if (!rect) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const barCenterX = rect.left + (bar.x / 100) * rect.width;
+        const barCenterY = rect.top + (bar.y / 100) * rect.height;
+        dragState = { id, offsetX: clientX - barCenterX, offsetY: clientY - barCenterY, type: 'bar' };
+        const el = document.querySelector('.bar-unit[data-bar-id="' + id + '"]');
+        if (el) el.classList.add('dragging');
+        document.addEventListener('mousemove', onBarPointerMove);
+        document.addEventListener('mouseup', onBarPointerUp);
+        document.addEventListener('touchmove', onBarPointerMove, { passive: false });
+        document.addEventListener('touchend', onBarPointerUp);
+    }
+
+    function onBarPointerMove(e) {
+        if (!dragState || dragState.type !== 'bar') return;
+        e.preventDefault();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const rect = getFloorPlanRect();
+        if (!rect) return;
+        const centerX = clientX - dragState.offsetX;
+        const centerY = clientY - dragState.offsetY;
+        const pct = pxToPercent(centerX, centerY);
+        if (!pct) return;
+        const bar = bars.find(b => b.id === dragState.id);
+        if (bar) { bar.x = pct.x; bar.y = pct.y; }
+        const el = document.querySelector('.bar-unit[data-bar-id="' + dragState.id + '"]');
+        if (el) { el.style.left = pct.x + '%'; el.style.top = pct.y + '%'; }
+    }
+
+    function onBarPointerUp() {
+        if (!dragState || dragState.type !== 'bar') return;
+        document.querySelectorAll('.bar-unit.dragging').forEach(el => el.classList.remove('dragging'));
+        document.removeEventListener('mousemove', onBarPointerMove);
+        document.removeEventListener('mouseup', onBarPointerUp);
+        document.removeEventListener('touchmove', onBarPointerMove);
+        document.removeEventListener('touchend', onBarPointerUp);
+        saveToStorage();
+        dragState = null;
+    }
+
+    function onBarResizeDown(e, id) {
+        e.preventDefault();
+        e.stopPropagation();
+        const bar = bars.find(b => b.id === id);
+        if (!bar) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        barResizeState = { id, startClientX: clientX, startWidth: bar.width || BAR_DEFAULT_WIDTH };
+        const unit = document.querySelector('.bar-unit[data-bar-id="' + id + '"]');
+        if (unit) unit.classList.add('resizing');
+        document.addEventListener('mousemove', onBarResizeMove);
+        document.addEventListener('mouseup', onBarResizeUp);
+        document.addEventListener('touchmove', onBarResizeMove, { passive: false });
+        document.addEventListener('touchend', onBarResizeUp);
+    }
+
+    function onBarResizeMove(e) {
+        if (!barResizeState) return;
+        e.preventDefault();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const deltaX = clientX - barResizeState.startClientX;
+        const bar = bars.find(b => b.id === barResizeState.id);
+        if (!bar) return;
+        let w = barResizeState.startWidth + deltaX;
+        w = Math.max(BAR_MIN_WIDTH, Math.min(BAR_MAX_WIDTH, w));
+        bar.width = w;
+        const unit = document.querySelector('.bar-unit[data-bar-id="' + barResizeState.id + '"]');
+        if (unit) unit.style.width = w + 'px';
+    }
+
+    function onBarResizeUp() {
+        if (!barResizeState) return;
+        document.querySelectorAll('.bar-unit.resizing').forEach(el => el.classList.remove('resizing'));
+        document.removeEventListener('mousemove', onBarResizeMove);
+        document.removeEventListener('mouseup', onBarResizeUp);
+        document.removeEventListener('touchmove', onBarResizeMove);
+        document.removeEventListener('touchend', onBarResizeUp);
+        saveToStorage();
+        barResizeState = null;
+    }
+
+    function clampBarSitOffset(offsetX, offsetY) {
+        const d = Math.sqrt(offsetX * offsetX + offsetY * offsetY);
+        if (d <= MAX_SIT_OFFSET_PX) return { offsetX, offsetY };
+        const k = MAX_SIT_OFFSET_PX / d;
+        return { offsetX: offsetX * k, offsetY: offsetY * k };
+    }
+
+    function onBarSitPointerDown(e, sitId) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.target.classList.contains('bar-sit-delete')) return;
+        const sit = barSits.find(s => s.id === sitId);
+        if (!sit) return;
+        const bar = bars.find(b => b.id === sit.barId);
+        if (!bar) return;
+        const rect = getFloorPlanRect();
+        if (!rect) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const barCenterX = rect.left + (bar.x / 100) * rect.width;
+        const barCenterY = rect.top + (bar.y / 100) * rect.height;
+        barSitDragState = {
+            sitId,
+            barId: sit.barId,
+            startClientX: clientX,
+            startClientY: clientY,
+            startOffsetX: sit.offsetX,
+            startOffsetY: sit.offsetY
+        };
+        const el = document.querySelector('.bar-sit[data-sit-id="' + sitId + '"]');
+        if (el) el.classList.add('dragging');
+        document.addEventListener('mousemove', onBarSitPointerMove);
+        document.addEventListener('mouseup', onBarSitPointerUp);
+        document.addEventListener('touchmove', onBarSitPointerMove, { passive: false });
+        document.addEventListener('touchend', onBarSitPointerUp);
+    }
+
+    function onBarSitPointerMove(e) {
+        if (!barSitDragState) return;
+        e.preventDefault();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const deltaX = clientX - barSitDragState.startClientX;
+        const deltaY = clientY - barSitDragState.startClientY;
+        const { offsetX, offsetY } = clampBarSitOffset(
+            barSitDragState.startOffsetX + deltaX,
+            barSitDragState.startOffsetY + deltaY
+        );
+        const sit = barSits.find(s => s.id === barSitDragState.sitId);
+        if (sit) { sit.offsetX = offsetX; sit.offsetY = offsetY; }
+        const el = document.querySelector('.bar-sit[data-sit-id="' + barSitDragState.sitId + '"]');
+        if (el) el.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) translate(-50%, -50%)';
+    }
+
+    function onBarSitPointerUp() {
+        if (!barSitDragState) return;
+        document.querySelectorAll('.bar-sit.dragging').forEach(el => el.classList.remove('dragging'));
+        document.removeEventListener('mousemove', onBarSitPointerMove);
+        document.removeEventListener('mouseup', onBarSitPointerUp);
+        document.removeEventListener('touchmove', onBarSitPointerMove);
+        document.removeEventListener('touchend', onBarSitPointerUp);
+        saveToStorage();
+        barSitDragState = null;
+    }
+
+    function renderTables() {
+        const floor = document.getElementById('floorPlan');
+        if (!floor) return;
+        floor.querySelectorAll('.table-unit').forEach(el => el.remove());
+
+        tables.forEach(t => {
+            const unit = document.createElement('div');
+            unit.className = 'table-unit';
+            unit.setAttribute('data-table-id', t.id);
+            unit.style.left = (t.x != null ? t.x : 10) + '%';
+            unit.style.top = (t.y != null ? t.y : 10) + '%';
+            const tableClass = tableShape === 'square' ? 'table-item table-item--square' : 'table-item';
+            unit.innerHTML =
+                '<div class="table-chairs">' +
+                '<span class="chair n" aria-hidden="true"></span><span class="chair e" aria-hidden="true"></span>' +
+                '<span class="chair s" aria-hidden="true"></span><span class="chair w" aria-hidden="true"></span>' +
+                '</div>' +
+                '<div class="' + tableClass + '">' +
+                '<span class="table-label">Table</span><span class="table-number">' + (t.number || '') + '</span>' +
+                '<button type="button" class="table-delete" aria-label="Delete table" title="Delete table">×</button>' +
+                '</div>';
+            unit.addEventListener('mousedown', e => { if (!e.target.classList.contains('table-delete')) onPointerDown(e, t.id); });
+            unit.addEventListener('touchstart', e => { if (!e.target.classList.contains('table-delete')) onPointerDown(e, t.id); }, { passive: false });
+            unit.querySelector('.table-delete').addEventListener('click', e => deleteTable(t.id, e));
+            floor.appendChild(unit);
+        });
+    }
+
+    function renderBars() {
+        const floor = document.getElementById('floorPlan');
+        if (!floor) return;
+        floor.querySelectorAll('.bar-unit').forEach(el => el.remove());
+
+        bars.forEach(bar => {
+            const barWidth = Math.max(BAR_MIN_WIDTH, Math.min(BAR_MAX_WIDTH, bar.width || BAR_DEFAULT_WIDTH));
+            const unit = document.createElement('div');
+            unit.className = 'bar-unit';
+            unit.setAttribute('data-bar-id', bar.id);
+            unit.style.left = (bar.x != null ? bar.x : 20) + '%';
+            unit.style.top = (bar.y != null ? bar.y : 50) + '%';
+            unit.style.width = barWidth + 'px';
+            const sits = barSits.filter(s => s.barId === bar.id);
+            let sitsHtml = '';
+            sits.forEach(sit => {
+                const num = sit.number != null ? sit.number : '';
+                sitsHtml += '<span class="bar-sit" data-sit-id="' + sit.id + '" style="transform: translate(' + (sit.offsetX || 0) + 'px, ' + (sit.offsetY || 0) + 'px) translate(-50%, -50%); left: 50%; top: 50%;">' +
+                    '<span class="bar-sit-number">' + num + '</span>' +
+                    '<span class="bar-sit-delete" aria-label="Remove sit" title="Remove sit">×</span></span>';
+            });
+            unit.innerHTML =
+                '<div class="bar-item">' +
+                '<span class="bar-label">Bar ' + (bar.number || '') + '</span>' +
+                '<button type="button" class="bar-delete" aria-label="Delete bar" title="Delete bar">×</button>' +
+                '</div>' +
+                '<div class="bar-resize-handle" aria-label="Resize bar" title="Drag to resize"></div>' +
+                '<div class="bar-sits">' + sitsHtml + '</div>';
+            unit.addEventListener('mousedown', e => {
+                if (!e.target.classList.contains('bar-delete') && !e.target.closest('.bar-sit') && !e.target.closest('.bar-resize-handle')) onBarPointerDown(e, bar.id);
+            });
+            unit.addEventListener('touchstart', e => {
+                if (!e.target.classList.contains('bar-delete') && !e.target.closest('.bar-sit') && !e.target.closest('.bar-resize-handle')) onBarPointerDown(e, bar.id);
+            }, { passive: false });
+            unit.querySelector('.bar-resize-handle')?.addEventListener('mousedown', e => { e.stopPropagation(); onBarResizeDown(e, bar.id); });
+            unit.querySelector('.bar-resize-handle')?.addEventListener('touchstart', e => { e.stopPropagation(); onBarResizeDown(e, bar.id); }, { passive: false });
+            unit.querySelector('.bar-delete')?.addEventListener('click', e => { deleteBar(bar.id, e); });
+            sits.forEach(sit => {
+                const sitEl = unit.querySelector('.bar-sit[data-sit-id="' + sit.id + '"]');
+                if (sitEl) {
+                    sitEl.addEventListener('mousedown', e => { e.stopPropagation(); onBarSitPointerDown(e, sit.id); });
+                    sitEl.addEventListener('touchstart', e => { e.stopPropagation(); onBarSitPointerDown(e, sit.id); }, { passive: false });
+                    sitEl.querySelector('.bar-sit-delete')?.addEventListener('click', e => deleteBarSit(sit.id, e));
+                }
+            });
+            floor.appendChild(unit);
+        });
+    }
+
+    function renderAll() {
+        const floor = document.getElementById('floorPlan');
+        const empty = document.getElementById('emptyState');
+        if (!floor) return;
+
+        if (tables.length === 0 && bars.length === 0) {
+            empty.classList.remove('d-none');
+            floor.querySelectorAll('.table-unit, .bar-unit').forEach(el => el.remove());
+            return;
+        }
+        empty.classList.add('d-none');
+        renderTables();
+        renderBars();
+    }
+
+    function updateAddBarSitMenu() {
+        const menu = document.getElementById('addBarSitMenu');
+        const btn = document.getElementById('addBarSitBtn');
+        if (!menu || !btn) return;
+        menu.innerHTML = '';
+        if (bars.length === 0) {
+            const li = document.createElement('li');
+            li.innerHTML = '<span class="dropdown-item text-muted">No bars yet</span>';
+            menu.appendChild(li);
+            btn.disabled = true;
+        } else {
+            btn.disabled = false;
+            bars.forEach(bar => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.className = 'dropdown-item';
+                a.href = '#';
+                a.textContent = 'Bar ' + (bar.number || '');
+                a.addEventListener('click', e => {
+                    e.preventDefault();
+                    addBarSit(bar.id);
+                    try { document.querySelector('.dropdown.show .dropdown-toggle')?.click(); } catch (_) {}
+                });
+                li.appendChild(a);
+                menu.appendChild(li);
+            });
+        }
+    }
+
+    function updateShapeUI() {
+        document.querySelectorAll('#tableShapeGroup .btn').forEach(btn => {
+            const isActive = btn.getAttribute('data-shape') === tableShape;
+            btn.classList.toggle('active', isActive);
+        });
+    }
+
+    function setShape(shape) {
+        tableShape = shape;
+        saveToStorage();
+        updateShapeUI();
+        renderAll();
+    }
+
+    function init() {
+        loadFromStorage();
+        updateShapeUI();
+        updateAddBarSitMenu();
+        renderAll();
+        document.getElementById('addTableBtn')?.addEventListener('click', addTable);
+        document.getElementById('addBarBtn')?.addEventListener('click', addBar);
+        document.getElementById('shapeRound')?.addEventListener('click', () => setShape('round'));
+        document.getElementById('shapeSquare')?.addEventListener('click', () => setShape('square'));
+    }
+
+    init();
+})();
+</script>
