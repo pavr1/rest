@@ -1,6 +1,6 @@
 <!-- Table Map Page Partial - Client-side interactive floor plan -->
 <style>
-    .table-map-page { padding: 1rem; max-width: 1400px; margin: 0 auto; }
+    .table-map-page { padding: 1rem; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
     .table-map-header { display: flex; justify-content: flex-start; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
     .table-map-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .table-shape-switch { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-start; }
@@ -19,7 +19,7 @@
     .table-map-controls .btn-primary:hover { background: #6b5a2d; border-color: #5c4a1a; color: #fff; }
     .floor-plan {
         position: relative;
-        min-height: 500px;
+        min-height: 600px;
         background: linear-gradient(180deg, #f5ebe0 0%, #ede0d4 100%);
         border-radius: var(--border-radius, 12px);
         box-shadow: inset 0 2px 20px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.12);
@@ -115,7 +115,41 @@
     .table-map-empty { text-align: center; padding: 3rem 1rem; color: var(--text-secondary, #6c757d); }
     .table-map-empty i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
 
-    /* Bars */
+    /* Bars row (top) */
+    .bars-row {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        height: 90px;
+        min-height: 90px;
+        margin-bottom: 1rem;
+        background: rgba(44,24,16,0.08);
+        border-radius: var(--border-radius, 12px);
+        border: 2px dashed var(--border-color, #D4A574);
+        overflow: hidden;
+        padding: 0 0.5rem;
+    }
+    .bars-row .bar-unit {
+        position: relative;
+        flex: 1 1 0;
+        min-width: 0;
+        height: 100%;
+        cursor: default;
+        transform: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid rgba(61,90,117,0.4);
+    }
+    .bars-row .bar-unit:last-child { border-right: none; }
+    .bars-row .bar-unit:hover { transform: none; }
+    .bars-row .bar-unit .bar-item { height: 100%; min-height: 36px; flex: 1; min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; padding: 0.35rem 0 0 0.75rem; }
+    .bars-row .bar-unit .bar-delete { position: static; width: 44px; flex-shrink: 0; height: auto; min-height: 36px; border-radius: 0 8px 8px 0; margin-left: auto; }
+    .add-bar-sits-control { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .add-bar-sits-control label { margin: 0; font-size: 0.9rem; font-weight: 600; color: #2C1810; }
+    .add-bar-sits-control select { padding: 0.35rem 0.5rem; font-size: 0.9rem; border: 1px solid var(--border-color, #D4A574); border-radius: 6px; min-width: 5rem; }
+
+    /* Bars (when on floor plan - legacy/drag) */
     .bar-unit {
         position: absolute;
         min-width: 80px;
@@ -128,9 +162,8 @@
         justify-content: center;
         transition: transform 0.15s ease;
     }
-    .bar-unit:hover { transform: translate(-50%, -50%) scale(1.02); }
-    .bar-unit.dragging { cursor: grabbing; z-index: 1000; transform: translate(-50%, -50%) scale(1.03); }
-    .bar-unit.resizing { cursor: ew-resize; }
+    .floor-plan .bar-unit:hover { transform: translate(-50%, -50%) scale(1.02); }
+    .floor-plan .bar-unit.dragging { cursor: grabbing; z-index: 1000; transform: translate(-50%, -50%) scale(1.03); }
     .bar-unit .bar-item {
         position: absolute;
         left: 0;
@@ -150,17 +183,19 @@
     .bar-unit .bar-delete {
         position: absolute;
         top: -14px;
-        right: 14px;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
+        right: 0;
+        width: 36px;
+        height: 100%;
+        min-height: 36px;
+        border-radius: 0 6px 6px 0;
         background: var(--danger-color, #dc3545);
         color: white;
-        border: 2px solid white;
+        border: none;
+        border-left: 2px solid rgba(255,255,255,0.3);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.65rem;
+        font-size: 1rem;
         font-weight: bold;
         cursor: pointer;
         opacity: 0.9;
@@ -168,32 +203,40 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     .bar-unit .bar-delete:hover { opacity: 1; background: var(--danger-dark, #c82333); }
-    .bar-unit .bar-resize-handle {
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        width: 10px;
-        cursor: ew-resize;
-        z-index: 3;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .bar-unit .bar-resize-handle::after {
-        content: '';
-        width: 4px;
-        height: 20px;
-        background: rgba(255,255,255,0.5);
-        border-radius: 2px;
-    }
-    .bar-unit .bar-resize-handle:hover::after { background: rgba(255,255,255,0.9); }
     .bar-unit .bar-sits { position: absolute; inset: 0; pointer-events: none; }
     .bar-unit .bar-sits .bar-sit { left: 50%; top: 50%; margin-left: 0; margin-top: 0; }
+    /* Bars row: sits at bottom of bar so title stays visible */
+    .bars-row .bar-unit .bar-sits {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: auto;
+        min-height: 44px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding-left: 8px;
+        padding-right: 52px;
+        padding-bottom: 4px;
+        gap: 8px;
+    }
+    .bars-row .bar-unit .bar-sit {
+        flex: 1 1 0;
+        min-width: 28px;
+        max-width: 48px;
+        width: auto;
+        height: auto;
+        aspect-ratio: 1;
+        position: static;
+        left: auto;
+        top: auto;
+        transform: none;
+    }
     .bar-unit .bar-sit {
         position: absolute;
-        width: 34px;
-        height: 34px;
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
         background: linear-gradient(145deg, #6b5a4a 0%, #4a3f35 100%);
         border: 2px solid #3d352d;
@@ -209,18 +252,19 @@
     }
     .bar-unit .bar-sit .bar-sit-number {
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.95rem;
         line-height: 1;
         text-shadow: 0 1px 2px rgba(0,0,0,0.4);
     }
+    .bars-row .bar-unit .bar-sit .bar-sit-number { font-size: clamp(0.65rem, 2.2vw, 0.95rem); }
     .bar-unit .bar-sit:hover { filter: brightness(1.1); }
     .bar-unit .bar-sit.dragging { cursor: grabbing; z-index: 100; }
     .bar-unit .bar-sit .bar-sit-delete {
         position: absolute;
         top: -2px;
         right: -2px;
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background: var(--danger-color);
         color: white;
@@ -233,7 +277,6 @@
         opacity: 0;
     }
     .bar-unit .bar-sit:hover .bar-sit-delete { opacity: 1; }
-    .add-bar-sit-dropdown .dropdown-menu { max-height: 200px; overflow-y: auto; }
 </style>
 
 <div class="table-map-page">
@@ -252,14 +295,20 @@
             <button type="button" class="btn btn-primary" id="addBarBtn">
                 <i class="fas fa-glass-martini-alt me-2"></i>Add Bar
             </button>
-            <div class="dropdown add-bar-sit-dropdown" id="addBarSitDropdown">
-                <button type="button" class="btn btn-primary dropdown-toggle" id="addBarSitBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-chair me-2"></i>Add Bar Sit
+            <div class="add-bar-sits-control">
+                <label for="addBarSitsBar">Add Bar Sits:</label>
+                <select id="addBarSitsBar" aria-label="Select bar">
+                    <option value="">—</option>
+                </select>
+                <label for="addBarSitsCount">Sits:</label>
+                <input type="number" id="addBarSitsCount" min="0" max="30" value="0" aria-label="Number of sits" style="width:4rem;">
+                <button type="button" class="btn btn-primary btn-sm" id="addBarSitsSet">
+                    <i class="fas fa-chair me-1"></i>Set
                 </button>
-                <ul class="dropdown-menu" id="addBarSitMenu" aria-labelledby="addBarSitBtn"></ul>
             </div>
         </div>
     </div>
+    <div class="bars-row" id="barsRow"></div>
     <div class="floor-plan" id="floorPlan">
         <div class="table-map-empty d-none" id="emptyState">
             <i class="fas fa-map-marked-alt"></i>
@@ -279,12 +328,13 @@
     const BAR_MIN_WIDTH = 80;
     const BAR_MAX_WIDTH = 400;
     const BAR_DEFAULT_WIDTH = 160;
+    const MAX_BARS = 4;
+    const BAR_ROW_ESTIMATED_WIDTH = 1000;
     let tables = [];
     let bars = [];
     let barSits = [];
     let dragState = null;
     let barSitDragState = null;
-    let barResizeState = null;
     let tableShape = 'round';
 
     function loadFromStorage() {
@@ -372,18 +422,21 @@
     }
 
     function addBar() {
+        if (bars.length >= MAX_BARS) {
+            if (typeof Swal !== 'undefined') Swal.fire('Limit reached', 'Maximum ' + MAX_BARS + ' bars allowed.', 'info');
+            return;
+        }
         const num = nextBarNumber();
         const bar = {
             id: generateBarId(),
             number: num,
-            x: 20 + (bars.length % 3) * 25,
-            y: 60 + Math.floor(bars.length / 3) * 20,
+            x: 20,
+            y: 50,
             width: BAR_DEFAULT_WIDTH
         };
         bars.push(bar);
         saveToStorage();
         renderAll();
-        updateAddBarSitMenu();
     }
 
     function deleteBar(id, e) {
@@ -392,7 +445,6 @@
         barSits = barSits.filter(s => s.barId !== id);
         saveToStorage();
         renderAll();
-        updateAddBarSitMenu();
     }
 
     function nextBarSitNumber(barId) {
@@ -411,43 +463,57 @@
         });
     }
 
-    function reflowBarSitsPositions() {
-        bars.forEach(bar => {
-            const sits = barSits.filter(s => s.barId === bar.id).sort((a, b) => (a.number || 0) - (b.number || 0));
-            const step = BAR_SIT_SIZE + BAR_SIT_GAP;
-            sits.forEach((sit, i) => {
-                const n = sits.length;
-                const offsetX = -((n - 1) * step) / 2 + i * step;
-                sit.offsetX = Math.max(-MAX_SIT_OFFSET_PX, Math.min(MAX_SIT_OFFSET_PX, offsetX));
-                sit.offsetY = 0;
-            });
+    const BAR_SIT_SIZE = 40;
+    const BAR_SIT_GAP = 10;
+    const BAR_SIT_LEFT_PADDING = 8;
+
+    function reflowBarSitsForBar(barId) {
+        const bar = bars.find(b => b.id === barId);
+        if (!bar) return;
+        const sits = barSits.filter(s => s.barId === barId).sort((a, b) => (a.number || 0) - (b.number || 0));
+        const step = BAR_SIT_SIZE + BAR_SIT_GAP;
+        sits.forEach((sit, i) => {
+            sit.offsetX = BAR_SIT_LEFT_PADDING + i * step;
+            sit.offsetY = 0;
         });
     }
 
-    const BAR_SIT_SIZE = 34;
-    const BAR_SIT_GAP = 10;
-    const BAR_SIT_LEFT_PADDING = 8;
+    function reflowBarSitsPositions() {
+        bars.forEach(bar => reflowBarSitsForBar(bar.id));
+    }
+
+    const BAR_SIT_COUNT_MAX = 30;
+
+    function setBarSitCount(barId, count) {
+        const bar = bars.find(b => b.id === barId);
+        if (!bar) return;
+        const n = Math.max(0, Math.min(BAR_SIT_COUNT_MAX, Math.floor(Number(count)) || 0));
+        const sits = barSits.filter(s => s.barId === barId).sort((a, b) => (a.number || 0) - (b.number || 0));
+        const current = sits.length;
+        if (n > current) {
+            for (let i = current; i < n; i++) {
+                barSits.push({
+                    id: generateBarSitId(),
+                    barId,
+                    number: i + 1,
+                    offsetX: 0,
+                    offsetY: 0
+                });
+            }
+            reflowBarSitsForBar(barId);
+        } else if (n < current) {
+            const toRemove = sits.slice(n);
+            toRemove.forEach(s => { barSits = barSits.filter(x => x.id !== s.id); });
+        }
+        saveToStorage();
+        renderAll();
+    }
 
     function addBarSit(barId) {
         const bar = bars.find(b => b.id === barId);
         if (!bar) return;
-        const sitsForBar = barSits.filter(s => s.barId === barId);
-        const i = sitsForBar.length;
-        const step = BAR_SIT_SIZE + BAR_SIT_GAP;
-        const barWidth = bar.width || BAR_DEFAULT_WIDTH;
-        const startX = -barWidth / 2 + BAR_SIT_SIZE / 2 + BAR_SIT_LEFT_PADDING;
-        const offsetX = startX + i * step;
-        const offsetY = 0;
-        const sit = {
-            id: generateBarSitId(),
-            barId,
-            number: nextBarSitNumber(barId),
-            offsetX: Math.max(-MAX_SIT_OFFSET_PX, Math.min(MAX_SIT_OFFSET_PX, offsetX)),
-            offsetY: Math.max(-MAX_SIT_OFFSET_PX, Math.min(MAX_SIT_OFFSET_PX, offsetY))
-        };
-        barSits.push(sit);
-        saveToStorage();
-        renderAll();
+        const sits = barSits.filter(s => s.barId === barId);
+        setBarSitCount(barId, sits.length + 1);
     }
 
     function deleteBarSit(id, e) {
@@ -528,7 +594,6 @@
     function onBarPointerDown(e, id) {
         e.preventDefault();
         e.stopPropagation();
-        if (e.target.classList.contains('bar-resize-handle') || e.target.closest('.bar-resize-handle')) return;
         const bar = bars.find(b => b.id === id);
         if (!bar) return;
         const rect = getFloorPlanRect();
@@ -572,46 +637,6 @@
         document.removeEventListener('touchend', onBarPointerUp);
         saveToStorage();
         dragState = null;
-    }
-
-    function onBarResizeDown(e, id) {
-        e.preventDefault();
-        e.stopPropagation();
-        const bar = bars.find(b => b.id === id);
-        if (!bar) return;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        barResizeState = { id, startClientX: clientX, startWidth: bar.width || BAR_DEFAULT_WIDTH };
-        const unit = document.querySelector('.bar-unit[data-bar-id="' + id + '"]');
-        if (unit) unit.classList.add('resizing');
-        document.addEventListener('mousemove', onBarResizeMove);
-        document.addEventListener('mouseup', onBarResizeUp);
-        document.addEventListener('touchmove', onBarResizeMove, { passive: false });
-        document.addEventListener('touchend', onBarResizeUp);
-    }
-
-    function onBarResizeMove(e) {
-        if (!barResizeState) return;
-        e.preventDefault();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const deltaX = clientX - barResizeState.startClientX;
-        const bar = bars.find(b => b.id === barResizeState.id);
-        if (!bar) return;
-        let w = barResizeState.startWidth + deltaX;
-        w = Math.max(BAR_MIN_WIDTH, Math.min(BAR_MAX_WIDTH, w));
-        bar.width = w;
-        const unit = document.querySelector('.bar-unit[data-bar-id="' + barResizeState.id + '"]');
-        if (unit) unit.style.width = w + 'px';
-    }
-
-    function onBarResizeUp() {
-        if (!barResizeState) return;
-        document.querySelectorAll('.bar-unit.resizing').forEach(el => el.classList.remove('resizing'));
-        document.removeEventListener('mousemove', onBarResizeMove);
-        document.removeEventListener('mouseup', onBarResizeUp);
-        document.removeEventListener('touchmove', onBarResizeMove);
-        document.removeEventListener('touchend', onBarResizeUp);
-        saveToStorage();
-        barResizeState = null;
     }
 
     function clampBarSitOffset(offsetX, offsetY) {
@@ -708,23 +733,20 @@
     }
 
     function renderBars() {
-        const floor = document.getElementById('floorPlan');
-        if (!floor) return;
-        floor.querySelectorAll('.bar-unit').forEach(el => el.remove());
+        const barsRow = document.getElementById('barsRow');
+        if (!barsRow) return;
+        barsRow.innerHTML = '';
+        if (bars.length === 0) return;
 
         bars.forEach(bar => {
-            const barWidth = Math.max(BAR_MIN_WIDTH, Math.min(BAR_MAX_WIDTH, bar.width || BAR_DEFAULT_WIDTH));
             const unit = document.createElement('div');
             unit.className = 'bar-unit';
             unit.setAttribute('data-bar-id', bar.id);
-            unit.style.left = (bar.x != null ? bar.x : 20) + '%';
-            unit.style.top = (bar.y != null ? bar.y : 50) + '%';
-            unit.style.width = barWidth + 'px';
-            const sits = barSits.filter(s => s.barId === bar.id);
+            const sits = barSits.filter(s => s.barId === bar.id).sort((a, b) => (a.number || 0) - (b.number || 0));
             let sitsHtml = '';
-            sits.forEach(sit => {
+            sits.forEach((sit) => {
                 const num = sit.number != null ? sit.number : '';
-                sitsHtml += '<span class="bar-sit" data-sit-id="' + sit.id + '" style="transform: translate(' + (sit.offsetX || 0) + 'px, ' + (sit.offsetY || 0) + 'px) translate(-50%, -50%); left: 50%; top: 50%;">' +
+                sitsHtml += '<span class="bar-sit" data-sit-id="' + sit.id + '">' +
                     '<span class="bar-sit-number">' + num + '</span>' +
                     '<span class="bar-sit-delete" aria-label="Remove sit" title="Remove sit">×</span></span>';
             });
@@ -733,16 +755,7 @@
                 '<span class="bar-label">Bar ' + (bar.number || '') + '</span>' +
                 '<button type="button" class="bar-delete" aria-label="Delete bar" title="Delete bar">×</button>' +
                 '</div>' +
-                '<div class="bar-resize-handle" aria-label="Resize bar" title="Drag to resize"></div>' +
                 '<div class="bar-sits">' + sitsHtml + '</div>';
-            unit.addEventListener('mousedown', e => {
-                if (!e.target.classList.contains('bar-delete') && !e.target.closest('.bar-sit') && !e.target.closest('.bar-resize-handle')) onBarPointerDown(e, bar.id);
-            });
-            unit.addEventListener('touchstart', e => {
-                if (!e.target.classList.contains('bar-delete') && !e.target.closest('.bar-sit') && !e.target.closest('.bar-resize-handle')) onBarPointerDown(e, bar.id);
-            }, { passive: false });
-            unit.querySelector('.bar-resize-handle')?.addEventListener('mousedown', e => { e.stopPropagation(); onBarResizeDown(e, bar.id); });
-            unit.querySelector('.bar-resize-handle')?.addEventListener('touchstart', e => { e.stopPropagation(); onBarResizeDown(e, bar.id); }, { passive: false });
             unit.querySelector('.bar-delete')?.addEventListener('click', e => { deleteBar(bar.id, e); });
             sits.forEach(sit => {
                 const sitEl = unit.querySelector('.bar-sit[data-sit-id="' + sit.id + '"]');
@@ -752,8 +765,43 @@
                     sitEl.querySelector('.bar-sit-delete')?.addEventListener('click', e => deleteBarSit(sit.id, e));
                 }
             });
-            floor.appendChild(unit);
+            barsRow.appendChild(unit);
         });
+        const addBarBtn = document.getElementById('addBarBtn');
+        if (addBarBtn) addBarBtn.disabled = bars.length >= MAX_BARS;
+    }
+
+    function updateAddBarSitsControl() {
+        const barSelect = document.getElementById('addBarSitsBar');
+        const countInput = document.getElementById('addBarSitsCount');
+        const setBtn = document.getElementById('addBarSitsSet');
+        if (!barSelect || !countInput || !setBtn) return;
+        const selectedId = barSelect.value;
+        barSelect.innerHTML = bars.length === 0 ? '<option value="">—</option>' : bars.map(b => '<option value="' + b.id + '">Bar ' + (b.number || '') + '</option>').join('');
+        if (bars.length > 0) {
+            barSelect.disabled = false;
+            countInput.disabled = false;
+            setBtn.disabled = false;
+            const stillSelected = bars.some(b => b.id === selectedId);
+            if (stillSelected) barSelect.value = selectedId;
+            else if (bars.length > 0) barSelect.value = bars[0].id;
+            const barId = barSelect.value;
+            const sits = barId ? barSits.filter(s => s.barId === barId).length : 0;
+            countInput.value = sits;
+        } else {
+            barSelect.disabled = true;
+            countInput.disabled = true;
+            setBtn.disabled = true;
+            countInput.value = 0;
+        }
+    }
+
+    function applyAddBarSits() {
+        const barSelect = document.getElementById('addBarSitsBar');
+        const countInput = document.getElementById('addBarSitsCount');
+        if (!barSelect || !countInput || !barSelect.value) return;
+        const n = Math.max(0, Math.min(BAR_SIT_COUNT_MAX, parseInt(countInput.value, 10) || 0));
+        setBarSitCount(barSelect.value, n);
     }
 
     function renderAll() {
@@ -761,43 +809,15 @@
         const empty = document.getElementById('emptyState');
         if (!floor) return;
 
-        if (tables.length === 0 && bars.length === 0) {
+        if (tables.length === 0) {
             empty.classList.remove('d-none');
-            floor.querySelectorAll('.table-unit, .bar-unit').forEach(el => el.remove());
-            return;
-        }
-        empty.classList.add('d-none');
-        renderTables();
-        renderBars();
-    }
-
-    function updateAddBarSitMenu() {
-        const menu = document.getElementById('addBarSitMenu');
-        const btn = document.getElementById('addBarSitBtn');
-        if (!menu || !btn) return;
-        menu.innerHTML = '';
-        if (bars.length === 0) {
-            const li = document.createElement('li');
-            li.innerHTML = '<span class="dropdown-item text-muted">No bars yet</span>';
-            menu.appendChild(li);
-            btn.disabled = true;
+            floor.querySelectorAll('.table-unit').forEach(el => el.remove());
         } else {
-            btn.disabled = false;
-            bars.forEach(bar => {
-                const li = document.createElement('li');
-                const a = document.createElement('a');
-                a.className = 'dropdown-item';
-                a.href = '#';
-                a.textContent = 'Bar ' + (bar.number || '');
-                a.addEventListener('click', e => {
-                    e.preventDefault();
-                    addBarSit(bar.id);
-                    try { document.querySelector('.dropdown.show .dropdown-toggle')?.click(); } catch (_) {}
-                });
-                li.appendChild(a);
-                menu.appendChild(li);
-            });
+            empty.classList.add('d-none');
+            renderTables();
         }
+        renderBars();
+        updateAddBarSitsControl();
     }
 
     function updateShapeUI() {
@@ -817,10 +837,15 @@
     function init() {
         loadFromStorage();
         updateShapeUI();
-        updateAddBarSitMenu();
         renderAll();
         document.getElementById('addTableBtn')?.addEventListener('click', addTable);
         document.getElementById('addBarBtn')?.addEventListener('click', addBar);
+        document.getElementById('addBarSitsSet')?.addEventListener('click', applyAddBarSits);
+        document.getElementById('addBarSitsBar')?.addEventListener('change', function() {
+            const countInput = document.getElementById('addBarSitsCount');
+            if (countInput && this.value) countInput.value = barSits.filter(s => s.barId === this.value).length;
+            else if (countInput) countInput.value = 0;
+        });
         document.getElementById('shapeRound')?.addEventListener('click', () => setShape('round'));
         document.getElementById('shapeSquare')?.addEventListener('click', () => setShape('square'));
     }
